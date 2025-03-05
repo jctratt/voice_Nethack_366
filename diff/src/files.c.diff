@@ -1,0 +1,25 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/src/files.c	2020-03-08 12:29:31.000000000 -0500
++++ /home/jtratt/s/voice_Nethack_366/src/files.c	2025-02-23 17:34:48.686886340 -0600
+@@ -2757,6 +2757,16 @@
+     } else if (match_varname(buf, "SOUND", 5)) {
+         add_sound_mapping(bufp);
+ #endif
++#ifdef VOICE_ENABLED
++    } else if (match_varname(buf, "VOICE_EXCEPTION", 13)) {
++        add_voice_exception(bufp); // New function to add VOICE_EXCEPTION patterns /* defined in options.c */
++    } else if (match_varname(buf, "VOICE_FORCE", 11)) {
++        if (add_voice_force(bufp) < 0) { /* defined in options.c */
++            config_error_add("Could not compile VOICE_FORCE regex: '%s'", bufp);
++        } else {
++            ;//config_error_add("Successfully compiled VOICE_FORCE: '%s'", bufp); /* Optional debug */
++        }
++#endif /* VOICE_ENABLED */
+     } else if (match_varname(buf, "QT_TILEWIDTH", 12)) {
+ #ifdef QT_GRAPHICS
+         extern char *qt_tilewidth;
+@@ -4468,4 +4478,5 @@
+ 
+ /* ----------  END TRIBUTE ----------- */
+ 
++
+ /*files.c*/

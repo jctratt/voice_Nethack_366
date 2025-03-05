@@ -1,0 +1,11 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/include/artifact.h	2020-03-08 12:29:31.000000000 -0500
++++ /home/jtratt/s/voice_Nethack_366/include/artifact.h	2025-01-05 19:58:25.038409976 -0600
+@@ -66,7 +66,7 @@
+     LEV_TELE,
+     CREATE_PORTAL,
+     ENLIGHTENING,
+-    CREATE_AMMO
++    CREATE_AMMO,
+ };
+ 
+ #endif /* ARTIFACT_H */

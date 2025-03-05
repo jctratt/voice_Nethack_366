@@ -1,0 +1,23 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/win/curses/curswins.c	2025-01-01 18:00:44.938501236 -0600
++++ /home/jtratt/s/voice_Nethack_366/win/curses/curswins.c	2025-01-26 21:52:14.803640248 -0600
+@@ -387,7 +387,6 @@
+     map[y][x].color = color;
+     map[y][x].attr = attr;
+     nch = map[y][x];
+-
+     (void) curses_map_borders(&sx, &sy, &ex, &ey, -1, -1);
+ 
+     if ((x >= sx) && (x <= ex) && (y >= sy) && (y <= ey)) {
+@@ -397,10 +396,11 @@
+         }
+ 
+         write_char(mapwin, x - sx, y - sy, nch);
++        //pline("Color=%d", color);
+     }
+     /* refresh after every character?
+      * Fair go, mate! Some of us are playing from Australia! */
+-    /* wrefresh(mapwin); */
++    wrefresh(mapwin);
+ }
+ 
+ 

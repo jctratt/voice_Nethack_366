@@ -1,0 +1,12 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/win/curses/cursmain.c	2020-03-08 12:29:31.000000000 -0500
++++ /home/jtratt/s/voice_Nethack_366/win/curses/cursmain.c	2025-02-06 10:58:31.407524539 -0600
+@@ -610,6 +610,9 @@
+     inv_update = 1;
+     curses_update_inv();
+     inv_update = 0;
++
++    /* Refresh the inventory window each turn */
++    curses_refresh_nhwin(INV_WIN);
+ }
+ 
+ /*

@@ -1,0 +1,22 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/src/invent.c	2025-01-01 18:00:44.986500675 -0600
++++ /home/jtratt/s/voice_Nethack_366/src/invent.c	2025-02-23 17:34:48.442889716 -0600
+@@ -2770,9 +2770,16 @@
+         to_let = '_';
+     /* add amulet, rings, wielded weapon to menu header */
+ 
+-    Sprintf(invheading, "%ld Wt:%d(%d) (%d/52 slots) Spd:%d Exr:%ld \"%c =%c =%c )%c %d",
+-            ((long)weight_cap() - ( (long)(inv_weight()+weight_cap()) )), inv_weight() + wcap, wcap, \
+-            inv_cnt(TRUE), youmonst.movement, context.next_attrib_check-moves, am_let, rl_let, rr_let, to_let, u.uluck);
++    Sprintf(invheading, "%d/52 slots Wt:%d(%d)=%ld Spd:%d Exr:%ld \"%c =%c =%c )%c LK:%d",
++            inv_cnt(TRUE), \
++            inv_weight() + wcap, wcap, ((long)weight_cap() - ( (long)(inv_weight()+weight_cap()) )), \
++            youmonst.movement, \
++            context.next_attrib_check-moves, \
++            am_let, \
++            rl_let, \
++            rr_let, \
++            to_let, \
++            u.uluck);
+     add_menu(win, NO_GLYPH, &any, 0, 0, ATR_BOLD, invheading, MENU_UNSELECTED);
+  nextclass:
+     classcount = 0;

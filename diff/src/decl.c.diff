@@ -1,0 +1,26 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/src/decl.c	2020-03-08 12:29:31.000000000 -0500
++++ /home/jtratt/s/voice_Nethack_366/src/decl.c	2025-02-23 17:34:48.750885454 -0600
+@@ -4,6 +4,7 @@
+ /* NetHack may be freely redistributed.  See license for details. */
+ 
+ #include "hack.h"
++#include "flag.h"
+ 
+ int NDECL((*afternmv));
+ int NDECL((*occupation));
+@@ -348,6 +349,15 @@
+ 
+ struct plinemsg_type *plinemsg_types = (struct plinemsg_type *) 0;
+ 
++#ifdef VOICE_ENABLED
++NEARDATA char voice_exceptions[MAX_VOICE_EXCEPTIONS][BUFSZ] = { { 0 } };
++NEARDATA int num_voice_exceptions = 0;
++NEARDATA char voice_forces[MAX_VOICE_FORCES][BUFSZ] = { { 0 } };
++NEARDATA int num_voice_forces = 0;
++NEARDATA struct voice_exception *voicelist = (struct voice_exception *) 0; // New linked list for VOICE_EXCEPTION
++NEARDATA struct voice_force *forcelist = (struct voice_force *) 0; // New linked list for VOICE_FORCE
++#endif /* VOICE_ENABLED */
++
+ #ifdef PANICTRACE
+ const char *ARGV0;
+ #endif

@@ -1,0 +1,38 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/src/display.c	2025-01-01 18:00:44.966500908 -0600
++++ /home/jtratt/s/voice_Nethack_366/src/display.c	2025-02-23 17:34:48.862883905 -0600
+@@ -910,7 +910,7 @@
+         for (i = 0; i < SHIELD_COUNT; i++) {
+             show_glyph(x, y, cmap_to_glyph(shield_static[i]));
+             flush_screen(1); /* make sure the glyph shows up */
+-            delay_output();
++            nh_delay_output();
+         }
+         newsym(x, y); /* restore the old information */
+     }
+@@ -929,7 +929,7 @@
+ /*
+  * tmp_at()
+  *
+- * Temporarily place glyphs on the screen.  Do not call delay_output().  It
++ * Temporarily place glyphs on the screen.  Do not call nh_delay_output().  It
+  * is up to the caller to decide if it wants to wait [presently, everyone
+  * but explode() wants to delay].
+  *
+@@ -1025,7 +1025,7 @@
+                     show_glyph(tglyph->saved[i - 1].x,
+                                tglyph->saved[i - 1].y, tglyph->glyph);
+                     flush_screen(0);   /* make sure it shows up */
+-                    delay_output();
++                    nh_delay_output();
+                 }
+                 tglyph->sidx = 1;
+             }
+@@ -1109,7 +1109,7 @@
+     for (i = 0; i < rpt; i++) {
+         show_glyph(x, y, glyph[i % 2]);
+         flush_screen(1);
+-        delay_output();
++        nh_delay_output();
+     }
+ }
+ 

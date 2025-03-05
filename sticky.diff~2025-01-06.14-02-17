@@ -1,0 +1,366 @@
++#endif /* STICKY_OBJECTS */
+ 			otmp->no_charge = 0;
+ 
+ 			if (otmp->otyp == SLIME_MOLD) goodfruit(otmp->spe);
+--- src.v1/cmd.c	Sun Feb 23 09:43:25 2003
++++ src/cmd.c	Sat Mar  1 13:41:31 2003
+@@ -97,6 +97,9 @@
+ extern int NDECL(dowieldquiver); /**/
+ extern int NDECL(dozap); /**/
+ extern int NDECL(doorganize); /**/
++#ifdef STICKY_OBJECTS
++extern int NDECL(dosticky); /**/
++#endif /* STICKY_OBJECTS */
+ #endif /* DUMB */
+ 
+ #ifdef OVL1
+@@ -1431,6 +1434,9 @@
+ 	{'x', FALSE, doswapweapon},
+ 	{'X', TRUE, enter_explore_mode},
+ /*	'y', 'Y' : go nw */
++#ifdef STICKY_OBJECTS
++	{M('y'), TRUE, dosticky},
++#endif /* STICKY_OBJECTS */
+ 	{'z', FALSE, dozap},
+ 	{'Z', TRUE, docast},
+ 	{'<', FALSE, doup},
+@@ -1485,6 +1491,9 @@
+ #endif
+ 	{"rub", "rub a lamp or a stone", dorub, FALSE},
+ 	{"sit", "sit down", dosit, FALSE},
++#ifdef STICKY_OBJECTS
++	{"sticky", "set 'sticky' inventory slots", dosticky, TRUE},
++#endif /* STICKY_OBJECTS */
+ 	{"turn", "turn undead", doturn, TRUE},
+ 	{"twoweapon", "toggle two-weapon combat", dotwoweapon, FALSE},
+ 	{"untrap", "untrap something", dountrap, FALSE},
+--- src.v1/invent.c	Sun Feb 23 09:43:27 2003
++++ src/invent.c	Sat Mar  1 13:41:31 2003
+@@ -31,6 +31,9 @@
+ 
+ #ifdef OVLB
+ 
++#ifdef STICKY_OBJECTS
++boolean sticky_inv_hack = 0;	/* blech ick yuck... */
++#endif /* STICKY_OBJECTS */
+ static int lastinvnr = 51;	/* 0 ... 51 (never saved&restored) */
+ 
+ #ifdef WIZARD
+@@ -159,6 +162,9 @@
+ struct obj **potmp, **pobj;
+ {
+ 	register struct obj *otmp = *potmp, *obj = *pobj;
++#ifdef STICKY_OBJECTS
++	boolean sticky_hack = 0;
++#endif /* STICKY_OBJECTS */
+ 
+ 	if(mergable(otmp, obj)) {
+ 		/* Approximate age: we do it this way because if we were to
+@@ -223,8 +229,20 @@
+ 		}
+ #endif /*0*/
+ 
++#ifdef STICKY_OBJECTS
++ 		if (flags.invlet_constant && obj->invlet &&
++ 		    obj->sticky && !otmp->sticky) {
++ 			otmp->invlet = obj->invlet;
++ 			otmp->sticky = 1;
++ 			sticky_hack = 1;
++ 		}
++#endif /* STICKY_OBJECTS */
+ 		obfree(obj,otmp);	/* free(obj), bill->otmp */
+ 		return(1);
++#ifdef STICKY_OBJECTS
++ 		/* if we're not merging in inventory, this will be a nop */
++ 		if (sticky_hack) reorder_invent();
++#endif /* STICKY_OBJECTS */
+ 	}
+ 	return 0;
+ }
+@@ -302,6 +320,10 @@
+ struct obj *obj;
+ {
+ 	struct obj *otmp, *prev;
++#ifdef STICKY_OBJECTS
++	struct obj *otmp2;
++	char save_invlet = '\0';
++#endif /* STICKY_OBJECTS */
+ 
+ 	if (obj->where != OBJ_FREE)
+ 	    panic("addinv: obj not free");
+@@ -314,6 +336,16 @@
+ 	    return obj;
+ #endif
+ 
++#ifdef STICKY_OBJECTS
++	/* if object is sticky, find the object we'll be displacing */
++	if (flags.invlet_constant && obj->invlet && obj->sticky) {
++		save_invlet = obj->invlet;
++		for (otmp2 = invent; otmp2; otmp2 = otmp2->nobj)
++			if (otmp2->invlet == save_invlet)
++				break;
++	}
++#endif /* STICKY_OBJECTS */
++
+ 	/* merge if possible; find end of chain in the process */
+ 	for (prev = 0, otmp = invent; otmp; prev = otmp, otmp = otmp->nobj)
+ 	    if (merged(&otmp, &obj)) {
+@@ -322,7 +354,15 @@
+ 	    }
+ 	/* didn't merge, so insert into chain */
+ 	if (flags.invlet_constant || !prev) {
+-	    if (flags.invlet_constant) assigninvlet(obj);
++	    if (flags.invlet_constant) {
++		    assigninvlet(obj);
++#ifdef STICKY_OBJECTS
++		    if (save_invlet) {
++			    if (otmp2) otmp2->invlet = obj->invlet;
++			    obj->invlet = save_invlet;
++		    }
++#endif /* STICKY_OBJECTS */
++	    }
+ 	    obj->nobj = invent;		/* insert at beginning */
+ 	    invent = obj;
+ 	    if (flags.invlet_constant) reorder_invent();
+@@ -1614,9 +1654,16 @@
+ #endif
+     } else {
+ 	/* ordinary inventory display or pickup message */
++#ifndef STICKY_OBJECTS
+ 	Sprintf(li, "%c - %s%s",
+ 		(use_invlet ? obj->invlet : let),
+ 		(txt ? txt : doname(obj)), (dot ? "." : ""));
++#else
++	Sprintf(li, "%c %c %s%s",
++		(use_invlet ? obj->invlet : let),
++		(use_invlet && obj->sticky ? '=' : '-'),
++		(txt ? txt : doname(obj)), (dot ? "." : ""));
++#endif /* STICKY_OBJECTS */
+     }
+     if (savequan) obj->quan = savequan;
+ 
+@@ -1751,9 +1798,19 @@
+ 				classcount++;
+ 			    }
+ 			    any.a_char = ilet;
++#ifdef STICKY_OBJECTS
++			    /*
++			     * Yes, this is evil and disgusting.  If you
++			     * have a better way of doing this, jump on it.
++			     */
++			    sticky_inv_hack = otmp->sticky;
++#endif /* STICKY_OBJECTS */
+ 			    add_menu(win, obj_to_glyph(otmp),
+ 					&any, ilet, 0, ATR_NONE, doname(otmp),
+ 					MENU_UNSELECTED);
++#ifdef STICKY_OBJECTS
++			    sticky_inv_hack = 0;
++#endif /* STICKY_OBJECTS */
+ 			}
+ 		}
+ 	}
+@@ -2690,5 +2747,22 @@
+ }
+
++#ifdef STICKY_OBJECTS
++int
++dosticky()	/* toggle "sticky" inventory slot */
++{
++	struct obj *obj;
++	char allowall[2];
++
++	/* get a pointer to the object the user wants to modify */
++	allowall[0] = ALL_CLASSES; allowall[1] = '\0';
++	if (!(obj = getobj(allowall,"mark"))) return 0;
++
++	obj->sticky = !obj->sticky;
++	prinv(obj->sticky ? "Marking:" : "Unmarking:", obj, 0L);
++	return(0);
++}
++#endif /* STICKY_OBJECTS */
++ 
+ /* common to display_minventory and display_cinventory */
+ STATIC_OVL void
+ invdisp_nothing(hdr, txt)
+--- include.v1/extern.h	Sun Feb 23 09:43:20 2003
++++ include/extern.h	Sat Mar  1 13:41:31 2003
+@@ -803,6 +803,9 @@
+ E void NDECL(free_invbuf);
+ E void NDECL(reassign);
+ E int NDECL(doorganize);
++#ifdef STICKY_OBJECTS
++E int NDECL(dosticky);
++#endif /* STICKY_OBJECTS */
+ E int FDECL(count_unpaid, (struct obj *));
+ E int FDECL(count_buc, (struct obj *,int));
+ E void FDECL(carry_obj_effects, (struct obj *));
+--- include.v1/obj.h	Sun Feb 23 09:43:21 2003
++++ include/obj.h	Sat Mar  1 13:41:31 2003
+@@ -87,7 +87,12 @@
+ 
+ 	Bitfield(in_use,1);	/* for magic items before useup items */
+ 	Bitfield(bypass,1);	/* mark this as an object to be skipped by bhito() */
++#ifndef STICKY_OBJECTS
+ 	/* 6 free bits */
++#else
++	Bitfield(sticky,1);	/* "sticky" inventory slot */
++	/* 5 free bits */
++#endif
+ 
+ 	int	corpsenm;	/* type of corpse is mons[corpsenm] */
+ #define leashmon  corpsenm	/* gets m_id of attached pet */
+--- win.v1/X11/winmenu.c	Sun Feb 23 09:43:49 2003
++++ win/X11/winmenu.c	Sat Mar  1 13:41:31 2003
+@@ -67,6 +67,10 @@
+ 
+ #define reset_menu_count(mi)	((mi)->counting = FALSE, (mi)->menu_count = 0L)
+ 
++#ifdef STICKY_OBJECTS
++extern boolean sticky_inv_hack;		/* blech ick yuck */
++#endif /* STICKY_OBJECTS */
++
+ 
+ static const char menu_translations[] =
+     "#override\n\
+@@ -633,6 +637,13 @@
+ 	    len = BUFSZ - 1;
+ 	}
+ 	Sprintf(buf, "%c - ", ch ? ch : ' ');
++#ifdef STICKY_OBJECTS
++	/*
++	 * Yes, this is a disgustingly ugly way of doing this.  If you have
++	 * a better idea, jump on it.
++	 */
++	if (sticky_inv_hack) buf[2] = '=';
++#endif /* STICKY_OBJECTS */
+ 	(void) strncpy(buf+4, str, len);
+ 	buf[4+len] = '\0';
+ 	item->str = copy_of(buf);
+--- win.v1/tty/wintty.c	Sun Feb 23 09:43:46 2003
++++ win/tty/wintty.c	Sat Mar  1 13:41:31 2003
+@@ -110,6 +110,9 @@
+ #endif
+ };
+ 
++#ifdef STICKY_OBJECTS
++extern boolean sticky_inv_hack;		/* blech ick yuck */
++#endif /* STICKY_OBJECTS */
+ static int maxwin = 0;			/* number of windows in use */
+ winid BASE_WINDOW;
+ struct WinDesc *wins[MAXWIN];
+@@ -1997,6 +2000,13 @@
+ 	    len = BUFSZ - 1;
+ 	}
+ 	Sprintf(buf, "%c - ", ch ? ch : '?');
++#ifdef STICKY_OBJECTS
++	/*
++	 * Yes, this is a disgustingly ugly way of doing this.  If you have
++	 * a better idea, jump on it.
++	 */
++	if (sticky_inv_hack) buf[2] = '=';
++#endif /* STICKY_OBJECTS */
+ 	(void) strncpy(buf+4, str, len);
+ 	buf[4+len] = '\0';
+ 	newstr = buf;
+--- doc.v1/Guidebook.mn	Sun Feb 23 09:43:18 2003
++++ doc/Guidebook.mn	Sat Mar  1 13:41:31 2003
+@@ -707,6 +707,13 @@
+ Rub a lamp or a stone.
+ .lp #sit
+ Sit down.
++.lp #sticky
++Toggle the 'stickiness' of an object.  An object marked 'sticky' will try
++harder to keep its inventory letter (as per the
++.op fixinv
++option), displacing any other object that might have taken its inventory
++letter after it was dropped.  Only available if the STICKY_OBJECTS option
++was enabled at compile-time.
+ .lp #turn
+ Turn undead.
+ .lp #twoweapon
+@@ -773,6 +780,8 @@
+ #version
+ .lp M-w
+ #wipe
++.lp M-y
++#sticky (if compiled in)
+ .pg
+ If the
+ .op number_pad
+--- doc.v1/Guidebook.tex	Sun Feb 23 09:43:18 2003
++++ doc/Guidebook.tex	Sat Mar  1 13:41:31 2003
+@@ -941,6 +941,14 @@
+ \item[\tb{\#sit}]
+ Sit down.
+ %.lp
++\item[\tb{\#sticky}]
++Toggle the 'stickiness' of an object.  An object marked 'sticky' will try
++harder to keep its inventory letter (as per the
++{\it fixinv\/}
++option), displacing any other object that might have taken its inventory
++letter after it was dropped.  Only available if the {\tt STICKY\_OBJECTS}
++option was enabled at compile time.
++%.lp
+ \item[\tb{\#turn}]
+ Turn undead.
+ %.lp
+@@ -1036,6 +1044,9 @@
+ %.lp
+ \item[\tb{M-w}]
+ {\tt\#wipe}
++%.lp
++\item[\tb{M-y}]
++{\tt\#sticky} (if compiled in)
+ \elist
+ 
+ %.pg
+--- dat.v1/cmdhelp	Sun Feb 23 09:43:15 2003
++++ dat/cmdhelp	Sat Mar  1 13:41:31 2003
+@@ -119,3 +119,4 @@
+ M-u     Untrap something (trap, door, or chest)
+ M-v     Print compile time options for this version of NetHack
+ M-w     Wipe off your face
++M-y     Set 'sticky' inventory slots (if STICKY_OBJECTS compile option set)
+--- dat.v1/hh	Sun Feb 23 09:43:16 2003
++++ dat/hh	Sat Mar  1 13:41:31 2003
+@@ -104,6 +104,7 @@
+ M-u     untrap  untrap something
+ M-v     version print compile time options for this version
+ M-w     wipe    wipe off your face
++M-y     sticky  set 'sticky' inventory slots (if compiled in)
+ 
+ If the "number_pad" option is on, these additional variants are available:
+ 
+--- src.v4/pickup.c	Sun Feb 23 09:43:29 2003
++++ src/pickup.c	Sun Mar 23 20:54:05 2003
+@@ -53,6 +53,9 @@
+ /* if you can figure this out, give yourself a hearty pat on the back... */
+ #define GOLD_CAPACITY(w,n)	(((w) * -100L) - ((n) + 50L) - 1L)
+ 
++#ifdef STICKY_OBJECTS
++extern boolean sticky_inv_hack;		/* blech ick yuck */
++#endif
+ static const char moderateloadmsg[] = "You have a little trouble lifting";
+ static const char nearloadmsg[] = "You have much trouble lifting";
+ static const char overloadmsg[] = "You have extreme difficulty lifting";
+@@ -692,10 +695,20 @@
+ 		    }
+ 
+ 		    any.a_obj = curr;
++#ifdef STICKY_OBJECTS
++		    /*
++		     * Yes, this is evil and disgusting.  If you have a
++		     * better way of doing this, jump on it.
++		     */
++		    sticky_inv_hack = curr->sticky;
++#endif
+ 		    add_menu(win, obj_to_glyph(curr), &any,
+ 			    qflags & USE_INVLET ? curr->invlet : 0,
+ 			    def_oc_syms[(int)objects[curr->otyp].oc_class],
+ 			    ATR_NONE, doname(curr), MENU_UNSELECTED);
++#ifdef STICKY_OBJECTS
++		    sticky_inv_hack = 0;
++#endif
+ 		}
+ 	    pack++;
+ 	} while (qflags & INVORDER_SORT && *pack);

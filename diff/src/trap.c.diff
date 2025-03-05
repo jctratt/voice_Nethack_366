@@ -1,0 +1,11 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/src/trap.c	2020-03-08 12:29:31.000000000 -0500
++++ /home/jtratt/s/voice_Nethack_366/src/trap.c	2025-02-23 17:34:48.718885897 -0600
+@@ -1853,7 +1853,7 @@
+         /* dstage@u.washington.edu -- Delay only if hero sees it */
+         if (cansee(bhitpos.x, bhitpos.y))
+             while (tmp-- > 0)
+-                delay_output();
++                nh_delay_output();
+ 
+         bhitpos.x += dx;
+         bhitpos.y += dy;

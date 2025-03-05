@@ -1,0 +1,24 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/doc/Guidebook.mn	2020-03-08 12:29:31.000000000 -0500
++++ /home/jtratt/s/voice_Nethack_366/doc/Guidebook.mn	2025-01-28 13:40:27.661695489 -0600
+@@ -3407,6 +3407,12 @@
+ the objects\(rq since the pile size will always be at least that big;
+ default value is 5.
+ Persistent.
++.lp autosave
++Save and quit the game automatically, after playing for N turns
++\(lquseful if you want to artificially limit the game session duration\(rq.
++A value of -1 (and other negative values) mean that autosave is off, while
++positive values are used for turn countdown until save. 0 is not a valid
++turn count because this would cause the game to quit as soon as it starts.
+ .lp playmode
+ Values are \(lqnormal\(rq, \(lqexplore\(rq, or \(lqdebug\(rq.
+ Allows selection of explore mode (also known as discovery mode) or debug
+@@ -3561,6 +3567,8 @@
+ ." Debug mode only.
+ .lp verbose
+ Provide more commentary during the game (default on).  Persistent.
++.lp voice_enabled
++Use a text-to-speech engine to read output.
+ .lp whatis_coord
+ When using the \(oq/\(cq or \(oq;\(cq commands to look around on the map with
+ .op autodescribe

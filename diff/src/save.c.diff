@@ -1,0 +1,11 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/src/save.c	2020-03-08 12:29:31.000000000 -0500
++++ /home/jtratt/s/voice_Nethack_366/src/save.c	2025-02-23 17:34:48.498888942 -0600
+@@ -80,7 +80,7 @@
+     if (iflags.debug_fuzzer)
+         return 0;
+     clear_nhwindow(WIN_MESSAGE);
+-    if (yn("Really save?") == 'n') {
++    if (iflags.autosave && yn("Really save?") == 'n') {
+         clear_nhwindow(WIN_MESSAGE);
+         if (multi > 0)
+             nomul(0);

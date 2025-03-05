@@ -1,0 +1,64 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/src/cmd.c	2025-01-01 18:00:44.954501049 -0600
++++ /home/jtratt/s/voice_Nethack_366/src/cmd.c	2025-02-23 17:34:48.426889938 -0600
+@@ -4,6 +4,7 @@
+ /* NetHack may be freely redistributed.  See license for details. */
+ 
+ #include "hack.h"
++#include "flag.h"
+ #include "lev.h"
+ #include "func_tab.h"
+ 
+@@ -128,7 +129,9 @@
+ extern int NDECL(dozap);              /**/
+ extern int NDECL(doorganize);         /**/
+ 
++//#ifdef STICKY_OBJECTS
+ extern int NDECL(dosticky);           /**/
++//#endif /* STICKY_OBJECTS */
+ 
+ #endif /* DUMB */
+ 
+@@ -3369,7 +3372,7 @@
+             enl_msg(You_, "have not wished", "did not wish",
+                     " for any artifacts", "");
+     }
+-        Sprintf(buf, "wasted %s of time%s", short_time(buf2/*, u.uage*/), final?"":" so far");
++        Sprintf(buf, "wasted %s of time%s", short_time(buf2, u.uage), final?"":" so far");
+         you_have_X(buf);
+ 
+     /* Pop up the window and wait for a key */
+@@ -3378,6 +3381,16 @@
+     en_win = WIN_ERR;
+ }
+ 
++#ifdef VOICE_ENABLED
++int
++dotogglevoice(void) /* toggle voice_enabled */
++{
++    flags.voice_enabled = !flags.voice_enabled;
++    pline("Voice output is now %s.", flags.voice_enabled ? "enabled" : "disabled");
++    return 0;
++}
++#endif /* VOICE_ENABLED */
++
+ /* ordered by command name */
+ struct ext_func_tab extcmdlist[] = {
+     { '#', "#", "perform an extended command",
+@@ -3532,6 +3545,9 @@
+     { '<', "up", "go up a staircase", doup },
+     { '\0', "vanquished", "list vanquished monsters",
+             dovanquished, IFBURIED | AUTOCOMPLETE | WIZMODECMD },
++#ifdef VOICE_ENABLED
++    { C('s'), "voice", "toggle voice output", dotogglevoice, IFBURIED | AUTOCOMPLETE, 0 },
++#endif /* VOICE_ENABLED */
+     { M('v'), "vc-versioncompile",
+             "list compile time options for this version of NetHack",
+             doextversion, IFBURIED | AUTOCOMPLETE | GENERALCMD },
+@@ -5958,7 +5974,6 @@
+         } while (--cnt && sym == EOF);
+     }
+ #endif /* NR_OF_EOFS */
+-
+     if (sym == EOF) {
+ #ifdef HANGUPHANDLING
+         hangup(0); /* call end_of_input() or set program_state.done_hup */

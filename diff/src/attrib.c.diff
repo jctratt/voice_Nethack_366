@@ -1,0 +1,39 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/src/attrib.c	2025-01-01 18:00:45.010500394 -0600
++++ /home/jtratt/s/voice_Nethack_366/src/attrib.c	2025-02-23 17:34:48.310891543 -0600
+@@ -87,22 +87,22 @@
+                  { 0, 0, 0, 0 } },
+ 
+   /* Intrinsics conferred by race */
+-  dwa_abil[] = { { 1, &HInfravision, "", "" },
++  dwa_abil[] = { { 1, &HInfravision, "vision is redder", "vision is grayer" },
+                  { 0, 0, 0, 0 } },
+ 
+-  elf_abil[] = { { 1, &HInfravision, "", "" },
++  elf_abil[] = { { 1, &HInfravision, "vision is redder", "vision is grayer" },
+                  { 4, &HSleep_resistance, "awake", "tired" },
+                  { 4, &(HStealth), "stealthy", "noisy" },
+                  { 0, 0, 0, 0 } },
+ 
+-  gno_abil[] = { { 1, &HInfravision, "", "" },
++  gno_abil[] = { { 1, &HInfravision, "vision is redder", "vision is grayer" },
+                  { 0, 0, 0, 0 } },
+ 
+-  orc_abil[] = { { 1, &HInfravision, "", "" },
++  orc_abil[] = { { 1, &HInfravision, "vision is redder", "vision is grayer" },
+                  { 1, &HPoison_resistance, "", "" },
+                  { 0, 0, 0, 0 } },
+ 
+-  hum_abil[] = { { 2, &HInfravision, "red", "black" },
++  hum_abil[] = { { 2, &HInfravision, "vision is redder", "vision is grayer" },
+                  { 0, 0, 0, 0 } };
+ 
+ STATIC_DCL void NDECL(exerper);
+@@ -122,7 +122,7 @@
+     const char *attrstr;
+ 
+     if (Fixed_abil || !incr)
+-	{ pline("Too bad your abilities are fixed!"); return FALSE;}
++	{ pline("You feel something is unattainable."); return FALSE;}
+     //    return FALSE;
+ 
+     if ((ndx == A_INT || ndx == A_WIS) && uarmh && uarmh->otyp == DUNCE_CAP) {

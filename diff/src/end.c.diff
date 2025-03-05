@@ -1,0 +1,35 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/src/end.c	2020-03-08 12:29:31.000000000 -0500
++++ /home/jtratt/s/voice_Nethack_366/src/end.c	2025-02-23 18:04:05.510460218 -0600
+@@ -16,6 +16,10 @@
+ #endif
+ #include "dlb.h"
+ 
++#ifdef CURSES_GRAPHICS
++#include <curses.h>
++#endif
++
+ /* add b to long a, convert wraparound to max value */
+ #define nowrap_add(a, b) (a = ((a + b) < 0 ? LONG_MAX : (a + b)))
+ 
+@@ -137,7 +141,7 @@
+ {
+ #define SIG_MSG "\nSignal received.\n"
+     int f2;
+-    
++
+     f2 = (int) write(2, SIG_MSG, sizeof SIG_MSG - 1);
+     nhUse(f2);  /* what could we do if write to fd#2 (stderr) fails  */
+     NH_abort(); /* ... and we're already in the process of quitting? */
+@@ -2289,4 +2293,12 @@
+     return out;
+ }
+ 
++void nh_flushinp(void) {
++    int ch;
++    /* Drain input by consuming available characters */
++    while (windowprocs.win_nhgetch && (ch = (*windowprocs.win_nhgetch)()) != ERR) {
++        /* Discard input until no more is queued */
++    }
++}
++
+ /*end.c*/

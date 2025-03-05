@@ -1,0 +1,121 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/src/hack.c	2025-01-01 18:00:45.030500159 -0600
++++ /home/jtratt/s/voice_Nethack_366/src/hack.c	2025-02-23 17:34:48.406890215 -0600
+@@ -1085,10 +1085,10 @@
+                 for (i = 0; i < nn; ++i) {
+                     tmp_at(travelstepx[1 - set][i], travelstepy[1 - set][i]);
+                 }
+-                delay_output();
++                nh_delay_output();
+                 if (flags.runmode == RUN_CRAWL) {
+-                    delay_output();
+-                    delay_output();
++                    nh_delay_output();
++                    nh_delay_output();
+                 }
+                 tmp_at(DISP_END, 0);
+             }
+@@ -1139,12 +1139,12 @@
+                 /* Use of warning glyph is arbitrary. It stands out. */
+                 tmp_at(DISP_ALL, warning_to_glyph(2));
+                 tmp_at(px, py);
+-                delay_output();
++                nh_delay_output();
+                 if (flags.runmode == RUN_CRAWL) {
+-                    delay_output();
+-                    delay_output();
+-                    delay_output();
+-                    delay_output();
++                    nh_delay_output();
++                    nh_delay_output();
++                    nh_delay_output();
++                    nh_delay_output();
+                 }
+                 tmp_at(DISP_END, 0);
+             }
+@@ -1947,12 +1947,12 @@
+             if (flags.time)
+                 context.botl = 1;
+             curs_on_u();
+-            delay_output();
++            nh_delay_output();
+             if (flags.runmode == RUN_CRAWL) {
+-                delay_output();
+-                delay_output();
+-                delay_output();
+-                delay_output();
++                nh_delay_output();
++                nh_delay_output();
++                nh_delay_output();
++                nh_delay_output();
+             }
+         }
+     }
+@@ -2467,6 +2467,7 @@
+ 
+         /* Did we just enter some other special room? */
+         /* vault.c insists that a vault remain a VAULT,
++         * BEEHIVEs have special colouration,
+          * and temples should remain TEMPLEs,
+          * but everything else gives a message only the first time */
+         switch (rt) {
+@@ -2491,7 +2492,9 @@
+                 You("have an uncanny feeling...");
+             break;
+         case BEEHIVE:
+-            You("enter a giant beehive!");
++            if (monstinroom(&mons[PM_QUEEN_BEE], roomno))
++                You("enter a giant beehive!");
++            rt = 0;
+             break;
+         case COCKNEST:
+             You("enter a disgusting nest!");
+@@ -2884,6 +2887,7 @@
+     register int x, y;
+     register struct monst *mtmp;
+ 
++    if (!is_digging()) {
+     /* Also see the similar check in dochugw() in monmove.c */
+     for (x = u.ux - 1; x <= u.ux + 1; x++)
+         for (y = u.uy - 1; y <= u.uy + 1; y++) {
+@@ -2898,6 +2902,9 @@
+                 && !onscary(u.ux, u.uy, mtmp) && canspotmon(mtmp))
+                 return 1;
+         }
++    } else
++        pline("dig");
++
+     return 0;
+ }
+ 
+@@ -3019,6 +3026,31 @@
+     }
+ }
+ 
++/* 1KB: call this whenever the player gave any input */
++/* As of the moment of writing, this function gets called from only a couple
++   places, making it very inaccurate.  We really should put in win/ everywhere
++   where keyboard/mouse input is received. */
++void 
++time_check()
++{
++    time_t now, elapsed;
++
++#if defined(BSD) && !defined(POSIX_TYPES)
++        (void) time((long *)&now);
++#else
++        (void) time(&now);
++#endif
++    elapsed=now-u.timecheck;
++    u.timecheck=now;
++    if (elapsed<0)      /* the clock was adjusted */
++        return;
++    if (elapsed>10*365*24*3600) /* start or something fishy */
++        return;
++    if (elapsed>10)     /* beer/bathroom/work/rgrn or otherwise idle */
++        elapsed=10;
++    u.uage+=elapsed;
++}
++
+ int
+ weight_cap()
+ {

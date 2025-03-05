@@ -1,0 +1,11 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/src/dokick.c	2020-03-08 12:29:31.000000000 -0500
++++ /home/jtratt/s/voice_Nethack_366/src/dokick.c	2025-02-23 17:34:48.222892760 -0600
+@@ -1312,7 +1312,7 @@
+         if (Blind)
+             feel_location(x, y); /* we know we hit it */
+         exercise(A_STR, TRUE);
+-        pline("WHAMMM!!!");
++        pline("WHAM!");
+         if (in_town(x, y))
+             for (mtmp = fmon; mtmp; mtmp = mtmp->nmon) {
+                 if (DEADMONSTER(mtmp))

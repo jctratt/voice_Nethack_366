@@ -1,0 +1,11 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/include/wincurs.h	2020-03-08 12:29:31.000000000 -0500
++++ /home/jtratt/s/voice_Nethack_366/include/wincurs.h	2025-02-23 15:34:35.860031811 -0600
+@@ -5,6 +5,8 @@
+ #ifndef WINCURS_H
+ #define WINCURS_H
+ 
++#include <curses.h>
++
+ /* Global declarations for curses interface */
+ 
+ extern int term_rows, term_cols;   /* size of underlying terminal   */

@@ -1,0 +1,13 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/include/tradstdc.h	2025-02-23 14:08:31.160927837 -0600
++++ /home/jtratt/s/voice_Nethack_366/include/tradstdc.h.orig	2025-01-01 18:02:08.045523009 -0600
+@@ -431,10 +431,8 @@
+ #define NORETURN __attribute__((noreturn))
+ /* disable gcc's __attribute__((__warn_unused_result__)) since explicitly
+    discarding the result by casting to (void) is not accepted as a 'use' */
+-#if defined(__GNUC__) && !__has_attribute(__warn_unused_result__)
+ #define __warn_unused_result__ /*empty*/
+ #define warn_unused_result /*empty*/
+-#endif /* #if defined(__GNUC__) && !__has_attribute(__warn_unused_result__) */
+ #endif
+ #endif
+ 

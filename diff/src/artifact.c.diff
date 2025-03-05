@@ -1,0 +1,11 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/src/artifact.c	2020-03-08 12:29:31.000000000 -0500
++++ /home/jtratt/s/voice_Nethack_366/src/artifact.c	2025-02-23 17:34:48.922883075 -0600
+@@ -1580,7 +1580,7 @@
+             enlightenment(MAGICENLIGHTENMENT, ENL_GAMEINPROGRESS);
+             break;
+         case CREATE_AMMO: {
+-            struct obj *otmp = mksobj(ARROW, TRUE, FALSE);
++            struct obj *otmp = mksobj(SILVER_ARROW, TRUE, FALSE);
+ 
+             if (!otmp)
+                 goto nothing_special;

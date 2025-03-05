@@ -1,0 +1,15 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/src/mthrowu.c	2020-03-08 12:29:31.000000000 -0500
++++ /home/jtratt/s/voice_Nethack_366/src/mthrowu.c	2025-02-23 17:34:48.502888886 -0600
+@@ -685,10 +685,10 @@
+             break;
+         }
+         tmp_at(bhitpos.x, bhitpos.y);
+-        delay_output();
++        nh_delay_output();
+     }
+     tmp_at(bhitpos.x, bhitpos.y);
+-    delay_output();
++    nh_delay_output();
+     tmp_at(DISP_END, 0);
+     mesg_given = 0; /* reset */
+ 

@@ -1,0 +1,21 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/include/winprocs.h	2025-02-23 16:10:59.208092659 -0600
++++ /home/jtratt/s/voice_Nethack_366/include/winprocs.h	2025-02-25 20:55:00.925571017 -0600
+@@ -82,9 +82,8 @@
+     boolean NDECL((*win_can_suspend));
+ };
+ 
+-extern
+ #ifdef HANGUPHANDLING
+-    volatile
++volatile int hangup_flag;
+ #endif
+ 
+ /*
+@@ -450,6 +449,7 @@
+ extern void FDECL(safe_status_update, (int, genericptr_t, int, int, int, unsigned long *));
+ extern boolean NDECL(safe_can_suspend);
+ extern void FDECL(stdio_raw_print, (const char *));
++extern void FDECL(stdio_raw_print, (const char *));
+ extern void FDECL(stdio_nonl_raw_print, (const char *));
+ extern void FDECL(stdio_raw_print_bold, (const char *));
+ extern void NDECL(stdio_wait_synch);

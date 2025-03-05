@@ -1,0 +1,10 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/src/sit.c	2020-03-08 12:29:31.000000000 -0500
++++ /home/jtratt/s/voice_Nethack_366/src/sit.c	2025-02-23 17:34:48.250892373 -0600
+@@ -229,6 +229,7 @@
+                 if (Luck > 0) {
+                     make_blinded(Blinded + rn1(100, 250), TRUE);
+                     change_luck((Luck > 1) ? -rnd(2) : -1);
++                    You_feel("unlucky."); // added
+                 } else
+                     rndcurse();
+                 break;

@@ -1,0 +1,13 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/dat/gehennom.des	2020-03-08 12:29:31.000000000 -0500
++++ /home/jtratt/s/voice_Nethack_366/dat/gehennom.des	2025-01-25 14:47:33.754677022 -0600
+@@ -132,8 +132,8 @@
+ OBJECT:'(',random
+ 
+ # (Not so) Random traps.
+-TRAP:"spiked pit", (05,02)
+-TRAP:"spiked pit", (14,05)
++#TRAP:"spiked pit", (05,02)
++#TRAP:"spiked pit", (14,05)
+ TRAP:"sleep gas", (03,01)
+ TRAP:"board", (21,12)
+ TRAP:"board", random

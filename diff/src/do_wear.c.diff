@@ -1,0 +1,20 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/src/do_wear.c	2025-01-01 18:00:44.994500581 -0600
++++ /home/jtratt/s/voice_Nethack_366/src/do_wear.c	2025-02-23 17:34:48.558888111 -0600
+@@ -505,7 +505,7 @@
+ 
+     switch (uarmg->otyp) {
+     case LEATHER_GLOVES:
+-    case GAUNTLETS_OF_REFLECTION:
++    //case GAUNTLETS_OF_REFLECTION:
+         break;
+     case GAUNTLETS_OF_FUMBLING:
+         if (!oldprop && !(HFumbling & ~TIMEOUT))
+@@ -561,7 +561,7 @@
+ 
+     switch (uarmg->otyp) {
+     case LEATHER_GLOVES:
+-    case GAUNTLETS_OF_REFLECTION:
++    //case GAUNTLETS_OF_REFLECTION:
+         break;
+     case GAUNTLETS_OF_FUMBLING:
+         if (!oldprop && !(HFumbling & ~TIMEOUT))

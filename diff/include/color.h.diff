@@ -1,0 +1,11 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/include/color.h	2025-01-01 18:00:45.038500065 -0600
++++ /home/jtratt/s/voice_Nethack_366/include/color.h	2025-01-26 21:14:07.302440960 -0600
+@@ -11,7 +11,7 @@
+  * exceptions, these are listed below.	Bright black doesn't mean very
+  * much, so it is used as the "default" foreground color of the screen.
+  */
+-#define CLR_BLACK 0
++#define CLR_BLACK 8
+ #define CLR_RED 1
+ #define CLR_GREEN 2
+ #define CLR_BROWN 3 /* on IBM, low-intensity yellow is brown */

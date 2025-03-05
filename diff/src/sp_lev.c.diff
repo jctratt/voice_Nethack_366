@@ -1,0 +1,16 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/src/sp_lev.c	2020-03-08 12:29:31.000000000 -0500
++++ /home/jtratt/s/voice_Nethack_366/src/sp_lev.c	2025-02-23 17:34:48.642886949 -0600
+@@ -3205,11 +3205,11 @@
+             break;
+         case SP_O_V_LOCKED:
+             if (OV_typ(parm) == SPOVAR_INT)
+-                tmpobj.locked = OV_i(parm);
++                ; //tmpobj.locked = OV_i(parm);
+             break;
+         case SP_O_V_TRAPPED:
+             if (OV_typ(parm) == SPOVAR_INT)
+-                tmpobj.trapped = OV_i(parm);
++                ; //tmpobj.trapped = OV_i(parm);
+             break;
+         case SP_O_V_RECHARGED:
+             if (OV_typ(parm) == SPOVAR_INT)

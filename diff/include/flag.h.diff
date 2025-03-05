@@ -1,0 +1,24 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/include/flag.h	2025-01-01 18:00:45.054499878 -0600
++++ /home/jtratt/s/voice_Nethack_366/include/flag.h	2025-02-07 19:15:23.662470357 -0600
+@@ -10,6 +10,10 @@
+ #ifndef FLAG_H
+ #define FLAG_H
+ 
++#ifndef BUFSZ
++#define BUFSZ 256
++#endif
++
+ /*
+  * Persistent flags that are saved and restored with the game.
+  *
+@@ -91,6 +95,10 @@
+     boolean time;            /* display elapsed 'time' */
+     boolean tombstone;       /* print tombstone */
+     boolean verbose;         /* max battle info */
++#ifdef VOICE_ENABLED
++    boolean voice_enabled;   // New global boolean for voice enablement
++    char voice_command[BUFSZ]; // New global buffer for voice command
++#endif /* VOICE_ENABLED */
+     int end_top, end_around; /* describe desired score list */
+     unsigned moonphase;
+     unsigned long suppress_alert;

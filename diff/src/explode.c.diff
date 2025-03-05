@@ -1,0 +1,31 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/src/explode.c	2020-03-08 12:29:31.000000000 -0500
++++ /home/jtratt/s/voice_Nethack_366/src/explode.c	2025-02-23 17:34:48.302891653 -0600
+@@ -281,7 +281,7 @@
+                                        cmap_to_glyph(shield_static[k]));
+                     }
+                 curs_on_u(); /* will flush screen and output */
+-                delay_output();
++                nh_delay_output();
+             }
+ 
+             /* Cover last shield glyph with blast symbol. */
+@@ -294,8 +294,8 @@
+                 }
+ 
+         } else { /* delay a little bit. */
+-            delay_output();
+-            delay_output();
++            nh_delay_output();
++            nh_delay_output();
+         }
+ 
+         tmp_at(DISP_END, 0); /* clear the explosion */
+@@ -747,7 +747,7 @@
+                 } else {
+                     if (scflags & VIS_EFFECTS) {
+                         /* tmp_at(bhitpos.x, bhitpos.y); */
+-                        /* delay_output(); */
++                        /* nh_delay_output(); */
+                     }
+                 }
+                 stmp->ox = bhitpos.x;

@@ -1,0 +1,114 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/src/dothrow.c	2020-03-08 12:29:31.000000000 -0500
++++ /home/jtratt/s/voice_Nethack_366/src/dothrow.c	2025-02-23 17:34:48.162893591 -0600
+@@ -20,12 +20,20 @@
+ STATIC_DCL void FDECL(sho_obj_return_to_u, (struct obj * obj));
+ STATIC_DCL boolean FDECL(mhurtle_step, (genericptr_t, int, int));
+ 
++//static NEARDATA const char toss_objs[] = { ALLOW_COUNT, COIN_CLASS, POTION_CLASS,
++//                                           ALL_CLASSES, WEAPON_CLASS, 0 };
++///* different default choices when wielding a sling (gold must be included) */
++//static NEARDATA const char bullets[] = { ALLOW_COUNT, COIN_CLASS, ALL_CLASSES, POTION_CLASS,
++//                                         GEM_CLASS, 0 };
++
+ static NEARDATA const char toss_objs[] = { ALLOW_COUNT, COIN_CLASS,
+-                                           ALL_CLASSES, WEAPON_CLASS, 0 };
++                                            //ALL_CLASSES, WEAPON_CLASS, 0 };
++                                            //ALL_CLASSES, WEAPON_CLASS, FOOD_CLASS, GEM_CLASS,0 };
++                                           ALL_CLASSES, WEAPON_CLASS, FOOD_CLASS, GEM_CLASS, POTION_CLASS, 0 };
+ /* different default choices when wielding a sling (gold must be included) */
+ static NEARDATA const char bullets[] = { ALLOW_COUNT, COIN_CLASS, ALL_CLASSES,
+-                                         GEM_CLASS, 0 };
+-
++                                         //GEM_CLASS, 0 };
++                                         GEM_CLASS, POTION_CLASS, 0 };
+ /* thrownobj (decl.c) tracks an object until it lands */
+ 
+ extern boolean notonhead; /* for long worms */
+@@ -145,8 +153,8 @@
+             break;
+         case PM_RANGER:
+             /* arbitrary; encourage use of other missiles beside daggers */
+-            if (skill != P_DAGGER)
+-                multishot++;
++            //if (skill != P_DAGGER)
++                multishot+=2;
+             break;
+         case PM_ROGUE:
+             /* possibly should add knives... */
+@@ -166,8 +174,10 @@
+             switch (Race_switch) {
+             case PM_ELF:
+                 if (obj->otyp == ELVEN_ARROW && uwep
+-                    && uwep->otyp == ELVEN_BOW)
++                    && (uwep->otyp == ELVEN_BOW || uwep && uwep->oartifact == ART_LONGBOW_OF_DIANA)) {
+                     multishot++;
++                    pline("multishot");
++                }
+                 break;
+             case PM_ORC:
+                 if (obj->otyp == ORCISH_ARROW && uwep
+@@ -203,7 +213,7 @@
+     m_shot.s = ammo_and_launcher(obj, uwep) ? TRUE : FALSE;
+     /* give a message if shooting more than one, or if player
+        attempted to specify a count */
+-    if (multishot > 1 || shotlimit > 0) {
++    if (multishot > 0 || shotlimit > 0) {
+         /* "You shoot N arrows." or "You throw N daggers." */
+         You("%s %d %s.", m_shot.s ? "shoot" : "throw",
+             multishot, /* (might be 1 if player gave shotlimit) */
+@@ -303,7 +313,10 @@
+                        && objects[otmp->otyp].oc_name_known)
+                    || (otmp->oclass == GEM_CLASS
+                        && objects[otmp->otyp].oc_material == GLASS
+-                       && objects[otmp->otyp].oc_name_known)) {
++                       && objects[otmp->otyp].oc_name_known)
++                   || (otmp->otyp == COIN_CLASS
++                       && objects[otmp->otyp].oc_name_known)
++                   ) {
+             if (uslinging())
+                 oammo = otmp;
+             else if (ammo_and_launcher(otmp, uswapwep))
+@@ -390,7 +403,7 @@
+             /* choose something from inventory, then usually quiver it */
+             obj = getobj(uslinging() ? bullets : toss_objs, "throw");
+             /* Q command doesn't allow gold in quiver */
+-            if (obj && !obj->owornmask && obj->oclass != COIN_CLASS)
++            if (obj && !obj->owornmask && obj->oclass /*!= COIN_CLASSr*/)
+                 setuqwep(obj); /* demi-autoquiver */
+         }
+         /* give feedback if quiver has now been filled */
+@@ -765,7 +778,7 @@
+     if (--*range < 0) /* make sure our range never goes negative */
+         *range = 0;
+     if (*range != 0)
+-        delay_output();
++        nh_delay_output();
+     return TRUE;
+ }
+ 
+@@ -1082,7 +1095,7 @@
+         tmp_at(DISP_FLASH, obj_to_glyph(obj, rn2_on_display_rng));
+         while (isok(x,y) && (x != u.ux || y != u.uy)) {
+             tmp_at(x, y);
+-            delay_output();
++            nh_delay_output();
+             x -= u.dx;
+             y -= u.dy;
+         }
+@@ -1388,7 +1401,7 @@
+             || obj->oclass == VENOM_CLASS) {
+             tmp_at(DISP_FLASH, obj_to_glyph(obj, rn2_on_display_rng));
+             tmp_at(bhitpos.x, bhitpos.y);
+-            delay_output();
++            nh_delay_output();
+             tmp_at(DISP_END, 0);
+             breakmsg(obj, cansee(bhitpos.x, bhitpos.y));
+             breakobj(obj, bhitpos.x, bhitpos.y, TRUE, TRUE);
+@@ -1722,6 +1735,7 @@
+                     if (*u.ushops || obj->unpaid)
+                         check_shop_obj(obj, bhitpos.x, bhitpos.y, TRUE);
+                     obfree(obj, (struct obj *) 0);
++                    pline("Snap!");
+                     return 1;
+                 }
+             }

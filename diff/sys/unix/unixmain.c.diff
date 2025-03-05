@@ -1,0 +1,20 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/sys/unix/unixmain.c	2020-03-08 12:29:31.000000000 -0500
++++ /home/jtratt/s/voice_Nethack_366/sys/unix/unixmain.c	2025-01-21 21:50:24.328775987 -0600
+@@ -612,12 +612,12 @@
+ {
+     struct passwd *pw = get_unix_pw();
+ 
+-    if (pw && sysopt.wizards && sysopt.wizards[0]) {
+-        if (check_user_string(sysopt.wizards))
++    //if (pw && sysopt.wizards && sysopt.wizards[0]) {
++    //    if (check_user_string(sysopt.wizards))
+             return TRUE;
+-    }
+-    wiz_error_flag = TRUE; /* not being allowed into wizard mode */
+-    return FALSE;
++    //}
++    //wiz_error_flag = TRUE; /* not being allowed into wizard mode */
++    //return FALSE;
+ }
+ 
+ static void

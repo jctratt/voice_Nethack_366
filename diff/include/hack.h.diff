@@ -1,0 +1,9 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/include/hack.h	2025-01-01 18:00:45.046499972 -0600
++++ /home/jtratt/s/voice_Nethack_366/include/hack.h	2025-02-23 21:34:31.904110147 -0600
+@@ -541,4 +541,6 @@
+ #define DEVTEAM_EMAIL "devteam@nethack.org"
+ #define DEVTEAM_URL "https://www.nethack.org/"
+ 
++void NDECL(nh_flushinp);
++
+ #endif /* HACK_H */

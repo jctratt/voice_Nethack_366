@@ -1,0 +1,6 @@
+include/flag.h
+include/decl.h
+src/pline.c
+src/files.c
+src/decl.c
+src/options.c

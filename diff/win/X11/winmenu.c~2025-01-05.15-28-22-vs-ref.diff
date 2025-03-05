@@ -1,0 +1,28 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/win/X11/winmenu.c	2020-03-08 12:29:31.000000000 -0500
++++ /home/jtratt/s/voice_Nethack_366/win/X11/winmenu.c~2025-01-05.15-28-22	2025-01-05 15:27:55.796374957 -0600
+@@ -66,6 +66,11 @@
+ 
+ #define reset_menu_count(mi) ((mi)->counting = FALSE, (mi)->menu_count = 0L)
+ 
++
++extern boolean sticky_inv_hack;        /* blech ick yuck */
++
++
++
+ static const char menu_translations[] = "#override\n\
+      <Key>Left: scroll(4)\n\
+      <Key>Right: scroll(6)\n\
+@@ -681,6 +686,13 @@
+             len = BUFSZ - 1;
+         }
+         Sprintf(buf, "%c %c ", ch ? ch : ' ', preselected ? '+' : '-');
++
++   /*
++    * Yes, this is a disgustingly ugly way of doing this.  If you have
++    * a better idea, jump on it.
++    */
++   if (sticky_inv_hack) buf[2] = '=';
++
+         (void) strncpy(buf + 4, str, len);
+         buf[4 + len] = '\0';
+         item->str = copy_of(buf);

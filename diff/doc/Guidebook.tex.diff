@@ -1,0 +1,26 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/doc/Guidebook.tex	2020-03-08 12:29:31.000000000 -0500
++++ /home/jtratt/s/voice_Nethack_366/doc/Guidebook.tex	2025-01-28 13:40:53.681370166 -0600
+@@ -3745,6 +3745,13 @@
+ the objects'' since the pile size will always be at least that big;
+ default value is 5.  Persistent.
+ %.lp
++\item[\ib{autosave}]
++Save and quit the game automatically, after playing for N turns
++(useful if you want to artificially limit the game session duration).
++A value of -1 (and other negative values) mean that autosave is off, while
++positive values are used for turn countdown until save. 0 is not a valid
++turn count because this would cause the game to quit as soon as it starts.
++%.lp
+ \item[\ib{playmode}]
+ Values are {\it normal\/}, {\it explore\/}, or {\it debug\/}.
+ Allows selection of explore mode (also known as discovery mode) or debug
+@@ -3916,6 +3923,9 @@
+ \item[\ib{verbose}]
+ Provide more commentary during the game (default on).  Persistent.
+ %.lp
++\item[\ib{voice_enabled}]
++Enable or disable voice output for game messages (default off). Use `OPTIONS:voice_enabled` to turn on and `OPTIONS:!voice_enabled` to turn off. Persistent.
++%.lp
+ \item[\ib{whatis\verb+_+coord}]
+ When using the `{\tt /}' or `{\tt ;}' commands to look around on the map with
+ ``{\tt autodescribe}''

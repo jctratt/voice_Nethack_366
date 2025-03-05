@@ -1,0 +1,10 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/dat/hh	2020-03-08 12:29:31.000000000 -0500
++++ /home/jtratt/s/voice_Nethack_366/dat/hh	2025-02-22 16:40:47.338835184 -0600
+@@ -34,6 +34,7 @@
+ \       known   display list of what's been discovered
+ v       version display version number
+ V       history display game history
++^S      voice   toggle voice output (with voice_enable patch)
+ ^A      again   redo the previous command (^A denotes the keystroke CTRL-A)
+ ^R      redraw  redraw the screen
+ ^P      prevmsg repeat previous message (subsequent ^P's repeat earlier ones)

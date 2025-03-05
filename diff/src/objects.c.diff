@@ -1,0 +1,30 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/src/objects.c	2020-03-08 12:29:31.000000000 -0500
++++ /home/jtratt/s/voice_Nethack_366/src/objects.c	2025-02-23 17:34:48.146893812 -0600
+@@ -113,21 +113,25 @@
+ PROJECTILE("arrow", None,
+            1, 55, 1, 2, 6, 6, 0,        IRON, -P_BOW, HI_METAL),
+ PROJECTILE("elven arrow", "runed arrow",
+-           0, 20, 1, 2, 7, 6, 0,        WOOD, -P_BOW, HI_WOOD),
++           0, 20, 1, 2, 7, 6, 0,        SILVER, -P_BOW, HI_SILVER),
+ PROJECTILE("orcish arrow", "crude arrow",
+            0, 20, 1, 2, 5, 6, 0,        IRON, -P_BOW, CLR_BLACK),
+ PROJECTILE("silver arrow", None,
+            1, 12, 1, 5, 6, 6, 0,        SILVER, -P_BOW, HI_SILVER),
++//PROJECTILE("silver Elven arrow", None,
++//           1, 12, 1, 5, 6, 6, 0,        SILVER, -P_BOW, HI_SILVER),
+ PROJECTILE("ya", "bamboo arrow",
+            0, 15, 1, 4, 7, 7, 1,        METAL, -P_BOW, HI_METAL),
+ PROJECTILE("crossbow bolt", None,
+            1, 55, 1, 2, 4, 6, 0,        IRON, -P_CROSSBOW, HI_METAL),
++//PROJECTILE("silver crossbow bolt", None,
++//           1, 55, 1, 2, 4, 6, 0,        SILVER, -P_CROSSBOW, HI_SILVER),
+ 
+ /* missiles that don't use a launcher */
+ WEAPON("dart", None,
+        1, 1, 0, 60,   1,   2,  3,  2, 0, P,   -P_DART, IRON, HI_METAL),
+ WEAPON("shuriken", "throwing star",
+-       0, 1, 0, 35,   1,   5,  8,  6, 2, P,   -P_SHURIKEN, IRON, HI_METAL),
++       0, 1, 0, 35,   1,   5,  8,  6, 2, P,   -P_SHURIKEN, SILVER, HI_SILVER),
+ WEAPON("boomerang", None,
+        1, 1, 0, 15,   5,  20,  9,  9, 0, 0,   -P_BOOMERANG, WOOD, HI_WOOD),
+ 

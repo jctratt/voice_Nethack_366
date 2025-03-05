@@ -1,0 +1,29 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/src/botl.c	2025-01-01 18:00:44.962500955 -0600
++++ /home/jtratt/s/voice_Nethack_366/src/botl.c	2025-02-23 17:34:48.362890823 -0600
+@@ -406,7 +406,7 @@
+                     strcat(sayit, rep);
+                     strcat(sayit, "\"");
+                     status = system(sayit);
+-                    flushinp();
++                    nh_flushinp();
+             }
+             utotal=777;
+         } else {
+@@ -422,7 +422,7 @@
+                 strcat(sayit, rep);
+                 strcat(sayit, "\"");
+                 status = system(sayit);
+-                flushinp();
++                nh_flushinp();
+             }
+             utotal=666;
+         }
+@@ -437,7 +437,7 @@
+                 strcat(sayit, rep);
+                 strcat(sayit, "\"");
+                 status = system(sayit);
+-                flushinp();
++                nh_flushinp();
+             }
+             g_has_spoken_elbereth = -1;
+             g_has_spoken_no_elbereth = -1;

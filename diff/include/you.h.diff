@@ -1,0 +1,11 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/include/you.h	2020-03-08 12:29:31.000000000 -0500
++++ /home/jtratt/s/voice_Nethack_366/include/you.h	2025-01-01 17:41:15.981094579 -0600
+@@ -394,6 +394,8 @@
+     xchar skill_record[P_SKILL_LIMIT]; /* skill advancements */
+     struct skills weapon_skills[P_NUM_SKILLS];
+     boolean twoweap;         /* KMH -- Using two-weapon combat */
++    time_t	uage;		/* time wasted */
++    time_t	timecheck;	/* last time check */
+ 
+ }; /* end of `struct you' */
+ 

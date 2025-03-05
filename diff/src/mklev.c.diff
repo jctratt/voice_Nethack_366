@@ -1,0 +1,31 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/src/mklev.c	2020-03-08 12:29:31.000000000 -0500
++++ /home/jtratt/s/voice_Nethack_366/src/mklev.c	2025-02-23 17:34:48.830884347 -0600
+@@ -1430,13 +1430,17 @@
+            that kill in a specific way that's obvious after the fact. */
+         switch (kind) {
+         case ARROW_TRAP:
+-            otmp = mksobj(ARROW, TRUE, FALSE);
++            /* otmp = mksobj(ARROW, TRUE, FALSE); */
++            /* src/mklev.c must also be modified */
++            otmp = mksobj(rn2(2) ? ARROW : ELVEN_ARROW, TRUE, FALSE);
+             otmp->opoisoned = 0;
+             /* don't adjust the quantity; maybe the trap shot multiple
+                times, there was an untrapping attempt, etc... */
+             break;
+         case DART_TRAP:
+-            otmp = mksobj(DART, TRUE, FALSE);
++            /* otmp = mksobj(DART, TRUE, FALSE); */
++            /* src/mklev.c must also be modified */
++            otmp = mksobj(rn2(3) ? DART : (rn2(2) ? CROSSBOW_BOLT : DART), TRUE, FALSE);
+             break;
+         case ROCKTRAP:
+             otmp = mksobj(ROCK, TRUE, FALSE);
+@@ -1749,7 +1753,7 @@
+         }
+ 
+         flush_screen(1); /* make sure the new glyphs shows up */
+-        delay_output();
++        nh_delay_output();
+     }
+ 
+     You("are standing at the top of a stairwell leading down!");

@@ -1,0 +1,13 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/src/uhitm.c	2025-01-01 18:00:44.998500534 -0600
++++ /home/jtratt/s/voice_Nethack_366/src/uhitm.c	2025-02-23 17:34:48.566888001 -0600
+@@ -2104,8 +2104,8 @@
+         tmp_at(mdef->mx, mdef->my);
+     }
+     You("engulf %s!", mon_nam(mdef));
+-    delay_output();
+-    delay_output();
++    nh_delay_output();
++    nh_delay_output();
+ }
+ 
+ STATIC_OVL void

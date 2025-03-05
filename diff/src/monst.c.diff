@@ -1,0 +1,11 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/src/monst.c	2025-01-01 18:00:45.018500300 -0600
++++ /home/jtratt/s/voice_Nethack_366/src/monst.c	2025-02-23 17:34:48.658886728 -0600
+@@ -2111,6 +2111,8 @@
+     /*
+      * humans, including elves and were-critters
+      */
++// add infravision to humans
++// the added part is "M3_INFRAVISION |"
+     MON("human", S_HUMAN, LVL(0, 12, 10, 0, 0), G_NOGEN, /* for corpses */
+         A(ATTK(AT_WEAP, AD_PHYS, 1, 6), NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK,
+           NO_ATTK),

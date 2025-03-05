@@ -1,0 +1,146 @@
+ranger ammo patch 0.2 by Stanislav Traykov, terms of use NetHack GPL
+
+diff -ru nethack-3.4.3/include/obj.h nethack-3.4.3-ra/include/obj.h
+--- nethack-3.4.3/include/obj.h Sun Dec  7 23:39:13 2003
++++ nethack-3.4.3-ra/include/obj.h  Sun Feb 22 12:01:43 2004
+@@ -202,7 +202,15 @@
+                || (otmp)->otyp == DWARVISH_ROUNDSHIELD)
+ #define is_gnomish_armor(otmp) (FALSE)
+ 
+-               
++/* Ammo, identified by level 10+ rangers */
++#define is_ammo2(otmp)           ((otmp)->otyp == ARROW\
++                                || (otmp)->otyp == ELVEN_ARROW\
++                                || (otmp)->otyp == ORCISH_ARROW\
++                                || (otmp)->otyp == SILVER_ARROW\
++                                || (otmp)->otyp == YA\
++                                || (otmp)->otyp == CROSSBOW_BOLT)
++
++
+ /* Eggs and other food */
+ #define MAX_EGG_HATCH_TIME 200 /* longest an egg can remain unhatched */
+ #define stale_egg(egg) ((monstermoves - (egg)->age) > (2*MAX_EGG_HATCH_TIME))
+diff -ru nethack-3.4.3/include/you.h nethack-3.4.3-ra/include/you.h
+--- nethack-3.4.3/include/you.h Sun Dec  7 23:39:13 2003
++++ nethack-3.4.3-ra/include/you.h  Sun Feb 22 12:01:43 2004
+@@ -140,6 +140,8 @@
+ extern const struct Role roles[];  /* table of available roles */
+ extern struct Role urole;
+ #define Role_if(X) (urole.malenum == (X))
++        /* identify ammo */
++#define Ammo_id         (urole.malenum == PM_RANGER && u.ulevel >= 10)
+ #define Role_switch    (urole.malenum)
+ 
+ /* used during initialization for race, gender, and alignment
+diff -ru nethack-3.4.3/src/exper.c nethack-3.4.3-ra/src/exper.c
+--- nethack-3.4.3/src/exper.c   Sun Dec  7 23:39:13 2003
++++ nethack-3.4.3-ra/src/exper.c    Sun Feb 22 12:01:43 2004
+@@ -126,10 +126,12 @@
+        if (resists_drli(&youmonst)) return;
+ 
+    if (u.ulevel > 1) {
++                int ammo_id=Ammo_id;
+        pline("%s level %d.", Goodbye(), u.ulevel--);
+        /* remove intrinsic abilities */
+        adjabil(u.ulevel + 1, u.ulevel);
+        reset_rndmonst(NON_PM); /* new monster selection */
++                if(ammo_id!=Ammo_id) You_feel("less knowledgeable!"); /* ammo */
+    } else {
+        if (drainer) {
+            killer_format = KILLED_BY;
+@@ -202,6 +204,7 @@
+    u.uenmax += num;
+    u.uen += num;
+    if (u.ulevel < MAXULEV) {
++            int ammo_id=Ammo_id;
+        if (incr) {
+        long tmp = newuexp(u.ulevel + 1);
+        if (u.uexp >= tmp) u.uexp = tmp - 1;
+@@ -213,6 +216,7 @@
+        pline("Welcome to experience level %d.", u.ulevel);
+        adjabil(u.ulevel - 1, u.ulevel);    /* give new intrinsics */
+        reset_rndmonst(NON_PM);     /* new monster selection */
++            if(ammo_id!=Ammo_id) You_feel("knowledgeable!"); /* about ammo */
+    }
+    flags.botl = 1;
+ }
+diff -ru nethack-3.4.3/src/invent.c nethack-3.4.3-ra/src/invent.c
+--- nethack-3.4.3/src/invent.c  Sun Dec  7 23:39:13 2003
++++ nethack-3.4.3-ra/src/invent.c   Sun Feb 22 12:47:39 2004
+@@ -1842,7 +1842,11 @@
+     int count = 0;
+ 
+     while (list) {
+-   if (Role_if(PM_PRIEST)) list->bknown = TRUE;
++   if (Role_if(PM_PRIEST))
++                list->bknown = TRUE;
++        else if (Ammo_id && is_ammo2(list)
++                        && not_fully_identified(list))
++                (void) fully_identify_obj(list);
+    switch(type) {
+        case BUC_BLESSED:
+        if (list->oclass != COIN_CLASS && list->bknown && list->blessed)
+@@ -2327,15 +2331,17 @@
+    if (obj->oclass == COIN_CLASS) return TRUE;
+ #endif
+    if (obj->unpaid != otmp->unpaid ||
+-       obj->spe != otmp->spe || obj->dknown != otmp->dknown ||
+-       (obj->bknown != otmp->bknown && !Role_if(PM_PRIEST)) ||
+-       obj->cursed != otmp->cursed || obj->blessed != otmp->blessed ||
++       (obj->spe != otmp->spe) ||
++            (obj->dknown != otmp->dknown && !(Ammo_id && is_ammo2(otmp))) ||
++       (obj->bknown != otmp->bknown && !Role_if(PM_PRIEST) && !(Ammo_id && is_ammo2(otmp))) ||
++       obj->cursed != otmp->cursed ||
++            obj->blessed != otmp->blessed ||
+        obj->no_charge != otmp->no_charge ||
+        obj->obroken != otmp->obroken ||
+        obj->otrapped != otmp->otrapped ||
+        obj->lamplit != otmp->lamplit ||
+ #ifdef INVISIBLE_OBJECTS // eliminated in 366
+-       obj->oinvis != otmp->oinvis ||
++            obj->oinvis != otmp->oinvis ||
+ #endif
+        obj->greased != otmp->greased ||
+        obj->oeroded != otmp->oeroded ||
+diff -ru nethack-3.4.3/src/objnam.c nethack-3.4.3-ra/src/objnam.c
+--- nethack-3.4.3/src/objnam.c  Sun Dec  7 23:39:13 2003
++++ nethack-3.4.3-ra/src/objnam.c   Sun Feb 22 12:01:43 2004
+@@ -255,7 +255,11 @@
+     */
+    if (!nn && ocl->oc_uses_known && ocl->oc_unique) obj->known = 0;
+    if (!Blind) obj->dknown = TRUE;
+-   if (Role_if(PM_PRIEST)) obj->bknown = TRUE;
++   if (Role_if(PM_PRIEST))
++                obj->bknown = TRUE;
++        else if (Ammo_id && is_ammo2(obj)
++                        && not_fully_identified(obj))
++                (void) fully_identify_obj(obj);
+    if (obj_is_pname(obj))
+        goto nameit;
+    switch (obj->oclass) {
+@@ -618,7 +622,8 @@
+ #endif
+            && obj->otyp != FAKE_AMULET_OF_YENDOR
+            && obj->otyp != AMULET_OF_YENDOR
+-           && !Role_if(PM_PRIEST))
++           && !Role_if(PM_PRIEST)
++                        && !(Ammo_id && is_ammo2(obj)))
+        Strcat(prefix, "uncursed ");
+    }
+ 
+diff -ru nethack-3.4.3/src/pickup.c nethack-3.4.3-ra/src/pickup.c
+--- nethack-3.4.3/src/pickup.c  Sun Dec  7 23:39:13 2003
++++ nethack-3.4.3-ra/src/pickup.c   Sun Feb 22 12:01:43 2004
+@@ -324,7 +324,11 @@
+ allow_category(obj)
+ struct obj *obj;
+ {
+-    if (Role_if(PM_PRIEST)) obj->bknown = TRUE;
++   if (Role_if(PM_PRIEST))
++        obj->bknown = TRUE;
++   else if (Ammo_id && is_ammo2(obj)
++                && not_fully_identified(obj))
++        (void) fully_identify_obj(obj);
+     if (((index(valid_menu_classes,'u') != (char *)0) && obj->unpaid) ||
+    (index(valid_menu_classes, obj->oclass) != (char *)0))
+    return TRUE;

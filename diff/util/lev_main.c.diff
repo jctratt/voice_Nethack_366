@@ -1,0 +1,21 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/util/lev_main.c	2025-02-25 13:33:20.430617307 -0600
++++ /home/jtratt/s/voice_Nethack_366/util/lev_main.c	2025-02-25 13:35:13.844222214 -0600
+@@ -150,7 +150,9 @@
+     const char *name;
+     int type;
+ } trap_types[] = { { "arrow", ARROW_TRAP },
++                   { "elven arrow", ARROW_TRAP }, // see src/trap.c
+                    { "dart", DART_TRAP },
++                   { "crossbow bolt", DART_TRAP }, // see src/trap.c
+                    { "falling rock", ROCKTRAP },
+                    { "board", SQKY_BOARD },
+                    { "bear", BEAR_TRAP },
+@@ -1639,7 +1641,7 @@
+ #ifdef HANGUPHANDLING
+ volatile
+ #endif
+-   struct window_procs windowprocs;
++struct window_procs windowprocs; /* may need static */
+ /* xxxtty.c */
+ #ifdef DEFINE_OSPEED
+ short ospeed;

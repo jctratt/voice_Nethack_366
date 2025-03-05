@@ -1,0 +1,28 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/src/allmain.c	2025-01-01 18:00:44.946501142 -0600
++++ /home/jtratt/s/voice_Nethack_366/src/allmain.c	2025-02-25 19:56:56.686554404 -0600
+@@ -7,6 +7,8 @@
+ 
+ #include "hack.h"
+ #include <ctype.h>
++/* #include "wincurs.h" */
++/* #include "winprocs.h" */
+ 
+ #ifndef NO_SIGNAL
+ #include <signal.h>
+@@ -19,6 +21,8 @@
+ STATIC_DCL void FDECL(interrupt_multi, (const char *));
+ STATIC_DCL void FDECL(debug_fields, (const char *));
+ 
++extern struct window_procs windowprocs;
++
+ void
+ moveloop(resuming)
+ boolean resuming;
+@@ -459,6 +463,7 @@
+             display_nhwindow(WIN_MAP, FALSE);
+         }
+     }
++    // curses_update_inventory(); // enables cursed items to be identified immediately
+ }
+ 
+ /* maybe recover some lost health (or lose some when an eel out of water) */

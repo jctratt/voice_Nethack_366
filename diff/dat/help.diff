@@ -1,0 +1,10 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/dat/help	2020-03-08 12:29:31.000000000 -0500
++++ /home/jtratt/s/voice_Nethack_366/dat/help	2025-02-22 16:38:28.201212392 -0600
+@@ -149,6 +149,7 @@
+         v       Displays the version number.
+         V       Display a longer identification of the version, including the
+                 history of the game.
++        ^S      Toggle voice output (with voice_enable patch)
+         w       Wield weapon.  w- means wield nothing, use bare hands.
+         W       Wear armor.
+         x       Swap wielded and secondary weapons.

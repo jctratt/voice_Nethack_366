@@ -1,0 +1,61 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/include/extern.h	2020-03-08 12:29:31.000000000 -0500
++++ /home/jtratt/s/voice_Nethack_366/include/extern.h	2025-02-21 22:58:23.959925424 -0600
+@@ -255,6 +255,9 @@
+ E char* FDECL(key2txt, (UCHAR_P, char *));
+ E char FDECL(yn_function, (const char *, const char *, CHAR_P));
+ E boolean FDECL(paranoid_query, (BOOLEAN_P, const char *));
++#ifdef VOICE_ENABLED
++E int dotogglevoice(void);
++#endif /* VOICE_ENABLED */
+ 
+ /* ### dbridge.c ### */
+ 
+@@ -901,6 +904,7 @@
+ E void FDECL(nomul, (int));
+ E void FDECL(unmul, (const char *));
+ E void FDECL(losehp, (int, const char *, BOOLEAN_P));
++E void NDECL(time_check);
+ E int NDECL(weight_cap);
+ E int NDECL(inv_weight);
+ E int NDECL(near_capacity);
+@@ -1047,9 +1051,16 @@
+ E int NDECL(doprinuse);
+ E void FDECL(useupf, (struct obj *, long));
+ E char *FDECL(let_to_name, (CHAR_P, BOOLEAN_P, BOOLEAN_P));
++#ifdef PREADJUST
++/* This has to be up here so it won't collide with the sticky patch... */
++E void FDECL(doorganize_guts, (struct obj *, char, boolean));
++#endif /* PREADJUST */
+ E void NDECL(free_invbuf);
+ E void NDECL(reassign);
+ E int NDECL(doorganize);
++#ifdef STICKY_OBJECTS
++E int NDECL(dosticky);
++#endif /* STICKY_OBJECTS */
+ E void NDECL(free_pickinv_cache);
+ E int FDECL(count_unpaid, (struct obj *));
+ E int FDECL(count_buc, (struct obj *, int, boolean (*)(OBJ_P)));
+@@ -1779,6 +1790,11 @@
+ E void FDECL(add_menu_cmd_alias, (CHAR_P, CHAR_P));
+ E char FDECL(get_menu_cmd_key, (CHAR_P));
+ E char FDECL(map_menu_cmd, (CHAR_P));
++#ifdef PREADJUST
++E boolean FDECL(collect_preadjust, (char *));
++E void NDECL(apply_preadjust);
++E void NDECL(cleanup_preadjust);
++#endif /* PREADJUST */
+ E void FDECL(show_menu_controls, (winid, BOOLEAN_P));
+ E void FDECL(assign_warnings, (uchar *));
+ E char *FDECL(nh_getenv, (const char *));
+@@ -1788,6 +1804,11 @@
+ E void FDECL(set_option_mod_status, (const char *, int));
+ E int FDECL(add_autopickup_exception, (const char *));
+ E void NDECL(free_autopickup_exceptions);
++#ifdef VOICE_ENABLED
++E int FDECL(add_voice_exception, (const char *));
++E void NDECL(free_voice_exceptions);
++E struct voice_exception *FDECL(check_voice_exceptions, (const char *));
++#endif /* VOICE_ENABLED */
+ E int FDECL(load_symset, (const char *, int));
+ E void NDECL(free_symsets);
+ E boolean FDECL(parsesymbols, (char *, int));

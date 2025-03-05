@@ -1,0 +1,70 @@
+--- a/include/decl.h
++++ b/include/decl.h
+@@ -452,66 +452,33 @@ struct plinemsg_type {
+     struct plinemsg_type *next;
+ };
+ 
+-
+ #ifdef VOICE_ENABLED
+ #define MAX_VOICE_EXCEPTIONS 200
+ #define MAX_VOICE_FORCES 200
++
+ extern char voice_exceptions[MAX_VOICE_EXCEPTIONS][BUFSZ];
+ extern int num_voice_exceptions;
+ extern char voice_forces[MAX_VOICE_FORCES][BUFSZ];
+ extern int num_voice_forces;
+-
+-/* Structures for VOICE_EXCEPTION and VOICE_FORCE */
+ struct voice_exception {
+     struct voice_exception *next;
+     char *pattern;
+     int flags;
+ };
+ extern NEARDATA struct voice_exception *voicelist;
+-
+ struct voice_force {
+     struct voice_force *next;
+     char *pattern;
+     char *speak_text;     /* e.g., "\1" or "corpse." */
+     int flags;
+ };
+ extern NEARDATA struct voice_force *forcelist;
+-
+-#ifdef VOICE_ENABLED
+-#define MAX_VOICE_EXCEPTIONS 200
+-#define MAX_VOICE_FORCES 200
+-
+-extern char voice_exceptions[MAX_VOICE_EXCEPTIONS][BUFSZ];
+-extern int num_voice_exceptions;
+-extern char voice_forces[MAX_VOICE_FORCES][BUFSZ];
+-extern int num_voice_forces;
+-
+-struct voice_exception {
+-    struct voice_exception *next;
+-    char *pattern;
+-    int flags;
+-};
+-extern NEARDATA struct voice_exception *voicelist;
+-
+-struct voice_force {
+-    struct voice_force *next;
+-    char *pattern;
+-    char *speak_text;     /* e.g., "\1" or "corpse." */
+-    int flags;
+-};
+-extern NEARDATA struct voice_force *forcelist;
+-
+ /* Function prototypes */
+ int add_voice_exception(const char *pattern);
+ void free_voice_exceptions(void);
+ struct voice_exception *check_voice_exceptions(const char *text);
+ int add_voice_force(const char *pattern);
+ void free_voice_forces(void);
+ struct voice_force *check_voice_forces(const char *text);
+ #endif /* VOICE_ENABLED */
+-
+-#endif /* VOICE_ENABLED */
+-
+ #define MSGTYP_NORMAL   0
+ #define MSGTYP_NOREP    1
+ #define MSGTYP_NOSHOW   2

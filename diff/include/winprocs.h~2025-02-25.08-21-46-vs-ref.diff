@@ -1,0 +1,36 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/include/winprocs.h	2025-02-23 16:10:59.208092659 -0600
++++ /home/jtratt/s/voice_Nethack_366/include/winprocs.h~2025-02-25.08-21-46	2025-02-25 08:10:08.969143808 -0600
+@@ -6,6 +6,13 @@
+ #define WINPROCS_H
+ 
+ #include "botl.h"
++#include "hack.h" // Include hack.h instead of global.h
++
++#ifdef MSDOS
++extern NEARDATA struct window_procs windowprocs;
++#else
++extern struct window_procs windowprocs;
++#endif /* MSDOS */
+ 
+ /* NB: this MUST match chain_procs below */
+ struct window_procs {
+@@ -82,9 +89,8 @@
+     boolean NDECL((*win_can_suspend));
+ };
+ 
+-extern
+ #ifdef HANGUPHANDLING
+-    volatile
++volatile int hangup_flag;
+ #endif
+ 
+ /*
+@@ -131,7 +137,7 @@
+ #define getlin (*windowprocs.win_getlin)
+ #define get_ext_cmd (*windowprocs.win_get_ext_cmd)
+ #define number_pad (*windowprocs.win_number_pad)
+-#define delay_output (*windowprocs.win_delay_output)
++#define nh_delay_output() ((*windowprocs.win_delay_output)())
+ #ifdef CHANGE_COLOR
+ #define change_color (*windowprocs.win_change_color)
+ #ifdef MAC

@@ -1,0 +1,25 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/include/artilist.h	2020-03-08 12:29:31.000000000 -0500
++++ /home/jtratt/s/voice_Nethack_366/include/artilist.h	2025-01-21 14:29:46.473207037 -0600
+@@ -212,11 +212,21 @@
+       M2_UNDEAD, NO_ATTK, NO_DFNS, CARY(AD_FIRE), ENERGY_BOOST, A_LAWFUL,
+       PM_PRIEST, NON_PM, 2000L, NO_COLOR),
+ 
+-    A("The Longbow of Diana", BOW,
++    A("The Longbow of Diana", ELVEN_BOW,
+       (SPFX_NOGEN | SPFX_RESTR | SPFX_INTEL | SPFX_REFLECT), SPFX_ESP, 0,
+       PHYS(5, 0), NO_DFNS, NO_CARY, CREATE_AMMO, A_CHAOTIC, PM_RANGER, NON_PM,
+       4000L, NO_COLOR),
+ 
++    /*A("The Longbow of Galadriel", ELVEN_BOW,
++      (SPFX_NOGEN | SPFX_RESTR | SPFX_INTEL | SPFX_REFLECT), SPFX_ESP, 0,
++      PHYS(5, 0), NO_DFNS, NO_CARY, CREATE_AMMO, A_CHAOTIC, PM_RANGER, NON_PM,
++      4000L, NO_COLOR),
++
++    A("The Rogue Gear-Spirits", CROSSBOW,
++      (SPFX_NOGEN | SPFX_RESTR | SPFX_INTEL | SPFX_REFLECT), SPFX_ESP, 0,
++      PHYS(5, 0), NO_DFNS, NO_CARY, CREATE_AMMO, A_CHAOTIC, PM_RANGER, NON_PM,
++      4000L, NO_COLOR),*/
++
+     /* MKoT has an additional carry property if the Key is not cursed (for
+        rogues) or blessed (for non-rogues):  #untrap of doors and chests
+        will always find any traps and disarming those will always succeed */

@@ -1,0 +1,29 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/src/zap.c	2020-03-08 12:29:31.000000000 -0500
++++ /home/jtratt/s/voice_Nethack_366/src/zap.c	2025-02-23 17:34:48.182893314 -0600
+@@ -3460,7 +3460,7 @@
+                 newsym(x, y);
+             }
+             tmp_at(bhitpos.x, bhitpos.y);
+-            delay_output();
++            nh_delay_output();
+             /* kicked objects fall in pools */
+             if ((weapon == KICKED_WEAPON)
+                 && (is_pool(bhitpos.x, bhitpos.y)
+@@ -3581,7 +3581,7 @@
+             }
+         }
+         tmp_at(bhitpos.x, bhitpos.y);
+-        delay_output();
++        nh_delay_output();
+         if (IS_SINK(levl[bhitpos.x][bhitpos.y].typ)) {
+             if (!Deaf)
+                 pline("Klonk!");
+@@ -4104,7 +4104,7 @@
+             if (ZAP_POS(levl[sx][sy].typ)
+                 || (isok(lsx, lsy) && cansee(lsx, lsy)))
+                 tmp_at(sx, sy);
+-            delay_output(); /* wait a little */
++            nh_delay_output(); /* wait a little */
+         }
+ 
+         /* hit() and miss() need bhitpos to match the target */

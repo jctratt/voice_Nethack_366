@@ -1,0 +1,22 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/src/windows.c	2020-03-08 12:29:31.000000000 -0500
++++ /home/jtratt/s/voice_Nethack_366/src/windows.c~2025-02-25.08-23-08	2025-02-25 08:14:22.336747675 -0600
+@@ -3,6 +3,7 @@
+ /* NetHack may be freely redistributed.  See license for details. */
+ 
+ #include "hack.h"
++#include "winprocs.h"
+ #ifdef TTY_GRAPHICS
+ #include "wintty.h"
+ #endif
+@@ -75,9 +76,9 @@
+ #endif /* DUMPLOG */
+ 
+ #ifdef HANGUPHANDLING
+-volatile
++volatile int hangup_flag;
+ #endif
+-    NEARDATA struct window_procs windowprocs;
++//extern struct window_procs windowprocs;
+ 
+ #ifdef WINCHAIN
+ #define CHAINR(x) , x

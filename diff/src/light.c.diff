@@ -1,0 +1,11 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/src/light.c	2020-03-08 12:29:31.000000000 -0500
++++ /home/jtratt/s/voice_Nethack_366/src/light.c	2025-02-23 17:34:48.894883462 -0600
+@@ -239,7 +239,7 @@
+         place_object(obj, bhitpos.x, bhitpos.y); /* temporarily put on map */
+         vision_recalc(0);
+         flush_screen(0);
+-        delay_output();
++        nh_delay_output();
+         remove_object(obj); /* take back off of map */
+ 
+         radius_squared = ls->range * ls->range;

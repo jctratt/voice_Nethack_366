@@ -1,0 +1,263 @@
+--- ./doc/Guidebook.tex.orig	2003-12-07 18:39:13.000000000 -0500
++++ ./doc/Guidebook.tex	2008-04-13 13:43:25.000000000 -0400
+@@ -2084,6 +2084,15 @@
+ A zero in any entry in such a sequence leaves the display of that
+ entry unchanged; this feature is not available using the option syntax.
+ Such a sequence can be continued to multiple lines by putting a
++If the {\tt PREADJUST} compile-time option is enabled, any line starting
++with ``{\tt PREADJUST:}'' causes an {\tt \#adjust} command to be performed
++on a corresponding item in the starting inventory of a new character.  For
++instance, ``\mbox{\tt PREADJUST:C-cloak}'' will adjust an object whose name
++contains ``cloak'' into the `C' slot; if the {\tt \#sticky} command is
++available, ``\mbox{\tt PREADJUST:C=cloak}'' will also mark the object
++sticky.  Note that common prefixes like ``ring of'' do not appear in the
++internal name data for objects, and so should not be included in your match
++string.
+ `{\tt \verb+\+}' at the end of each line to be continued.
+ 
+ %.pg
+--- ./doc/Guidebook.mn.orig	2003-12-07 18:39:13.000000000 -0500
++++ ./doc/Guidebook.mn	2008-04-13 13:45:16.000000000 -0400
+@@ -1661,6 +1661,14 @@
+ entry unchanged; this feature is not available using the option syntax.
+ Such a sequence can be continued to multiple lines by putting a `\e'
+ at the end of each line to be continued.
++If the PREADJUST compile-time option is enabled, any line starting with
++``PREADJUST:'' causes an #adjust command to be performed on a corresponding
++item in the starting inventory of a new character.  For instance,
++``PREADJUST:C-cloak'' will adjust an object whose name contains ``cloak''
++into the `C' slot; if the #sticky command is available,
++``PREADJUST:C=cloak'' will also mark the object sticky.  Note that common
++prefixes like ``ring of'' do not appear in the internal name data for
++objects, and so should not be included in your match string.
+ .pg
+ If your copy of the game included the compile time AUTOPICKUP_EXCEPTIONS
+ option, then any line starting with ``AUTOPICKUP_EXCEPTION='' is taken
+--- ./include/extern.h.orig	2003-12-07 18:39:13.000000000 -0500
++++ ./include/extern.h	2008-04-13 13:38:51.000000000 -0400
+@@ -809,6 +809,10 @@
+ E int NDECL(doprinuse);
+ E void FDECL(useupf, (struct obj *,long));
+ E char *FDECL(let_to_name, (CHAR_P,BOOLEAN_P));
++#ifdef PREADJUST
++/* This has to be up here so it won't collide with the sticky patch... */
++E void FDECL(doorganize_guts, (struct obj *, char, boolean));
++#endif /* PREADJUST */
+ E void NDECL(free_invbuf);
+ E void NDECL(reassign);
+ E int NDECL(doorganize);
+@@ -1395,6 +1399,11 @@
+ E int FDECL(choose_classes_menu, (const char *,int,BOOLEAN_P,char *,char *));
+ E void FDECL(add_menu_cmd_alias, (CHAR_P, CHAR_P));
+ E char FDECL(map_menu_cmd, (CHAR_P));
++#ifdef PREADJUST
++E boolean FDECL(collect_preadjust, (char *));
++E void NDECL(apply_preadjust);
++E void NDECL(cleanup_preadjust);
++#endif /* PREADJUST */
+ E void FDECL(assign_warnings, (uchar *));
+ E char *FDECL(nh_getenv, (const char *));
+ E void FDECL(set_duplicate_opt_detection, (int));
+--- ./src/files.c.orig	2003-12-07 18:39:13.000000000 -0500
++++ ./src/files.c	2008-04-13 13:38:51.000000000 -0400
+@@ -1823,6 +1823,11 @@
+ 	    (void) get_uchars(fp, buf, bufp, translate, FALSE,
+ 					WARNCOUNT, "WARNINGS");
+ 	    assign_warnings(translate);
++#ifdef PREADJUST
++	} else if (match_varname(buf, "PREADJUST", 6)) {
++	    if (!collect_preadjust(bufp))
++		return 0;
++#endif /* PREADJUST */
+ #ifdef WIZARD
+ 	} else if (match_varname(buf, "WIZKIT", 6)) {
+ 	    (void) strncpy(wizkit, bufp, WIZKIT_MAX-1);
+--- ./src/invent.c.orig	2003-12-07 18:39:13.000000000 -0500
++++ ./src/invent.c	2008-04-13 13:38:51.000000000 -0400
+@@ -2651,7 +2651,9 @@
+ 	char alphabet[52+1], buf[52+1];
+ 	char qbuf[QBUFSZ];
+ 	char allowall[2];
++#ifndef PREADJUST
+ 	const char *adj_type;
++#endif /* PREADJUST */
+ 
+ 	if (!flags.invlet_constant) reassign();
+ 	/* get a pointer to the object the user wants to organize */
+@@ -2694,7 +2696,22 @@
+ 	}
+ 
+ 	/* change the inventory and print the resulting item */
++#ifndef PREADJUST
+ 	adj_type = "Moving:";
++#else
++	doorganize_guts(obj, let, FALSE);
++	return(0);
++}
++
++void
++doorganize_guts(obj, let, quiet)
++struct obj *obj;
++char let;
++boolean quiet;
++{
++	struct obj *otmp;
++	const char *adj_type = "Moving:";
++#endif /* PREADJUST */
+ 
+ 	/*
+ 	 * don't use freeinv/addinv to avoid double-touching artifacts,
+@@ -2723,9 +2740,14 @@
+ 	invent = obj;
+ 	reorder_invent();
+ 
++#ifdef PREADJUST
++	if (!quiet)
++#endif /* PREADJUST */
+ 	prinv(adj_type, obj, 0L);
+ 	update_inventory();
++#ifndef PREADJUST
+ 	return(0);
++#endif /* PREADJUST */
+ }
+ 
+ /* common to display_minventory and display_cinventory */
+--- ./src/options.c.orig	2003-12-07 18:39:13.000000000 -0500
++++ ./src/options.c	2008-04-13 13:38:51.000000000 -0400
+@@ -413,6 +413,22 @@
+ static short n_menu_mapped = 0;
+ 
+ 
++#ifdef PREADJUST
++/* Stuff for doing starting inventory pre-#adjusts. */
++typedef struct {
++    const char *descr;
++# ifdef STICKY_OBJECTS
++    boolean sticky;
++# endif /* STICKY_OBJECTS */
++    char invlet;
++} preadjust;
++
++static preadjust *preadj_list = 0;
++static int n_preadjust = 0;
++static int preadjust_size = 0;
++#endif /* PREADJUST */
++
++
+ static boolean initial, from_file;
+ 
+ STATIC_DCL void FDECL(doset_add_menu, (winid,const char *,int));
+@@ -2318,6 +2334,84 @@
+ }
+ 
+ 
++#ifdef PREADJUST
++boolean
++collect_preadjust(bufp)
++char *bufp;
++{
++    preadjust adj;
++
++    if (!*bufp)
++	return 0;
++    adj.invlet = *bufp++;
++    if (*bufp != '-'
++# ifdef STICKY_OBJECTS
++		     && *bufp != '='
++# endif /* STICKY_OBJECTS */
++				    )
++	return 0;
++# ifdef STICKY_OBJECTS
++    adj.sticky = (*bufp == '=');
++# endif /* STICKY_OBJECTS */
++    bufp++;
++    if (!*bufp)
++	return 0;
++    adj.descr = (char *)strdup(bufp);
++
++    /* allocate additional space if necessary */
++    if (preadjust_size == 0) {
++	preadjust_size = 10;
++	preadj_list = (preadjust *)alloc(10 * sizeof(preadjust));
++    } else if (n_preadjust == preadjust_size) {
++	preadjust *tmp;
++	preadjust_size *= 2;
++	tmp = (preadjust *)alloc(preadjust_size * sizeof(preadjust));
++	(void)memcpy((genericptr_t)tmp, (genericptr_t)preadj_list,
++		     n_preadjust * sizeof(preadjust));
++	free((genericptr_t)preadj_list);
++	preadj_list = tmp;
++    }
++
++    preadj_list[n_preadjust++] = adj;
++    return 1;
++}
++
++void
++apply_preadjust()
++{
++    int i;
++    struct obj *obj;
++
++    if (n_preadjust == 0)
++	return;
++    /* this is kind of expensive, I suppose, but it only happens once */
++    for (i = 0; i < n_preadjust; i++) {
++	for (obj = invent; obj; obj = obj->nobj) {
++	    if (strstri(OBJ_NAME(objects[obj->otyp]), preadj_list[i].descr)) {
++# ifdef STICKY_OBJECTS
++		obj->sticky = preadj_list[i].sticky;
++# endif /* STICKY_OBJECTS */
++		doorganize_guts(obj, preadj_list[i].invlet, TRUE);
++		break;
++	    }
++	}
++    }
++}
++
++void
++cleanup_preadjust()
++{
++    int i;
++
++    if (n_preadjust == 0)
++	return;
++    for (i = 0; i < n_preadjust; i++)
++	free((genericptr_t)preadj_list[i].descr);
++    free((genericptr_t)preadj_list);
++}
++#endif /* PREADJUST */
++
++
+ #if defined(MICRO) || defined(MAC) || defined(WIN32)
+ # define OPTIONS_HEADING "OPTIONS"
+ #else
+--- ./src/restore.c.orig	2003-12-07 18:39:13.000000000 -0500
++++ ./src/restore.c	2008-04-13 13:38:51.000000000 -0400
+@@ -673,6 +673,9 @@
+ 	run_timers();	/* expire all timers that have gone off while away */
+ 	docrt();
+ 	restoring = FALSE;
++#ifdef PREADJUST
++	cleanup_preadjust();	/* we're now certain we don't need this */
++#endif /* PREADJUST */
+ 	clear_nhwindow(WIN_MESSAGE);
+ 	program_state.something_worth_saving++;	/* useful data now exists */
+ 
+--- ./src/allmain.c.orig	2003-12-07 18:39:13.000000000 -0500
++++ ./src/allmain.c	2008-04-13 13:40:14.000000000 -0400
+@@ -502,6 +502,10 @@
+ 	init_artifacts();	/* before u_init() in case $WIZKIT specifies
+ 				 * any artifacts */
+ 	u_init();
++#ifdef PREADJUST
++	apply_preadjust();
++	cleanup_preadjust();
++#endif /* PREADJUST */
+ 
+ #ifndef NO_SIGNAL
+ 	(void) signal(SIGINT, (SIG_RET_TYPE) done1);
+
+
++++ include/config.h    NB: You will need to manually add "#define PREADJUST" to include/config.h after applying this patch to enable the functionality.
++#define PREADJUST

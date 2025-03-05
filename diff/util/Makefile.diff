@@ -1,0 +1,30 @@
+--- /home/jtratt/s/Release.NetHack-NetHack-3.6.6_Released/util/Makefile	2025-02-23 11:25:19.084290486 -0600
++++ /home/jtratt/s/voice_Nethack_366/util/Makefile	2025-02-25 08:01:49.236067505 -0600
+@@ -14,7 +14,7 @@
+ 
+ 
+ #PREFIX=/usr
+-PREFIX=$(wildcard ~)/nh366r/install
++PREFIX=$(wildcard ~)/vnh366/install
+ HACKDIR=$(PREFIX)/games/lib/$(GAME)dir
+ SHELLDIR = $(PREFIX)/games
+ INSTDIR=$(HACKDIR)
+@@ -31,6 +31,7 @@
+ CFLAGS+=-DTIMED_DELAY
+ CFLAGS+=-DHACKDIR=\"$(HACKDIR)\"
+ CFLAGS+=-DDUMPLOG
++CFLAGS+=-DDEBUG
+ CFLAGS+=-DCONFIG_ERROR_SECURE=FALSE
+ CFLAGS+=-DCURSES_GRAPHICS
+ #CFLAGS+=-DEXTRA_SANITY_CHECKS
+@@ -38,7 +39,9 @@
+ CFLAGS+=-DSCORE_ON_BOTL
+ #CFLAGS+=-DMSGHANDLER
+ #CFLAGS+=-DTTY_TILES_ESCCODES
+-CFLAGS+=-Wall -Wextra -Wmissing-field-initializers
++#CFLAGS+=-DNO_VOICE
++#CFLAGS+=-Wall -Wextra -Wmissing-field-initializers
++#CFLAGS += -Wimplicit-function-declaration -Werror=implicit-function-declaration
+ 
+ LINK=$(CC)
+ # Only needed for GLIBC stack trace:
