@@ -21,14 +21,14 @@
 void handle_voice_output(const char *message);
 char *strip_patterns(const char *message);
 void sanitize_message(const char *src, char *dest);
-#ifdef __linux__
+#ifdef __linux__ /* begin OS */
 #define TTS_CMD "/usr/bin/espeak"
 //#define TTS_CMD "~/.local/bin/gtts-cli"
 #elif defined(_WIN32) || defined(_WIN64)
 #define TTS_CMD "powershell"
 #elif defined(__APPLE__) && defined(__MACH__)
 #define TTS_CMD "/usr/bin/say"
-#endif
+#endif /* end OS */
 
 int check_command_available(const char *command_to_check) {
     char check_command[256];
@@ -772,14 +772,14 @@ void handle_voice_output(const char *message) {
 
     #ifdef _WIN32
         snprintf(sayit, sizeof(sayit), "%s -Command \"%s\"", TTS_CMD, TTS_FLAGS, rep);
-    #else
-        // gTTS yuck; too slow for me
-        //pline("%s \"%s\" %s", TTS_CMD, rep, flags.voice_command); // testing
-        // gTTS
+        /* TODO add APPLE say */
         // snprintf(sayit, sizeof(sayit), "%s \"%s\" %s", TTS_CMD, rep, flags.voice_command);
         //
+    #else
+        /* TODO change linux to use TTS_CMD */
+        // gTTS yuck; too slow for me; better hardware?
+        //pline("%s \"%s\" %s", TTS_CMD, rep, flags.voice_command); // testing
         // espeak
-        //pline("%s %s \"%s\"", "/usr/bin/espeak", flags.voice_command, rep);
         snprintf(sayit, sizeof(sayit), "%s %s \"%s\"", "/usr/bin/espeak", flags.voice_command, rep);
     #endif
     // If no exception was found, proceed with voice output

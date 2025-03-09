@@ -58,3 +58,15 @@ Makefile.gcc-orig
 
 git_token.txt
 make_all_*
+claude_2025-03-09_11-16.asc
+config.h.patch
+cppcheck_output.asc
+cursmesg.patch
+decl.c.patch
+decl.h.patch
+forced_cppcheck.txt
+make_all.txt
+make_errors.asc
+related_cppcheck.txt
+shortened_forced_cppcheck.txt
+shortened_make_all.txt
