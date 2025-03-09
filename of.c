@@ -92,6 +92,7 @@ File: src/pline.c
 #include "config.h"
 void handle_voice_output(const char *message);
 char *strip_patterns(const char *message);
+void sanitize_message(const char *src, char *dest);
 #ifdef __linux__
 //#define TTS_CMD "/usr/bin/espeak"
 #define TTS_CMD "~/.local/bin/gtts-cli"
@@ -462,8 +463,8 @@ extern char *curses_fmt_attrs(char *);
 #endif
 --- Start of VOICE_ENABLED -------------------------------------------------------------------------------------------------
 #ifdef VOICE_ENABLED
-    { "voice_command", "command for voice output",
-        sizeof flags.voice_command * 2, SET_IN_GAME },
+    { "voice_command", "command for external voice engine (espeak, gtts, say, etc.)",
+        sizeof flags.voice_command * 2, DISP_IN_GAME },
 #endif /* VOICE_ENABLED */
 --- End of VOICE_ENABLED -------------------------------------------------------------------------------------------------
     { "whatis_coord", "show coordinates when auto-describing cursor position",
