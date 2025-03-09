@@ -22,8 +22,8 @@ void handle_voice_output(const char *message);
 char *strip_patterns(const char *message);
 void sanitize_message(const char *src, char *dest);
 #ifdef __linux__
-//#define TTS_CMD "/usr/bin/espeak"
-#define TTS_CMD "~/.local/bin/gtts-cli"
+#define TTS_CMD "/usr/bin/espeak"
+//#define TTS_CMD "~/.local/bin/gtts-cli"
 #elif defined(_WIN32) || defined(_WIN64)
 #define TTS_CMD "powershell"
 #elif defined(__APPLE__) && defined(__MACH__)
