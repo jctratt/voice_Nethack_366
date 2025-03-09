@@ -57,3 +57,4 @@ Makefile.gcc-orig
 .DS_Store
 
 git_token.txt
+make_all_*
