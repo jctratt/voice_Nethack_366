@@ -771,16 +771,16 @@ void handle_voice_output(const char *message) {
     sanitize_message(escaped_message, rep);
 
     #ifdef _WIN32
-        snprintf(sayit, sizeof(sayit), "%s -Command \"%s\"", TTS_CMD, TTS_FLAGS, rep);
-        /* TODO add APPLE say */
+        snprintf(sayit, sizeof(sayit), "%s -Command \"%s\"", TTS_CMD, rep);
         // snprintf(sayit, sizeof(sayit), "%s \"%s\" %s", TTS_CMD, rep, flags.voice_command);
-        //
+    #elif defined(__APPLE__) && defined(__MACH__)
+        snprintf(sayit, sizeof(sayit), "%s \"%s\" %s", TTS_CMD, rep, flags.voice_command);
+        // APPLE uses 'say'
     #else
-        /* TODO change linux to use TTS_CMD */
         // gTTS yuck; too slow for me; better hardware?
         //pline("%s \"%s\" %s", TTS_CMD, rep, flags.voice_command); // testing
         // espeak
-        snprintf(sayit, sizeof(sayit), "%s %s \"%s\"", "/usr/bin/espeak", flags.voice_command, rep);
+        snprintf(sayit, sizeof(sayit), "%s %s \"%s\"", TTS_CMD, flags.voice_command, rep);
     #endif
     // If no exception was found, proceed with voice output
     (void)system(sayit);
@@ -821,10 +821,8 @@ char *strip_patterns(const char *message) {
 void sanitize_message(const char *src, char *dest) {
     int i, j;
     for (i = 0, j = 0; src[i] != '\0' && j < BUFSZ - 1; i++) {
-        if (/*(src[i] == '\'' || src[i] == '"' || src[i] == '`' ||
-            src[i] == '|' || src[i] == '>' || src[i] == '<' ||
-            src[i] == '(' || src[i] == ')' || src[i] == ';' || */
-            src[i] == '_') {
+        if (src[i] == '_') {
+            /* Replace underscores with spaces for better speech output */
             if (i < BUFSZ - 1) {
                 dest[j++] = ' ';
             }
