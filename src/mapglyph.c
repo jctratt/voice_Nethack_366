@@ -287,6 +287,20 @@ unsigned mgflags;
 
     ch = showsyms[idx];
 #ifdef TEXTCOLOR
+    /* Check for engravings and apply color modifier */
+    if (iflags.use_color && (offset = (glyph - GLYPH_CMAP_OFF)) >= 0) {
+        struct engr *ep = engr_at(x, y);
+        if (ep && ep->engr_txt[0] && levl[x][y].typ != GRAVE) {
+            /* Apply bright/bold version of the color for Elbereth */
+            if (!strcmp(ep->engr_txt, "Elbereth")) {
+                color = CLR_BRIGHT_GREEN;
+            } else {
+                /* Apply bright/bold version for other engravings */
+                color = CLR_BRIGHT_CYAN;
+            }
+        }
+    }
+
     /* Turn off color if no color defined, or rogue level w/o PC graphics. */
     if (!has_color(color) || (Is_rogue_level(&u.uz) && !has_rogue_color))
 #endif

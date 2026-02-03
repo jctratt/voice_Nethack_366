@@ -81,6 +81,8 @@ start: NHAccess
 	S_hodbridge: \032
 	S_vcdbridge: \035
 	S_hcdbridge: \126
+	S_engrave_elbereth: '|'
+	S_engrave_other: '|'
 	S_arrow_trap: \094
 	S_dart_trap: \094
 	S_falling_rock_trap: \094
@@ -174,6 +176,8 @@ start: Blank
         S_dragon: \032
         S_eel: \032
         S_elemental: \032
+        S_engrave_elbereth: \032
+        S_engrave_other: \032
         S_explode1: \032
         S_explode2: \032
         S_explode3: \032
@@ -303,6 +307,8 @@ start: Blank
         S_water: \032
         S_weapon: \032
         S_web: \032
+        S_engrave_elbereth: \032
+        S_engrave_other: \032
         S_worm: \032
         S_worm_tail: \032
         S_wraith: \032
@@ -343,6 +349,8 @@ start: IBMgraphics
 	S_vodbridge: \xfa		# meta-z, centered dot
 	S_hodbridge: \xfa		# meta-z, centered dot
 	S_water: \xf7			# meta-w, approx. equals
+	S_engrave_elbereth: '|'		# Elbereth engraving
+	S_engrave_other: '|'		# other text engraving
 	S_vbeam: \xb3			# meta-3, vertical rule
 	S_hbeam: \xc4			# meta-D, horizontal rule
 	S_sw_ml: \xb3			# meta-3, vertical rule
@@ -594,6 +602,8 @@ start: DECgraphics
 	S_vodbridge: \xfe		# meta-~, centered dot
 	S_hodbridge: \xfe		# meta-~, centered dot
 	S_water: \xe0			# meta-\, diamond
+	S_engrave_elbereth: '|'		# Elbereth engraving
+	S_engrave_other: '|'		# other text engraving
 	S_vbeam: \xf8			# meta-x, vertical rule
 	S_hbeam: \xf1			# meta-q, horizontal rule
 	S_sw_tc: \xef			# meta-o, high horizontal line

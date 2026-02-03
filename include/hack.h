@@ -21,6 +21,12 @@
 
 extern int g_has_spoken_elbereth;
 extern int g_has_spoken_no_elbereth;
+extern int last_engraving_state;
+extern char last_engraving_text[BUFSZ];
+extern int current_engraving_state;
+extern char current_engraving_text[BUFSZ];
+extern int message_output_done;
+extern int pending_engraving_message;
 
 /* symbolic names for capacity levels */
 enum encumbrance_types {

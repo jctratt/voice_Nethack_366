@@ -182,6 +182,8 @@ const struct symdef defsyms[MAXPCHARS] = {
        { ' ', "air", C(CLR_CYAN) },                  /* open air */
 /*40*/ { '#', "cloud", C(CLR_GRAY) },                /* [part of] a cloud */
        { '}', "water", C(CLR_BLUE) },                /* under water */
+       { '|', "Elbereth engraving", C(CLR_GREEN) }, /* Elbereth engraving */
+       { '|', "engraving", C(CLR_RED) },            /* other text engraving */
        { '^', "arrow trap", C(HI_METAL) },           /* trap */
        { '^', "dart trap", C(HI_METAL) },            /* trap */
        { '^', "falling rock trap", C(CLR_GRAY) },    /* trap */
@@ -684,6 +686,8 @@ struct symparse loadsyms[] = {
     { SYM_PCHAR, S_cloud, "S_cloud" },
     { SYM_PCHAR, S_poisoncloud, "S_poisoncloud" },
     { SYM_PCHAR, S_water, "S_water" },
+    { SYM_PCHAR, S_engrave_elbereth, "S_engrave_elbereth" },
+    { SYM_PCHAR, S_engrave_other, "S_engrave_other" },
     { SYM_PCHAR, S_arrow_trap, "S_arrow_trap" },
     { SYM_PCHAR, S_dart_trap, "S_dart_trap" },
     { SYM_PCHAR, S_falling_rock_trap, "S_falling_rock_trap" },

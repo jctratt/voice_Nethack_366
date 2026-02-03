@@ -375,6 +375,16 @@ boolean resuming;
         }
         if (context.botl || context.botlx) {
             bot();
+#ifdef VOICE_ENABLED
+            /* Output pending engraving messages after bot() completes */
+            if (pending_engraving_message == 1) {
+                pline("You feel safer.");
+                pending_engraving_message = 0;
+            } else if (pending_engraving_message == 2) {
+                pline("You feel vulnerable.");
+                pending_engraving_message = 0;
+            }
+#endif /* VOICE_ENABLED */
             curs_on_u();
         } else if (iflags.time_botl) {
             timebot();

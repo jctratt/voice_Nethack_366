@@ -13,6 +13,12 @@
 
 int g_has_spoken_elbereth = 0;
 int g_has_spoken_no_elbereth = 0;
+int last_engraving_state = -1; /* -1: none, 0: Elbereth, 1: other */
+char last_engraving_text[BUFSZ] = ""; /* Track the actual engraving text */
+int current_engraving_state = -1; /* Current state for message output */
+char current_engraving_text[BUFSZ] = ""; /* Current text for message output */
+int message_output_done = 0; /* Flag to prevent duplicate messages */
+int pending_engraving_message = 0; /* 0: none, 1: safer, 2: vulnerable */
 
 extern const char *hu_stat[]; /* defined in eat.c */
 
@@ -202,6 +208,15 @@ do_statusline2()
         Strcpy(nb = eos(nb), " Fly");
     if (u.usteed)
         Strcpy(nb = eos(nb), " Ride");
+    /* Check for Elbereth engraving at current location */
+    {
+        struct engr *ep = engr_at(u.ux, u.uy);
+        if (ep && ep->engr_txt[0] && !strcmpi(ep->engr_txt, "Elbereth")) {
+            Strcpy(nb = eos(nb), " Elbereth");
+        } else if (ep && ep->engr_txt[0]) {
+            Strcpy(nb = eos(nb), " Engrave");
+        }
+    }
     cln = strlen(cond);
 
     /*
@@ -242,6 +257,7 @@ bot()
     if ((u.uhp != -1) && youmonst.data && iflags.status_updates) {
         if (VIA_WINDOWPORT()) {
             bot_via_windowport();
+            /* Message output moved to spoteffects() for better timing */
         } else {
             curs(WIN_STATUS, 1, 0);
             putstr(WIN_STATUS, 0, do_statusline1());
@@ -394,57 +410,8 @@ botl_score()
         utotal = LONG_MAX; /* wrap around */
 
 
-    if(engr_at(u.ux, u.uy)) {
-        if(sengr_at("Elbereth", u.ux, u.uy, TRUE)) {
-            /* -1 nothing; 0 not spoken yet; 1 has spoken */
-            if (g_has_spoken_elbereth < 1) {
-                    g_has_spoken_elbereth=1;
-                    g_has_spoken_no_elbereth=0;
-                    //pline("393,%d", g_has_spoken_elbereth);
-                    memcpy(rep, "You feel safer", 255);
-                    tosay[255] = '\0';
-                    memcpy(sayit, txt2sp, 17);
-                    sayit[17] = '\0';
-                    strcat(sayit, "\"");
-                    strcat(sayit, rep);
-                    strcat(sayit, "\"");
-                    status = system(sayit);
-                    flushinp();
-            }
-            utotal=777;
-        } else {
-            if (g_has_spoken_no_elbereth < 1) {
-                g_has_spoken_elbereth=0;
-                g_has_spoken_no_elbereth=1;
-                //pline("409,%d", g_has_spoken_elbereth);
-                memcpy(rep, "You feel vulnerable!", 255);
-                tosay[255] = '\0';
-                memcpy(sayit, txt2sp, 17);
-                sayit[17] = '\0';
-                strcat(sayit, "\"");
-                strcat(sayit, rep);
-                strcat(sayit, "\"");
-                status = system(sayit);
-                flushinp();
-            }
-            utotal=666;
-        }
-    } else {
-            if (g_has_spoken_elbereth > 0) {
-                // no engraving here
-                memcpy(rep, "You feel very vulnerable!", 255);
-                tosay[255] = '\0';
-                memcpy(sayit, txt2sp, 17);
-                sayit[17] = '\0';
-                strcat(sayit, "\"");
-                strcat(sayit, rep);
-                strcat(sayit, "\"");
-                status = system(sayit);
-                flushinp();
-            }
-            g_has_spoken_elbereth = -1;
-            g_has_spoken_no_elbereth = -1;
-    } // end sengr_at()
+    /* Old 777/666 score hack removed - now using status line display instead */
+    /* See do_statusline2() for Elbereth/Engrave status display */
 
 
 
@@ -814,6 +781,59 @@ bot_via_windowport()
         blstats[idx][BL_CONDITION].a.a_ulong |= BL_MASK_FLY;
     if (u.usteed)
         blstats[idx][BL_CONDITION].a.a_ulong |= BL_MASK_RIDE;
+    /* Check for Elbereth engraving at current location */
+    {
+        struct engr *ep = engr_at(u.ux, u.uy);
+        int state = -1; /* -1: none, 0: Elbereth, 1: other */
+        char text[BUFSZ] = "";
+
+        /* Clear both engraving masks first */
+        blstats[idx][BL_CONDITION].a.a_ulong &= ~(BL_MASK_ELBERETH | BL_MASK_ENGRAVE);
+
+        if (ep && ep->engr_txt[0]) {
+            Strcpy(text, ep->engr_txt);
+
+            if (!strcmpi(ep->engr_txt, "Elbereth")) {
+                blstats[idx][BL_CONDITION].a.a_ulong |= BL_MASK_ELBERETH;
+                state = 0;
+            } else {
+                /* Other engravings */
+                blstats[idx][BL_CONDITION].a.a_ulong |= BL_MASK_ENGRAVE;
+                state = 1;
+            }
+        } else {
+            /* No engraving here */
+            state = -1;
+        }
+
+#ifdef VOICE_ENABLED
+        /* Set flag for voice messages when engraving state changes */
+        if (iflags.window_inited && state != last_engraving_state) {
+            /* Entering or creating Elbereth */
+            if (state == 0) {
+                pending_engraving_message = 1; /* safer */
+                g_has_spoken_elbereth = 1;
+                g_has_spoken_no_elbereth = 0;
+            }
+            /* Leaving Elbereth or Elbereth eroded */
+            else if (last_engraving_state == 0) {
+                pending_engraving_message = 2; /* vulnerable */
+                g_has_spoken_elbereth = 0;
+                g_has_spoken_no_elbereth = 1;
+            }
+            /* No message for other transitions (already vulnerable) */
+
+            /* Update tracking state */
+            last_engraving_state = state;
+            Strcpy(last_engraving_text, text);
+        }
+#endif /* VOICE_ENABLED */
+
+        /* Store current state for compatibility */
+        current_engraving_state = state;
+        Strcpy(current_engraving_text, text);
+    }
+    valset[BL_CONDITION] = FALSE; /* Mark condition as changed so it updates */
     evaluate_and_notify_windowport(valset, idx);
 }
 
@@ -2389,6 +2409,8 @@ const struct condmap valid_conditions[] = {
     { "lev",      BL_MASK_LEV },
     { "fly",      BL_MASK_FLY },
     { "ride",     BL_MASK_RIDE },
+    { "elbereth", BL_MASK_ELBERETH },
+    { "engrave",  BL_MASK_ENGRAVE },
 };
 
 #ifdef STATUS_HILITES
@@ -2399,7 +2421,8 @@ const struct condmap condition_aliases[] = {
                         | BL_MASK_FOODPOIS | BL_MASK_TERMILL
                         | BL_MASK_BLIND | BL_MASK_DEAF | BL_MASK_STUN
                         | BL_MASK_CONF | BL_MASK_HALLU
-                        | BL_MASK_LEV | BL_MASK_FLY | BL_MASK_RIDE },
+                        | BL_MASK_LEV | BL_MASK_FLY | BL_MASK_RIDE
+                        | BL_MASK_ELBERETH | BL_MASK_ENGRAVE },
     { "major_troubles", BL_MASK_STONE | BL_MASK_SLIME | BL_MASK_STRNGL
                         | BL_MASK_FOODPOIS | BL_MASK_TERMILL },
     { "minor_troubles", BL_MASK_BLIND | BL_MASK_DEAF | BL_MASK_STUN
