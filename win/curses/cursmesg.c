@@ -11,6 +11,11 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+/* Macro for control characters */
+#ifndef C
+#define C(c) (0x1f & (c))
+#endif
+
 /* defined in sys/<foo>/<foo>tty.c or cursmain.c as last resort;
    set up by curses_init_nhwindows() */
 extern char erase_char, kill_char;
@@ -542,6 +547,11 @@ curses_message_win_getline(const char *prompt, char *answer, int buffer)
     ltmp = (int) strlen(linestarts[promptline]);
     mx = promptx = ltmp + border_space;
 #ifdef EDIT_GETLIN
+    if (len > 0) {
+        /* Display the pre-filled text */
+        mvwaddstr(win, my, mx, p_answer);
+        mx += len;
+    }
     if (len <= ltmp) {
         /* preloaded answer fits on same line as [last line of] prompt */
         promptx -= len;
@@ -686,6 +696,60 @@ curses_message_win_getline(const char *prompt, char *answer, int buffer)
                     mvwprintw(win, my--, border_space, "%*c",
                               (int) strlen(linestarts[nlines]), ' ');
                 }
+            }
+            break;
+        case C('a'): /* Ctrl+A - move to beginning of line */
+            mx = promptx;
+            break;
+        case C('e'): /* Ctrl+E - move to end of line */
+            mx = promptx + len;
+            break;
+        case C('b'): /* Ctrl+B - move cursor left */
+            if (mx > promptx)
+                mx--;
+            break;
+        case C('f'): /* Ctrl+F - move cursor right */
+            if (mx < promptx + len)
+                mx++;
+            break;
+        case C('d'): /* Ctrl+D - delete character at cursor */
+            if (mx < promptx + len) {
+                /* Delete character at cursor position */
+                int pos = mx - promptx;
+                for (int i = pos; i < len - 1; i++)
+                    p_answer[i] = p_answer[i + 1];
+                len--;
+                p_answer[len] = '\0';
+                /* Redraw the rest of the line */
+                mvwprintw(win, my, mx, "%s ", p_answer + pos);
+            }
+            break;
+        case C('u'): /* Ctrl+U - delete entire line */
+            if (len > 0) {
+                *p_answer = '\0';
+                len = 0;
+                mx = promptx;
+                mvwprintw(win, my, mx, "%*c", maxx - mx, ' ');
+            }
+            break;
+        case C('w'): /* Ctrl+W - delete word before cursor */
+            if (mx > promptx) {
+                int pos = mx - promptx;
+                int new_pos = pos;
+                /* Skip trailing spaces */
+                while (new_pos > 0 && p_answer[new_pos - 1] == ' ')
+                    new_pos--;
+                /* Skip word characters */
+                while (new_pos > 0 && p_answer[new_pos - 1] != ' ')
+                    new_pos--;
+                /* Delete from new_pos to pos */
+                for (int i = new_pos; i < len - (pos - new_pos); i++)
+                    p_answer[i] = p_answer[i + (pos - new_pos)];
+                len -= (pos - new_pos);
+                p_answer[len] = '\0';
+                mx = promptx + new_pos;
+                /* Redraw the rest of the line */
+                mvwprintw(win, my, mx, "%*c", maxx - mx, ' ');
             }
             break;
         default:

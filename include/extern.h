@@ -217,6 +217,10 @@ E int NDECL(wiz_wish);
 #endif /* USE_TRAMPOLI */
 E void NDECL(reset_occupations);
 E void FDECL(set_occupation, (int (*)(void), const char *, int));
+E void NDECL(init_occ_interrupt);
+E void NDECL(reset_occ_interrupt);
+E boolean FDECL(check_occ_interrupt, (struct monst *));
+E boolean NDECL(handle_occ_limits);
 E char NDECL(pgetchar);
 E void FDECL(pushch, (CHAR_P));
 E void FDECL(savech, (CHAR_P));

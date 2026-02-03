@@ -10,6 +10,19 @@
 #include "func_tab.h"
 #include <ctype.h>
 
+/* Macro for control characters */
+#ifndef C
+#define C(c) (0x1f & (c))
+#endif
+
+/* ncurses KEY_ constants for Ctrl+Arrow keys */
+#ifndef KEY_CTRL_LEFT
+#define KEY_CTRL_LEFT 554   /* 0x22a */
+#endif
+#ifndef KEY_CTRL_RIGHT
+#define KEY_CTRL_RIGHT 569  /* 0x239 */
+#endif
+
 #if defined(FILENAME_CMP) && !defined(strcasecmp)
 #define strcasecmp FILENAME_CMP
 #endif
@@ -123,6 +136,412 @@ static nhmenu *nhmenus = NULL;  /* NetHack menu array */
 /* Get a line of text from the player, such as asking for a character name
    or a wish.  Note: EDIT_GETLIN not supported for popup prompting. */
 
+/* Forward declaration for enhanced getline function */
+STATIC_OVL void curses_enhanced_getline(WINDOW *askwin, char *input, int buffer, int start_row);
+
+/* Dedicated popup dialog for naming operations with full editing support */
+void
+curses_name_input_dialog(const char *prompt, char *answer, int buffer)
+{
+    int map_height, map_width, maxwidth, winx, winy, count;
+    WINDOW *askwin, *bwin;
+    char *tmpstr;
+    int prompt_width, prompt_height = 1, height = prompt_height;
+    char input[BUFSZ];
+
+    /* if messages were being suppressed for the remainder of the turn,
+       re-activate them now that input is being requested */
+    curses_got_input();
+
+    if (buffer > (int) sizeof input)
+        buffer = (int) sizeof input;
+    /* +1: space between prompt and answer; buffer already accounts for \0 */
+    prompt_width = (int) strlen(prompt) + 1 + buffer;
+    maxwidth = term_cols - 2;
+
+    if (iflags.window_inited) {
+        curses_get_window_size(MAP_WIN, &map_height, &map_width);
+        if ((prompt_width + 2) > map_width)
+            maxwidth = map_width - 2;
+    }
+
+    if (prompt_width > maxwidth) {
+        prompt_height = curses_num_lines(prompt, maxwidth);
+        height = prompt_height;
+        prompt_width = maxwidth;
+        tmpstr = curses_break_str(prompt, maxwidth, prompt_height);
+        int remaining_buf = buffer - ((int) strlen(tmpstr) - 1);
+        if (remaining_buf > 0) {
+            height += (remaining_buf / prompt_width);
+            if ((remaining_buf % prompt_width) > 0) {
+                height++;
+            }
+        }
+        free(tmpstr);
+    }
+
+    bwin = curses_create_window(prompt_width, height,
+                                iflags.window_inited ? UP : CENTER);
+    wrefresh(bwin);
+    getbegyx(bwin, winy, winx);
+    askwin = newwin(height, prompt_width, winy + 1, winx + 1);
+
+    /* Enable keypad to handle arrow keys and special keys */
+    keypad(askwin, TRUE);
+
+    for (count = 0; count < prompt_height; count++) {
+        tmpstr = curses_break_str(prompt, maxwidth, count + 1);
+        mvwaddstr(askwin, count, 0, tmpstr);
+        free(tmpstr);
+    }
+
+    /* Move to the next line for input (after the prompt) */
+    wmove(askwin, prompt_height, 0);
+
+    /* Initialize input buffer with existing content if EDIT_GETLIN is enabled */
+#ifdef EDIT_GETLIN
+    if (answer[0] != '\0') {
+        Strcpy(input, answer);
+    } else {
+        input[0] = '\0';
+    }
+#else
+    input[0] = '\0';
+#endif
+
+    /* Use enhanced input with cursor navigation */
+    curses_enhanced_getline(askwin, input, buffer, prompt_height);
+
+    Strcpy(answer, input);
+    delwin(askwin);
+    delwin(bwin);
+
+    /* Refresh the main game windows to clear the dialog */
+    if (iflags.window_inited) {
+        curses_refresh_nethack_windows();
+    }
+}
+
+/* Helper function to calculate cursor position from character position */
+STATIC_OVL void
+calc_cursor_pos(int pos, int start_row, int start_col, int win_width,
+                int *out_row, int *out_col)
+{
+    int row = start_row;
+    int col = start_col + pos;
+
+    /* Handle line wrapping */
+    while (col >= win_width) {
+        col -= win_width;
+        row++;
+    }
+
+    *out_row = row;
+    *out_col = col;
+}
+
+/* Enhanced text input with cursor navigation support */
+STATIC_OVL void
+curses_enhanced_getline(WINDOW *askwin, char *input, int buffer, int start_row)
+{
+    int ch, pos = 0, len = 0;
+    int max_len = buffer - 1;
+    int cur_row = start_row, cur_col = 0;
+    int win_height, win_width;
+    int start_col = 0;  /* Column where input starts on the first line */
+
+    getmaxyx(askwin, win_height, win_width);
+
+    /* Get the starting column position for input */
+    getyx(askwin, cur_row, start_col);
+    cur_col = start_col;  /* Initialize cursor column to starting position */
+
+    /* Initialize with existing content if EDIT_GETLIN is enabled */
+#ifdef EDIT_GETLIN
+    if (input[0] != '\0') {
+        len = (int) strlen(input);
+        if (len > max_len)
+            len = max_len;
+        pos = len;
+        /* Display the pre-filled text */
+        waddstr(askwin, input);
+        wrefresh(askwin);
+        /* Get the actual cursor position after displaying text (handles wrapping) */
+        getyx(askwin, cur_row, cur_col);
+    }
+#endif
+
+    noecho();  /* Don't echo control characters as ^X */
+    curs_set(1);
+    /* Set a timeout to allow ncurses to properly assemble escape sequences */
+    wtimeout(askwin, 100);
+
+    for (;;) {
+        wmove(askwin, cur_row, cur_col);
+        wrefresh(askwin);
+        ch = wgetch(askwin);
+
+        /* Handle timeout - just continue without processing */
+        if (ch == ERR)
+            continue;
+
+        if (ch == '\n' || ch == '\r') {
+            /* End of input */
+            input[len] = '\0';
+            break;
+        } else if (ch == '\033') {
+            /* Escape - could be escape sequence or cancel input */
+            int next_ch = wgetch(askwin);
+            if (next_ch == '[') {
+                /* This is an escape sequence like ESC [ A (up arrow) */
+                int seq_ch = wgetch(askwin);
+
+                /* Check for modifier sequences like ESC [ 1 ; 5 C (Ctrl+Right) */
+                if (seq_ch == '1' || seq_ch == '5') {
+                    /* This might be a modifier sequence, read the rest */
+                    int modifier_ch = wgetch(askwin);
+                    if (modifier_ch == ';') {
+                        /* Format: ESC [ 1 ; 5 C or ESC [ 5 ; 5 C */
+                        int mod_val = wgetch(askwin);  /* Should be '5' for Ctrl */
+                        int final_ch = wgetch(askwin);  /* Should be 'C' or 'D' */
+
+                        if (final_ch == 'C') {
+                            /* Ctrl+Right - jump word forward */
+                            while (pos < len && input[pos] == ' ')
+                                pos++;
+                            while (pos < len && input[pos] != ' ')
+                                pos++;
+                            calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+                        } else if (final_ch == 'D') {
+                            /* Ctrl+Left - jump word backward */
+                            if (pos > 0) {
+                                pos--;
+                                while (pos > 0 && input[pos] == ' ')
+                                    pos--;
+                                while (pos > 0 && input[pos - 1] != ' ')
+                                    pos--;
+                            }
+                            calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+                        }
+                    } else if (modifier_ch == 'C') {
+                        /* ESC [ 5 C format (Ctrl+Right) */
+                        while (pos < len && input[pos] == ' ')
+                            pos++;
+                        while (pos < len && input[pos] != ' ')
+                            pos++;
+                        calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+                    } else if (modifier_ch == 'D') {
+                        /* ESC [ 5 D format (Ctrl+Left) */
+                        if (pos > 0) {
+                            pos--;
+                            while (pos > 0 && input[pos] == ' ')
+                                pos--;
+                            while (pos > 0 && input[pos - 1] != ' ')
+                                pos--;
+                        }
+                        calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+                    }
+                } else if (seq_ch == 'A') {
+                    /* Up arrow - not used, ignore */
+                } else if (seq_ch == 'B') {
+                    /* Down arrow - not used, ignore */
+                } else if (seq_ch == 'C') {
+                    /* Right arrow - move cursor right */
+                    if (pos < len) {
+                        pos++;
+                        calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+                    }
+                } else if (seq_ch == 'D') {
+                    /* Left arrow - move cursor left */
+                    if (pos > 0) {
+                        pos--;
+                        calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+                    }
+                } else if (seq_ch == 'H') {
+                    /* Home key - move to beginning */
+                    pos = 0;
+                    calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+                } else if (seq_ch == 'F') {
+                    /* End key - move to end */
+                    pos = len;
+                    calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+                }
+            } else if (next_ch == 'O') {
+                /* Alternative escape sequence format: ESC O X */
+                int seq_ch = wgetch(askwin);
+                if (seq_ch == 'A') {
+                    /* Up arrow */
+                } else if (seq_ch == 'B') {
+                    /* Down arrow */
+                } else if (seq_ch == 'C') {
+                    /* Right arrow */
+                    if (pos < len) {
+                        pos++;
+                        calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+                    }
+                } else if (seq_ch == 'D') {
+                    /* Left arrow */
+                    if (pos > 0) {
+                        pos--;
+                        calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+                    }
+                } else if (seq_ch == 'H') {
+                    /* Home key */
+                    pos = 0;
+                    calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+                } else if (seq_ch == 'F') {
+                    /* End key */
+                    pos = len;
+                    calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+                }
+            } else {
+                /* Not an escape sequence, treat as cancel */
+                input[0] = '\033';
+                input[1] = '\0';
+                break;
+            }
+        } else if (ch == erase_char || ch == '\b' || ch == KEY_BACKSPACE) {
+            /* Backspace - delete character before cursor */
+            if (pos > 0) {
+                pos--;
+                len--;
+                /* Shift remaining characters left */
+                for (int i = pos; i < len; i++)
+                    input[i] = input[i + 1];
+                input[len] = '\0';
+                /* Redraw from cursor position */
+                calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+                wmove(askwin, cur_row, cur_col);
+                wclrtoeol(askwin);
+                waddstr(askwin, &input[pos]);
+            }
+        } else if (ch == KEY_DC || ch == C('d')) {
+            /* Delete key or Ctrl+D - delete character at cursor */
+            if (pos < len) {
+                /* Shift remaining characters left */
+                for (int i = pos; i < len - 1; i++)
+                    input[i] = input[i + 1];
+                len--;
+                input[len] = '\0';
+                /* Redraw from cursor position */
+                calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+                wmove(askwin, cur_row, cur_col);
+                wclrtoeol(askwin);
+                waddstr(askwin, &input[pos]);
+            }
+        } else if (ch == KEY_CTRL_LEFT) {
+            /* Ctrl+Left - jump word backward */
+            if (pos > 0) {
+                pos--;
+                while (pos > 0 && input[pos] == ' ')
+                    pos--;
+                while (pos > 0 && input[pos - 1] != ' ')
+                    pos--;
+            }
+            calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+        } else if (ch == KEY_CTRL_RIGHT) {
+            /* Ctrl+Right - jump word forward */
+            while (pos < len && input[pos] == ' ')
+                pos++;
+            while (pos < len && input[pos] != ' ')
+                pos++;
+            calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+        } else if (ch == KEY_LEFT || ch == C('b')) {
+            /* Left arrow or Ctrl+B - move cursor left */
+            if (pos > 0) {
+                pos--;
+                calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+            }
+        } else if (ch == KEY_RIGHT || ch == C('f')) {
+            /* Right arrow or Ctrl+F - move cursor right */
+            if (pos < len) {
+                pos++;
+                calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+            }
+        } else if (ch == KEY_HOME || ch == C('a')) {
+            /* Home or Ctrl+A - move to beginning */
+            pos = 0;
+            calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+        } else if (ch == KEY_END || ch == C('e')) {
+            /* End or Ctrl+E - move to end */
+            pos = len;
+            calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+        } else if (ch == C('w')) {
+            /* Ctrl+W - delete word before cursor */
+            if (pos > 0) {
+                int new_pos = pos;
+                /* Skip trailing spaces */
+                while (new_pos > 0 && input[new_pos - 1] == ' ')
+                    new_pos--;
+                /* Skip word characters */
+                while (new_pos > 0 && input[new_pos - 1] != ' ')
+                    new_pos--;
+                /* Delete from new_pos to pos */
+                for (int i = new_pos; i < len - (pos - new_pos); i++)
+                    input[i] = input[i + (pos - new_pos)];
+                len -= (pos - new_pos);
+                pos = new_pos;
+                input[len] = '\0';
+                /* Redraw from new position */
+                calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+                wmove(askwin, cur_row, cur_col);
+                wclrtoeol(askwin);
+                waddstr(askwin, &input[pos]);
+            }
+        } else if (ch == kill_char || ch == C('u')) {
+            /* Ctrl+U - delete from beginning to cursor */
+            if (pos > 0) {
+                /* Shift remaining characters left */
+                for (int i = 0; i < len - pos; i++)
+                    input[i] = input[i + pos];
+                len -= pos;
+                pos = 0;
+                input[len] = '\0';
+                /* Redraw entire line */
+                calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+                cur_col = 0;
+                cur_row = start_row;
+                wmove(askwin, cur_row, cur_col);
+                wclrtoeol(askwin);
+                waddstr(askwin, input);
+            }
+        } else if (ch == C('?')) {
+            /* Ctrl+? - show help */
+            wmove(askwin, cur_row + 2, 0);
+            wclrtoeol(askwin);
+            waddstr(askwin, "Editing keys: Arrows/Ctrl+B/F=move, Home/Ctrl+A=start, End/Ctrl+E=end, Del/Ctrl+D=delete, Ctrl+W=word, Ctrl+U=line");
+            wmove(askwin, cur_row, cur_col);
+            wrefresh(askwin);
+            /* Wait for a key to dismiss help */
+            wgetch(askwin);
+            /* Clear help line and redraw input */
+            wmove(askwin, cur_row + 2, 0);
+            wclrtoeol(askwin);
+            wmove(askwin, cur_row, cur_col);
+            continue;
+        } else if ((unsigned char) ch >= 32 && ch != 127 && len < max_len) {
+            /* Regular character - insert at cursor */
+            /* Shift characters right to make room */
+            for (int i = len; i > pos; i--)
+                input[i] = input[i - 1];
+            input[pos] = (char) ch;
+            len++;
+            pos++;
+            input[len] = '\0';
+            /* Redraw from beginning of input */
+            calc_cursor_pos(0, start_row, start_col, win_width, &cur_row, &cur_col);
+            wmove(askwin, cur_row, cur_col);
+            wclrtoeol(askwin);
+            waddstr(askwin, input);
+            /* Move cursor to new position */
+            calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+        }
+    }
+
+    curs_set(0);
+    noecho();
+}
+
 void
 curses_line_input_dialog(const char *prompt, char *answer, int buffer)
 {
@@ -173,6 +592,9 @@ curses_line_input_dialog(const char *prompt, char *answer, int buffer)
     getbegyx(bwin, winy, winx);
     askwin = newwin(height, prompt_width, winy + 1, winx + 1);
 
+    /* Enable keypad to handle arrow keys and special keys */
+    keypad(askwin, TRUE);
+
     for (count = 0; count < prompt_height; count++) {
         tmpstr = curses_break_str(prompt, maxwidth, count + 1);
         mvwaddstr(askwin, count, 0, tmpstr);
@@ -185,15 +607,24 @@ curses_line_input_dialog(const char *prompt, char *answer, int buffer)
         free(tmpstr);
     }
 
-    echo();
-    curs_set(1);
-    wgetnstr(askwin, input, buffer - 1);
-    curs_set(0);
+    /* Initialize input buffer with existing content if EDIT_GETLIN is enabled */
+#ifdef EDIT_GETLIN
+    if (answer[0] != '\0') {
+        Strcpy(input, answer);
+    } else {
+        input[0] = '\0';
+    }
+#else
+    input[0] = '\0';
+#endif
+
+    /* Use enhanced input with cursor navigation */
+    curses_enhanced_getline(askwin, input, buffer, prompt_height);
+
     Strcpy(answer, input);
     werase(bwin);
     delwin(bwin);
     curses_destroy_win(askwin);
-    noecho();
 }
 
 

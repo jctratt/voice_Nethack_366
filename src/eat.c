@@ -406,6 +406,7 @@ struct obj *old_obj, *new_obj;
 STATIC_OVL void
 do_reset_eat()
 {
+    reset_occ_interrupt();
     debugpline0("do_reset_eat...");
     if (context.victual.piece) {
         context.victual.o_id = 0;
@@ -439,6 +440,16 @@ eatfood(VOID_ARGS)
     if (!context.victual.eating)
         return 0;
 
+    /* Initialize interruption control on first eating callback */
+    if (!context.occ_interrupt.active) {
+        init_occ_interrupt();
+    }
+
+    /* Check if we've hit our limits (actions or HP) */
+    if (handle_occ_limits()) {
+        return 0; /* Stop eating */
+    }
+
     if (++context.victual.usedtime <= context.victual.reqtime) {
         if (bite())
             return 0;
@@ -456,6 +467,7 @@ boolean message;
     struct obj *piece = context.victual.piece;
 
     piece->in_use = TRUE;
+    reset_occ_interrupt();
     occupation = 0; /* do this early, so newuhs() knows we're done */
     newuhs(FALSE);
     if (nomovemsg) {

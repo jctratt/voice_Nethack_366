@@ -105,6 +105,15 @@ struct novel_tracking { /* for choosing random passage when reading novel */
        passage from the Death Quotes section of dat/tribute */
 };
 
+struct occ_interrupt_info { /* occupation interruption control */
+    unsigned last_threat_id;     /* m_id of last monster that triggered prompt */
+    int start_hp;                /* HP when occupation started */
+    int hp_budget;               /* max HP loss allowed (0 = no limit) */
+    int actions_remaining;       /* actions left (0 = no limit) */
+    Bitfield(continue_mode, 1);  /* if 1, continue without prompts */
+    Bitfield(active, 1);         /* is interruption control active? */
+};
+
 struct context_info {
     unsigned ident;         /* social security number for each monster */
     unsigned no_of_wizards; /* 0, 1 or 2 (wizard and his shadow) */
@@ -140,6 +149,7 @@ struct context_info {
     struct obj_split objsplit; /* track most recently split object stack */
     struct tribute_info tribute;
     struct novel_tracking novel;
+    struct occ_interrupt_info occ_interrupt;
 };
 
 extern NEARDATA struct context_info context;

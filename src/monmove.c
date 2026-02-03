@@ -125,8 +125,11 @@ register struct monst *mtmp;
         /* can see it now, or sense it and would normally see it */
         && (canseemon(mtmp) || (sensemon(mtmp) && couldsee(x, y)))
         && mtmp->mcanmove && !noattacks(mtmp->data)
-        && !onscary(u.ux, u.uy, mtmp))
-        stop_occupation();
+        && !onscary(u.ux, u.uy, mtmp)) {
+        /* Check if player wants to continue occupation with limit control */
+        if (!check_occ_interrupt(mtmp))
+            stop_occupation();
+    }
 
     return rd;
 }

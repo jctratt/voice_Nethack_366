@@ -5,6 +5,11 @@
 
 #include "hack.h"
 
+/* Forward declaration for curses popup dialog */
+#ifdef CURSES_GRAPHICS
+extern void curses_name_input_dialog(const char *prompt, char *answer, int buffer);
+#endif
+
 STATIC_DCL char *NDECL(nextmbuf);
 STATIC_DCL void FDECL(getpos_help, (BOOLEAN_P, const char *));
 STATIC_DCL int FDECL(CFDECLSPEC cmp_coord_distu, (const void *, const void *));
@@ -32,6 +37,57 @@ nextmbuf()
 
     bufidx = (bufidx + 1) % NUMMBUF;
     return bufs[bufidx];
+}
+
+/* Persistent object type naming system - tracks user-assigned names for object types */
+STATIC_OVL char *NEARDATA objtype_names[NUM_OBJECTS] = DUMMY;
+
+/* Get the persistent name for an object type, if one exists */
+STATIC_OVL const char *
+get_objtype_name(otyp)
+int otyp;
+{
+    if (otyp >= 0 && otyp < NUM_OBJECTS && objtype_names[otyp])
+        return objtype_names[otyp];
+    return (const char *) 0;
+}
+
+/* Helper function to get input with proper dialog handling */
+STATIC_OVL void
+get_name_input(const char *prompt, char *answer, int buffer)
+{
+#ifdef CURSES_GRAPHICS
+    /* Use dedicated curses popup dialog for better editing support */
+    if (WINDOWPORT("curses")) {
+        curses_name_input_dialog(prompt, answer, buffer);
+        return;
+    }
+#endif
+    /* Fall back to standard getlin for other window ports */
+    getlin(prompt, answer);
+}
+
+/* Set the persistent name for an object type */
+STATIC_OVL void
+set_objtype_name(otyp, name)
+int otyp;
+const char *name;
+{
+    if (otyp < 0 || otyp >= NUM_OBJECTS)
+        return;
+
+    /* Free old name if it exists */
+    if (objtype_names[otyp]) {
+        free((genericptr_t) objtype_names[otyp]);
+        objtype_names[otyp] = (char *) 0;
+    }
+
+    /* Set new name if provided */
+    if (name && *name) {
+        int len = (int) strlen(name) + 1;
+        objtype_names[otyp] = (char *) alloc((unsigned) len);
+        Strcpy(objtype_names[otyp], name);
+    }
 }
 
 /* function for getpos() to highlight desired map locations.
@@ -1164,7 +1220,7 @@ do_mname()
     if (has_mname(mtmp))
         Strcpy(buf, MNAME(mtmp));
 #endif
-    getlin(qbuf, buf);
+    get_name_input(qbuf, buf, BUFSZ);
     if (!*buf || *buf == '\033')
         return;
     /* strip leading and trailing spaces; unnames monster if all spaces */
@@ -1208,7 +1264,7 @@ do_oname(obj)
 register struct obj *obj;
 {
     char *bufp, buf[BUFSZ], bufcpy[BUFSZ], qbuf[QBUFSZ];
-    const char *aname;
+    const char *aname, *descr;
     short objtyp;
 
     /* Do this now because there's no point in even asking for a name */
@@ -1223,10 +1279,35 @@ register struct obj *obj;
     buf[0] = '\0';
 #ifdef EDIT_GETLIN
     /* if there's an existing name, make it be the default answer */
-    if (has_oname(obj))
+    if (has_oname(obj)) {
         Strcpy(buf, ONAME(obj));
+    } else {
+        /* Check for persistent object type name */
+        const char *objtype_name = get_objtype_name(obj->otyp);
+        if (objtype_name) {
+            Strcpy(buf, objtype_name);
+        } else {
+            /* Auto-append item description for unidentified items */
+            descr = OBJ_DESCR(objects[obj->otyp]);
+            if (descr && !obj->dknown) {
+                /* For unidentified items, start with the appearance description */
+                Strcpy(buf, descr);
+            }
+        }
+        /* Auto-append price information for unpaid items */
+        if (is_unpaid(obj)) {
+            long price = unpaid_cost(obj, TRUE);
+            if (price > 0) {
+                if (buf[0] != '\0')
+                    Strcat(buf, " ");
+                Sprintf(eos(buf), "[%ld %s]", price, currency(price));
+            }
+        }
+    }
 #endif
-    getlin(qbuf, buf);
+    /* Display help text for editing keys */
+    pline("(Arrows/Ctrl+B/F=move, Home/Ctrl+A=start, End/Ctrl+E=end, Del/Ctrl+D=delete, Ctrl+W=word, Ctrl+U=line)");
+    get_name_input(qbuf, buf, BUFSZ);
     if (!*buf || *buf == '\033')
         return;
     /* strip leading and trailing spaces; unnames item if all spaces */
@@ -1277,6 +1358,11 @@ register struct obj *obj;
     ++via_naming; /* This ought to be an argument rather than a static... */
     obj = oname(obj, buf);
     --via_naming; /* ...but oname() is used in a lot of places, so defer. */
+
+    /* Save the name to persistent object type naming system */
+    if (*buf) {
+        set_objtype_name(obj->otyp, buf);
+    }
 }
 
 struct obj *
@@ -1470,27 +1556,54 @@ struct obj *obj;
 {
     char buf[BUFSZ], qbuf[QBUFSZ];
     char **str1;
+    const char *descr;
 
     if (!obj->dknown)
         return; /* probably blind */
     flush_screen(1); /* buffered updates might matter to player's response */
 
-    if (obj->oclass == POTION_CLASS && obj->fromsink)
+    if (obj->oclass == POTION_CLASS && obj->fromsink) {
         /* kludge, meaning it's sink water */
         Sprintf(qbuf, "Call a stream of %s fluid:",
                 OBJ_DESCR(objects[obj->otyp]));
-    else
+    } else {
         (void) safe_qbuf(qbuf, "Call ", ":", obj,
                          docall_xname, simpleonames, "thing");
+    }
     /* pointer to old name */
     str1 = &(objects[obj->otyp].oc_uname);
     buf[0] = '\0';
 #ifdef EDIT_GETLIN
     /* if there's an existing name, make it be the default answer */
-    if (*str1)
+    if (*str1) {
         Strcpy(buf, *str1);
+    } else {
+        /* Check for persistent object type name */
+        const char *objtype_name = get_objtype_name(obj->otyp);
+        if (objtype_name) {
+            Strcpy(buf, objtype_name);
+        } else {
+            /* Auto-append item description for unidentified items */
+            descr = OBJ_DESCR(objects[obj->otyp]);
+            if (descr && !obj->dknown) {
+                /* For unidentified items, start with the appearance description */
+                Strcpy(buf, descr);
+            }
+        }
+        /* Auto-append price information for unpaid items */
+        if (is_unpaid(obj)) {
+            long price = unpaid_cost(obj, TRUE);
+            if (price > 0) {
+                if (buf[0] != '\0')
+                    Strcat(buf, " ");
+                Sprintf(eos(buf), "[%ld %s]", price, currency(price));
+            }
+        }
+    }
 #endif
-    getlin(qbuf, buf);
+    /* Display help text for editing keys */
+    pline("(Arrows/Ctrl+B/F=move, Home/Ctrl+A=start, End/Ctrl+E=end, Del/Ctrl+D=delete, Ctrl+W=word, Ctrl+U=line)");
+    get_name_input(qbuf, buf, BUFSZ);
     if (!*buf || *buf == '\033')
         return;
 
@@ -1507,9 +1620,13 @@ struct obj *obj;
             *str1 = (char *) 0;
             undiscover_object(obj->otyp);
         }
+        /* Clear persistent name when uncalling */
+        set_objtype_name(obj->otyp, (const char *) 0);
     } else {
         *str1 = dupstr(buf);
         discover_object(obj->otyp, FALSE, TRUE); /* possibly add to disco[] */
+        /* Save to persistent object type naming system */
+        set_objtype_name(obj->otyp, buf);
     }
 }
 

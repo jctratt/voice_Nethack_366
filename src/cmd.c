@@ -250,6 +250,7 @@ timed_occupation(VOID_ARGS)
 void
 reset_occupations()
 {
+    reset_occ_interrupt();
     reset_remarm();
     reset_pick();
     reset_trapset();

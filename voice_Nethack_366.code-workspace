@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"zenMode.hideActivityBar": true,
+		"workbench.editor.editorActionsLocation": "titleBar"
+	}
+}

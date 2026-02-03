@@ -14,6 +14,11 @@
 #include "wintty.h"
 #include "func_tab.h"
 
+/* Macro for control characters */
+#ifndef C
+#define C(c) (0x1f & (c))
+#endif
+
 char morc = 0; /* tell the outside world what char you chose */
 STATIC_VAR boolean suppress_history;
 STATIC_DCL boolean FDECL(ext_cmd_getlin_hook, (char *));
@@ -48,6 +53,7 @@ register char *bufp;
 getlin_hook_proc hook;
 {
     register char *obufp = bufp;
+    register char *curpos = bufp;  /* cursor position in buffer */
     register int c;
     struct WinDesc *cw = wins[WIN_MESSAGE];
     boolean doprev = 0;
@@ -65,9 +71,11 @@ getlin_hook_proc hook;
        previous getlin()) as default input */
     addtopl(obufp);
     bufp = eos(obufp);
+    curpos = bufp;  /* cursor starts at end */
 #else
     /* !EDIT_GETLIN: bufp is output only; init it to empty */
     *bufp = '\0';
+    curpos = bufp;
 #endif
 
     for (;;) {
@@ -78,6 +86,7 @@ getlin_hook_proc hook;
             if (c == '\033' && obufp[0] != '\0') {
                 obufp[0] = '\0';
                 bufp = obufp;
+                curpos = bufp;
                 tty_clear_nhwindow(WIN_MESSAGE);
                 cw->maxcol = cw->maxrow;
                 addtopl(query);
@@ -92,6 +101,7 @@ getlin_hook_proc hook;
         if (ttyDisplay->intr) {
             ttyDisplay->intr--;
             *bufp = 0;
+            curpos = bufp;
         }
         if (c == '\020') { /* ctrl-P */
             if (iflags.prevmsg_window != 's') {
@@ -106,6 +116,7 @@ getlin_hook_proc hook;
                 addtopl(" ");
                 *bufp = 0;
                 addtopl(obufp);
+                curpos = bufp;
             } else {
                 if (!doprev)
                     (void) tty_doprev_message(); /* need two initially */
@@ -121,23 +132,27 @@ getlin_hook_proc hook;
             addtopl(" ");
             *bufp = 0;
             addtopl(obufp);
+            curpos = bufp;
         }
         if (c == erase_char || c == '\b') {
-            if (bufp != obufp) {
+            if (curpos != obufp) {
 #ifdef NEWAUTOCOMP
                 char *i;
 
 #endif /* NEWAUTOCOMP */
-                bufp--;
+                curpos--;
+                /* Delete character and shift remaining text left */
+                for (char *p = curpos; *p; ++p)
+                    *p = *(p + 1);
+                bufp = eos(obufp);
 #ifndef NEWAUTOCOMP
                 putsyms("\b \b"); /* putsym converts \b */
 #else                             /* NEWAUTOCOMP */
                 putsyms("\b");
-                for (i = bufp; *i; ++i)
+                for (i = curpos; *i; ++i)
                     putsyms(" ");
-                for (; i > bufp; --i)
+                for (; i > curpos; --i)
                     putsyms("\b");
-                *bufp = 0;
 #endif                            /* NEWAUTOCOMP */
             } else
                 tty_nhbell();
@@ -146,6 +161,77 @@ getlin_hook_proc hook;
             *bufp = 0;
 #endif /* not NEWAUTOCOMP */
             break;
+        } else if (c == C('h') || c == C('b')) {
+            /* Ctrl+H or Ctrl+B: move cursor left */
+            if (curpos > obufp) {
+                curpos--;
+                putsyms("\b");
+            } else
+                tty_nhbell();
+        } else if (c == C('l') || c == C('f')) {
+            /* Ctrl+L or Ctrl+F: move cursor right */
+            if (*curpos) {
+                putsyms(curpos);
+                curpos++;
+            } else
+                tty_nhbell();
+        } else if (c == C('a')) {
+            /* Ctrl+A: move to beginning */
+            while (curpos > obufp) {
+                curpos--;
+                putsyms("\b");
+            }
+        } else if (c == C('e')) {
+            /* Ctrl+E: move to end */
+            while (*curpos) {
+                putsyms(curpos);
+                curpos++;
+            }
+        } else if (c == C('d')) {
+            /* Ctrl+D: delete character at cursor */
+            if (*curpos) {
+                char *p = curpos;
+                while (*p) {
+                    *p = *(p + 1);
+                    ++p;
+                }
+                bufp = eos(obufp);
+                /* Redraw from cursor to end */
+                for (p = curpos; *p; ++p)
+                    putsyms(" ");
+                for (p = eos(obufp); p > curpos; --p)
+                    putsyms("\b");
+            }
+        } else if (c == C('w')) {
+            /* Ctrl+W: delete word before cursor */
+            if (curpos > obufp) {
+                char *p = curpos;
+                /* Skip spaces before cursor */
+                while (p > obufp && *(p - 1) == ' ')
+                    p--;
+                /* Skip word characters */
+                while (p > obufp && *(p - 1) != ' ')
+                    p--;
+                /* Delete from p to curpos */
+                char *q = p;
+                while (*curpos) {
+                    *q = *curpos;
+                    ++q;
+                    ++curpos;
+                }
+                *q = '\0';
+                bufp = eos(obufp);
+                curpos = p;
+                /* Redraw from new position */
+                for (int i = 0; i < (int)(eos(obufp) - p); ++i)
+                    putsyms(" ");
+                for (int i = 0; i < (int)(eos(obufp) - p); ++i)
+                    putsyms("\b");
+                for (p = curpos; *p; ++p)
+                    putsyms(p);
+                for (p = eos(obufp); p > curpos; --p)
+                    putsyms("\b");
+            }
         } else if (' ' <= (unsigned char) c && c != '\177'
                    /* avoid isprint() - some people don't have it
                       ' ' is not always a printing char */
@@ -154,42 +240,60 @@ getlin_hook_proc hook;
             char *i = eos(bufp);
 
 #endif /* NEWAUTOCOMP */
-            *bufp = c;
-            bufp[1] = 0;
-            putsyms(bufp);
-            bufp++;
+            /* Insert character at cursor position */
+            char *p = eos(obufp);
+            while (p > curpos) {
+                *p = *(p - 1);
+                --p;
+            }
+            *curpos = c;
+            curpos++;
+            bufp = eos(obufp);
+            putsyms(curpos - 1);
             if (hook && (*hook)(obufp)) {
-                putsyms(bufp);
+                putsyms(curpos);
 #ifndef NEWAUTOCOMP
                 bufp = eos(bufp);
 #else  /* NEWAUTOCOMP */
                 /* pointer and cursor left where they were */
-                for (i = bufp; *i; ++i)
+                for (i = curpos; *i; ++i)
                     putsyms("\b");
-            } else if (i > bufp) {
+            } else if (i > curpos) {
                 char *s = i;
 
                 /* erase rest of prior guess */
-                for (; i > bufp; --i)
+                for (; i > curpos; --i)
                     putsyms(" ");
-                for (; s > bufp; --s)
+                for (; s > curpos; --s)
                     putsyms("\b");
 #endif /* NEWAUTOCOMP */
             }
         } else if (c == kill_char || c == '\177') { /* Robert Viduya */
             /* this test last - @ might be the kill_char */
 #ifndef NEWAUTOCOMP
-            while (bufp != obufp) {
-                bufp--;
+            while (curpos != obufp) {
+                curpos--;
                 putsyms("\b \b");
             }
 #else  /* NEWAUTOCOMP */
-            for (; *bufp; ++bufp)
+            for (; *curpos; ++curpos)
                 putsyms(" ");
-            for (; bufp != obufp; --bufp)
+            for (; curpos != obufp; --curpos)
                 putsyms("\b \b");
-            *bufp = 0;
+            *curpos = 0;
 #endif /* NEWAUTOCOMP */
+            bufp = curpos;
+        } else if (c == C('?')) {
+            /* Ctrl+? - show help */
+            pline("Editing keys: Arrows/Ctrl+B/F=move, Home/Ctrl+A=start, End/Ctrl+E=end, Del/Ctrl+D=delete, Ctrl+W=word, Ctrl+U=line");
+            tty_clear_nhwindow(WIN_MESSAGE);
+            cw->maxcol = cw->maxrow;
+            addtopl(query);
+            addtopl(" ");
+            *bufp = 0;
+            addtopl(obufp);
+            curpos = bufp;
+            continue;
         } else
             tty_nhbell();
     }

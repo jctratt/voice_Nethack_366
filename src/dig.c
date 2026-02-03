@@ -251,8 +251,20 @@ dig(VOID_ARGS)
     if (u.uswallow || !uwep || (!ispick && !is_axe(uwep))
         || !on_level(&context.digging.level, &u.uz)
         || ((context.digging.down ? (dpx != u.ux || dpy != u.uy)
-                                  : (distu(dpx, dpy) > 2))))
+                                  : (distu(dpx, dpy) > 2)))) {
+        reset_occ_interrupt();
         return 0;
+    }
+
+    /* Initialize interruption control on first digging callback */
+    if (!context.occ_interrupt.active) {
+        init_occ_interrupt();
+    }
+
+    /* Check if we've hit our limits (actions or HP) */
+    if (handle_occ_limits()) {
+        return 0; /* Stop digging */
+    }
 
     if (context.digging.down) {
         if (!dig_check(BY_YOU, TRUE, u.ux, u.uy))
@@ -308,6 +320,7 @@ dig(VOID_ARGS)
             (void) dighole(FALSE, FALSE, (coord *) 0);
             (void) memset((genericptr_t) &context.digging, 0,
                           sizeof context.digging);
+            reset_occ_interrupt();
             return 0; /* done with digging */
         }
 
@@ -357,6 +370,7 @@ dig(VOID_ARGS)
             context.digging.level.dnum = 0;
             context.digging.level.dlevel = -1;
         }
+        reset_occ_interrupt();
         return 0;
     }
 
@@ -466,6 +480,7 @@ dig(VOID_ARGS)
         context.digging.quiet = FALSE;
         context.digging.level.dnum = 0;
         context.digging.level.dlevel = -1;
+        reset_occ_interrupt();
         return 0;
     } else { /* not enough effort has been spent yet */
         static const char *const d_target[6] = { "",        "rock", "statue",

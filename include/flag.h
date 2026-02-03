@@ -98,6 +98,7 @@ struct flag {
 #ifdef VOICE_ENABLED
     boolean voice_enabled;   // New global boolean for voice enablement
     char voice_command[BUFSZ]; // New global buffer for voice command
+    char voice_engine[BUFSZ];  /* New engine path/name */
 #endif /* VOICE_ENABLED */
     int end_top, end_around; /* describe desired score list */
     unsigned moonphase;

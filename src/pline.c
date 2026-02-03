@@ -3,7 +3,8 @@
 /*-Copyright (c) Robert Patrick Rankin, 2018. */
 /* NetHack may be freely redistributed.  See license for details. */
 
-#define NEED_VARARGS /* Uses ... */ /* comment line for pre-compiled headers */
+#define NEED_VARARGS /* Uses ... */ /* comment line for pre-compiled headers \
+                                     */
 #include "hack.h"
 #ifdef CURSES_GRAPHICS
 #include <curses.h>
@@ -12,9 +13,10 @@
 #include <regex.h>
 #include <string.h>
 
-#define BIGBUFSZ (5 * BUFSZ) /* big enough to format a 4*BUFSZ string (from
-                              * config file parsing) with modest decoration;
-                              * result will then be truncated to BUFSZ-1 */
+#define BIGBUFSZ                                                \
+    (5 * BUFSZ) /* big enough to format a 4*BUFSZ string (from  \
+                 * config file parsing) with modest decoration; \
+                 * result will then be truncated to BUFSZ-1 */
 
 #ifdef VOICE_ENABLED
 #include "config.h"
@@ -23,20 +25,26 @@ char *strip_patterns(const char *message);
 void sanitize_message(const char *src, char *dest);
 #ifdef __linux__ /* begin OS */
 #define TTS_CMD "/usr/bin/espeak"
-//#define TTS_CMD "~/.local/bin/gtts-cli"
+// #define TTS_CMD "~/.local/bin/gtts-cli"
 #elif defined(_WIN32) || defined(_WIN64)
 #define TTS_CMD "powershell"
 #elif defined(__APPLE__) && defined(__MACH__)
 #define TTS_CMD "/usr/bin/say"
 #endif /* end OS */
 
-int check_command_available(const char *command_to_check) {
+int
+check_command_available(const char *command_to_check)
+{
     char check_command[256];
-    snprintf(check_command, sizeof(check_command), "command -v %s >/dev/null 2>&1 || { echo 'not found'; exit 1; }", command_to_check);
+    snprintf(check_command, sizeof(check_command),
+             "command -v %s >/dev/null 2>&1 || { echo 'not found'; exit 1; }",
+             command_to_check);
 
-    #ifdef _WIN32
-    snprintf(check_command, sizeof(check_command), "where %s >nul 2>nul && (echo found) || (echo not found)", command_to_check);
-    #endif
+#ifdef _WIN32
+    snprintf(check_command, sizeof(check_command),
+             "where %s >nul 2>nul && (echo found) || (echo not found)",
+             command_to_check);
+#endif
 
     FILE *fp = popen(check_command, "r");
     if (!fp) {
@@ -54,12 +62,18 @@ int check_command_available(const char *command_to_check) {
     return 0;
 }
 
-void check_tts_availability() {
+void
+check_tts_availability()
+{
     if (!check_command_available(TTS_CMD)) {
-        fprintf(stderr, "\nVoice output is not available. Please ensure '%s' is installed:\n", TTS_CMD);
+        fprintf(stderr,
+                "\nVoice output is not available. Please ensure '%s' is "
+                "installed:\n",
+                TTS_CMD);
         // Platform-specific installation instructions
         fprintf(stderr, "Voice output has been disabled.\n\n");
-        flags.voice_enabled = 0; // Disable voice output at runtime if TTS not available
+        flags.voice_enabled =
+            0; // Disable voice output at runtime if TTS not available
     }
 }
 
@@ -69,10 +83,10 @@ void check_tts_availability();
 static unsigned pline_flags = 0;
 static char prevmsg[BUFSZ];
 
-static void FDECL(putmesg, (const char *));
-static char *FDECL(You_buf, (int));
+static void FDECL(putmesg, (const char *) );
+static char *FDECL(You_buf, (int) );
 #if defined(MSGHANDLER) && (defined(POSIX_TYPES) || defined(__GNUC__))
-static void FDECL(execplinehandler, (const char *));
+static void FDECL(execplinehandler, (const char *) );
 #endif
 
 #ifdef DUMPLOG
@@ -81,9 +95,7 @@ unsigned saved_pline_index = 0; /* slot in saved_plines[] to use next */
 char *saved_plines[DUMPLOG_MSG_COUNT] = { (char *) 0 };
 
 /* keep the most recent DUMPLOG_MSG_COUNT messages */
-void
-dumplogmsg(line)
-const char *line;
+void dumplogmsg(line) const char *line;
 {
     /*
      * TODO:
@@ -123,9 +135,7 @@ dumplogfreemessages()
 #endif
 
 /* keeps windowprocs usage out of pline() */
-static void
-putmesg(line)
-const char *line;
+static void putmesg(line) const char *line;
 {
     int attr = ATR_NONE;
 
@@ -147,8 +157,7 @@ const char *line;
 static void FDECL(vpline, (const char *, va_list));
 
 /*VARARGS1*/
-void
-pline
+void pline
 VA_DECL(const char *, line)
 {
     VA_START(line);
@@ -157,26 +166,23 @@ VA_DECL(const char *, line)
     VA_END();
 }
 
-# ifdef USE_STDARG
+#ifdef USE_STDARG
 static void
 vpline(const char *line, va_list the_args)
-# else
-static void
-vpline(line, the_args)
-const char *line;
+#else
+static void vpline(line, the_args) const char *line;
 va_list the_args;
-# endif
+#endif
 
 #else /* USE_STDARG | USE_VARARG */
 
-# define vpline pline
+#define vpline pline
 
 /*VARARGS1*/
-void
-pline
+void pline
 VA_DECL(const char *, line)
 #endif /* USE_STDARG | USE_VARARG */
-{       /* start of vpline() or of nested block in USE_OLDARG's pline() */
+{      /* start of vpline() or of nested block in USE_OLDARG's pline() */
     static int in_pline = 0;
     char pbuf[BIGBUFSZ]; /* will get chopped down to BUFSZ-1 if longer */
     int ln;
@@ -201,8 +207,8 @@ VA_DECL(const char *, line)
         vlen = vsnprintf(pbuf, sizeof pbuf, line, VA_ARGS);
 #if (NH_DEVEL_STATUS != NH_STATUS_RELEASED) && defined(DEBUG)
         if (vlen >= (int) sizeof pbuf)
-            panic("%s: truncation of buffer at %zu of %d bytes",
-                  "pline", sizeof pbuf, vlen);
+            panic("%s: truncation of buffer at %zu of %d bytes", "pline",
+                  sizeof pbuf, vlen);
 #endif
 #else
         Vsprintf(pbuf, line, VA_ARGS);
@@ -282,7 +288,7 @@ VA_DECL(const char *, line)
     if (msgtyp == MSGTYP_STOP)
         display_nhwindow(WIN_MESSAGE, TRUE); /* --more-- */
 
- pline_done:
+pline_done:
     --in_pline;
     return;
 
@@ -445,7 +451,7 @@ VA_DECL(const char *, line)
     else if (Unaware)
         YouPrefix(tmp, "You dream that you hear ", line);
     else
-        YouPrefix(tmp, "You hear ", line);  /* Deaf-aware */
+        YouPrefix(tmp, "You hear ", line); /* Deaf-aware */
     vpline(strcat(tmp, line), VA_ARGS);
     VA_END();
 }
@@ -505,15 +511,13 @@ VA_DECL(const char *, line)
     VA_END();
 }
 
-# ifdef USE_STDARG
+#ifdef USE_STDARG
 static void
 vraw_printf(const char *line, va_list the_args)
-# else
-static void
-vraw_printf(line, the_args)
-const char *line;
+#else
+static void vraw_printf(line, the_args) const char *line;
 va_list the_args;
-# endif
+#endif
 
 #else /* USE_STDARG | USE_VARARG */
 
@@ -582,9 +586,7 @@ VA_DECL(const char *, s)
 #if defined(MSGHANDLER) && (defined(POSIX_TYPES) || defined(__GNUC__))
 static boolean use_pline_handler = TRUE;
 
-static void
-execplinehandler(line)
-const char *line;
+static void execplinehandler(line) const char *line;
 {
     int f;
     const char *args[3];
@@ -628,8 +630,7 @@ const char *line;
 static void FDECL(vconfig_error_add, (const char *, va_list));
 
 /*VARARGS1*/
-void
-config_error_add
+void config_error_add
 VA_DECL(const char *, str)
 {
     VA_START(str);
@@ -638,24 +639,21 @@ VA_DECL(const char *, str)
     VA_END();
 }
 
-# ifdef USE_STDARG
+#ifdef USE_STDARG
 static void
 vconfig_error_add(const char *str, va_list the_args)
-# else
-static void
-vconfig_error_add(str, the_args)
-const char *str;
+#else
+static void vconfig_error_add(str, the_args) const char *str;
 va_list the_args;
-# endif
+#endif
 
-#else /* !(USE_STDARG || USE_VARARG) => USE_OLDARGS */
+#else  /* !(USE_STDARG || USE_VARARG) => USE_OLDARGS */
 
 /*VARARGS1*/
-void
-config_error_add
+void config_error_add
 VA_DECL(const char *, str)
 #endif /* ?(USE_STDARG || USE_VARARG) */
-{       /* start of vconf...() or of nested block in USE_OLDARG's conf...() */
+{      /* start of vconf...() or of nested block in USE_OLDARG's conf...() */
 #if !defined(NO_VSNPRINTF)
     int vlen = 0;
 #endif
@@ -680,119 +678,172 @@ VA_DECL(const char *, str)
 }
 
 #ifdef VOICE_ENABLED
-void handle_voice_output(const char *message) {
+void
+handle_voice_output(const char *message)
+{
     if (flags.voice_enabled) {
-    char sayit[BUFSZ * 2];
-    char escaped_message[BUFSZ * 2] = {0}; // Increased size to account for backslashes
-    int i, j = 0;
+        char sayit[BUFSZ * 4];
+        char escaped_message[BUFSZ * 2] = {
+            0
+        }; // Increased size to account for backslashes
+        const char *engine =
+            flags.voice_engine[0] ? flags.voice_engine : TTS_CMD;
+        int i, j = 0;
 
-    const char *stripped_message = strip_patterns(message);
+        const char *stripped_message = strip_patterns(message);
 
-    // Escape double quotes in the stripped message
-    for (i = 0; stripped_message[i] != '\0' && j < sizeof(escaped_message) - 1; i++) {
-        if (stripped_message[i] == '"') {
-            escaped_message[j++] = '\\'; // Escape the quote
-        }
-        escaped_message[j++] = stripped_message[i];
-    }
-    escaped_message[j] = '\0'; // Null-terminate the string
-
-    regex_t regex;
-    int reti;
-    char msg[BUFSZ];
-    char rep[BUFSZ] = {0};
-    strncpy(msg, stripped_message, sizeof(msg) - 1); // Ensure null termination
-    msg[sizeof(msg) - 1] = '\0';
-
-    // Check VOICE_FORCE patterns first
-    struct voice_force *vf;
-    for (vf = forcelist; vf; vf = vf->next) {
-        regmatch_t pmatch[2]; // 2 for full match (0) and \1 (1)
-        reti = regcomp(&regex, vf->pattern, REG_EXTENDED); // Remove REG_NOSUB for capture groups
-        if (reti) {
-            pline("Could not compile VOICE_FORCE regex");
-            regfree(&regex);
-            return;
-        }
-
-        reti = regexec(&regex, msg, 2, pmatch, 0); // Capture up to 1 group
-        if (!reti) { // Match found in VOICE_FORCE
-            regfree(&regex);
-            // Proceed directly to voice output, skipping VOICE_EXCEPTION
-        if (vf->speak_text && strcmp(vf->speak_text, "\\1") == 0 && pmatch[1].rm_so != -1) {
-            // Extract and escape captured group \1
-            size_t len = pmatch[1].rm_eo - pmatch[1].rm_so;
-            char captured[BUFSZ];
-            strncpy(captured, msg + pmatch[1].rm_so, len);
-            captured[len] = '\0';
-            char escaped[BUFSZ * 2] = {0};
-            int k, m = 0;
-            for (k = 0; captured[k] && m < sizeof(escaped) - 1; k++) {
-                if (captured[k] == '"') escaped[m++] = '\\';
-                escaped[m++] = captured[k];
+        // Escape double quotes in the stripped message
+        for (i = 0;
+             stripped_message[i] != '\0' && j < sizeof(escaped_message) - 1;
+             i++) {
+            if (stripped_message[i] == '"') {
+                escaped_message[j++] = '\\'; // Escape the quote
             }
-            escaped[m] = '\0';
-            snprintf(sayit, sizeof(sayit), "%s %s \"%s\"", "/usr/bin/espeak", flags.voice_command, escaped);
-        } else if (vf->speak_text) {
-            // Use custom speak_text as-is (assumes no quotes needed escaping here)
-            snprintf(sayit, sizeof(sayit), "%s %s \"%s\"", "/usr/bin/espeak", flags.voice_command, vf->speak_text);
+            escaped_message[j++] = stripped_message[i];
+        }
+        escaped_message[j] = '\0'; // Null-terminate the string
+
+        regex_t regex;
+        int reti;
+        char msg[BUFSZ];
+        char rep[BUFSZ] = { 0 };
+        strncpy(msg, stripped_message,
+                sizeof(msg) - 1); // Ensure null termination
+        msg[sizeof(msg) - 1] = '\0';
+
+        // Check VOICE_FORCE patterns first
+        struct voice_force *vf;
+        for (vf = forcelist; vf; vf = vf->next) {
+            regmatch_t pmatch[2]; // 2 for full match (0) and \1 (1)
+            reti =
+                regcomp(&regex, vf->pattern,
+                        REG_EXTENDED); // Remove REG_NOSUB for capture groups
+            if (reti) {
+                pline("Could not compile VOICE_FORCE regex");
+                regfree(&regex);
+                return;
+            }
+
+            reti =
+                regexec(&regex, msg, 2, pmatch, 0); // Capture up to 1 group
+            if (!reti) { // Match found in VOICE_FORCE
+                regfree(&regex);
+                // Proceed directly to voice output, skipping VOICE_EXCEPTION
+                if (vf->speak_text && strcmp(vf->speak_text, "\\1") == 0
+                    && pmatch[1].rm_so != -1) {
+                    // Extract and escape captured group \1
+                    size_t len = pmatch[1].rm_eo - pmatch[1].rm_so;
+                    char captured[BUFSZ];
+                    strncpy(captured, msg + pmatch[1].rm_so, len);
+                    captured[len] = '\0';
+                    char escaped[BUFSZ * 2] = { 0 };
+                    int k, m = 0;
+                    for (k = 0; captured[k] && m < sizeof(escaped) - 1; k++) {
+                        if (captured[k] == '"')
+                            escaped[m++] = '\\';
+                        escaped[m++] = captured[k];
+                    }
+                    escaped[m] = '\0';
+                    if (strstr(engine, "piper")) {
+                        snprintf(sayit, sizeof(sayit), "echo \"%s\" | %s %s",
+                                 escaped, engine, flags.voice_command);
+                    } else if (strstr(engine, "gtts")) {
+                        snprintf(sayit, sizeof(sayit), "%s \"%s\" %s", engine,
+                                 escaped, flags.voice_command);
+                    } else {
+                        snprintf(sayit, sizeof(sayit), "%s %s \"%s\"", engine,
+                                 flags.voice_command, escaped);
+                    }
+                } else if (vf->speak_text) {
+                    // Use custom speak_text as-is (assumes no quotes needed
+                    // escaping here)
+                    if (strstr(engine, "piper")) {
+                        snprintf(sayit, sizeof(sayit), "echo \"%s\" | %s %s",
+                                 vf->speak_text, engine, flags.voice_command);
+                    } else if (strstr(engine, "gtts")) {
+                        snprintf(sayit, sizeof(sayit), "%s \"%s\" %s", engine,
+                                 vf->speak_text, flags.voice_command);
+                    } else {
+                        snprintf(sayit, sizeof(sayit), "%s %s \"%s\"", engine,
+                                 flags.voice_command, vf->speak_text);
+                    }
+                } else {
+                    // Default to full message
+                    if (strstr(engine, "piper")) {
+                        snprintf(sayit, sizeof(sayit), "echo \"%s\" | %s %s",
+                                 escaped_message, engine,
+                                 flags.voice_command);
+                    } else if (strstr(engine, "gtts")) {
+                        snprintf(sayit, sizeof(sayit), "%s \"%s\" %s", engine,
+                                 escaped_message, flags.voice_command);
+                    } else {
+                        snprintf(sayit, sizeof(sayit), "%s %s \"%s\"", engine,
+                                 flags.voice_command, escaped_message);
+                    }
+                }
+                (void) system(sayit);
+                flushinp();
+                return;
+            }
+            regfree(&regex);
+        }
+
+        // Check VOICE_EXCEPTION patterns (only if no VOICE_FORCE match)
+        // Compile the regex for voice exceptions
+        // Loop through all possible voice exceptions
+        struct voice_exception *ve;
+        for (ve = voicelist; ve; ve = ve->next) {
+            reti = regcomp(&regex, ve->pattern, REG_EXTENDED | REG_NOSUB);
+            if (reti) {
+                pline("Could not compile regex");
+                regfree(&regex);
+                return;
+            }
+
+            // Perform regex match
+            reti = regexec(&regex, msg, 0, NULL, 0);
+            if (!reti) { // Match found
+                // pline("exception");
+                regfree(&regex);
+                return; // Skip speaking if there's a match
+            }
+            regfree(&regex); // Free the compiled regex before moving to the
+                             // next one
+        }
+        sanitize_message(escaped_message, rep);
+
+#ifdef _WIN32
+        snprintf(sayit, sizeof(sayit), "%s -Command \"%s\"", engine, rep);
+#elif defined(__APPLE__) && defined(__MACH__)
+        snprintf(sayit, sizeof(sayit), "%s \"%s\" %s", engine, rep,
+                 flags.voice_command);
+#else
+        if (strstr(engine, "piper")) {
+            snprintf(sayit, sizeof(sayit), "echo \"%s\" | %s %s", rep, engine,
+                     flags.voice_command);
+        } else if (strstr(engine, "gtts")) {
+            snprintf(sayit, sizeof(sayit), "%s \"%s\" %s", engine, rep,
+                     flags.voice_command);
         } else {
-            // Default to full message
-            snprintf(sayit, sizeof(sayit), "%s %s \"%s\"", "/usr/bin/espeak", flags.voice_command, escaped_message);
+            snprintf(sayit, sizeof(sayit), "%s %s \"%s\"", engine,
+                     flags.voice_command, rep);
         }
-            (void)system(sayit);
-            flushinp();
-            return;
-        }
-        regfree(&regex);
-    }
-
-    // Check VOICE_EXCEPTION patterns (only if no VOICE_FORCE match)
-    // Compile the regex for voice exceptions
-    // Loop through all possible voice exceptions
-    struct voice_exception *ve;
-    for (ve = voicelist; ve; ve = ve->next) {
-        reti = regcomp(&regex, ve->pattern, REG_EXTENDED | REG_NOSUB);
-        if (reti) {
-            pline("Could not compile regex");
-            regfree(&regex);
-            return;
-        }
-
-        // Perform regex match
-        reti = regexec(&regex, msg, 0, NULL, 0);
-        if (!reti) { // Match found
-            //pline("exception");
-            regfree(&regex);
-            return; // Skip speaking if there's a match
-        }
-        regfree(&regex); // Free the compiled regex before moving to the next one
-    }
-    sanitize_message(escaped_message, rep);
-
-    #ifdef _WIN32
-        snprintf(sayit, sizeof(sayit), "%s -Command \"%s\"", TTS_CMD, rep);
-        // snprintf(sayit, sizeof(sayit), "%s \"%s\" %s", TTS_CMD, rep, flags.voice_command);
-    #elif defined(__APPLE__) && defined(__MACH__)
-        snprintf(sayit, sizeof(sayit), "%s \"%s\" %s", TTS_CMD, rep, flags.voice_command);
-        // APPLE uses 'say'
-    #else
-        // gTTS yuck; too slow for me; better hardware?
-        //pline("%s \"%s\" %s", TTS_CMD, rep, flags.voice_command); // testing
-        // espeak
-        snprintf(sayit, sizeof(sayit), "%s %s \"%s\"", TTS_CMD, flags.voice_command, rep);
-    #endif
-    // If no exception was found, proceed with voice output
-    (void)system(sayit);
-    flushinp();
+#endif
+        // If no exception was found, proceed with voice output
+        (void) system(sayit);
+        flushinp();
     }
 }
 
-char *strip_patterns(const char *message) {
+char *
+strip_patterns(const char *message)
+{
     static char result[BUFSZ];
     regex_t regex;
     regmatch_t pmatch[1];
-    const char *pattern = "\\[.*\\)|\\[.*\\]"; // matches "[...]" or "[...)" for input questions "[ynq] (n)"
+    const char *pattern =
+        "\\[.*\\)|\\[.*\\]"; // matches "[...]" or "[...)" for input questions
+                             // "[ynq] (n)"
     char error_message[100];
 
     // Compile the regex
@@ -800,7 +851,7 @@ char *strip_patterns(const char *message) {
     if (reti) {
         regerror(reti, &regex, error_message, sizeof(error_message));
         snprintf(result, BUFSZ, "Error compiling regex: %s", error_message);
-        pline("%s",result);
+        pline("%s", result);
         return result;
     }
 
@@ -818,7 +869,9 @@ char *strip_patterns(const char *message) {
     return result;
 }
 
-void sanitize_message(const char *src, char *dest) {
+void
+sanitize_message(const char *src, char *dest)
+{
     int i, j;
     for (i = 0, j = 0; src[i] != '\0' && j < BUFSZ - 1; i++) {
         if (src[i] == '_') {
