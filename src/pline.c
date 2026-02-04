@@ -36,30 +36,18 @@ int
 check_command_available(const char *command_to_check)
 {
     char check_command[256];
-    snprintf(check_command, sizeof(check_command),
-             "command -v %s >/dev/null 2>&1 || { echo 'not found'; exit 1; }",
-             command_to_check);
-
 #ifdef _WIN32
     snprintf(check_command, sizeof(check_command),
-             "where %s >nul 2>nul && (echo found) || (echo not found)",
+             "where %s >nul 2>nul",
+             command_to_check);
+#else
+    snprintf(check_command, sizeof(check_command),
+             "command -v %s >/dev/null 2>&1",
              command_to_check);
 #endif
 
-    FILE *fp = popen(check_command, "r");
-    if (!fp) {
-        fprintf(stderr, "Failed to run command\n");
-        return 0;
-    }
-
-    char result[10];
-    if (fgets(result, sizeof(result), fp) != NULL) {
-        pclose(fp);
-        return strcmp(result, "not found\n") != 0;
-    }
-
-    pclose(fp);
-    return 0;
+    int result = system(check_command);
+    return (result == 0) ? 1 : 0;
 }
 
 void

@@ -268,9 +268,8 @@ boolean border;
           /*xspace*/ BL_ENE, BL_ENEMAX,
           /*xspace*/ BL_AC,
           /*xspace*/ BL_XP, BL_EXP, BL_HD,
-          /*xspace*/ BL_TIME,
-          /*xspace*/ BL_HUNGER, BL_CAP, BL_CONDITION,
-          BL_FLUSH },
+          /*xspace*/ BL_TIME, BL_TILE,
+          /*xspace*/ BL_HUNGER, BL_CAP, BL_CONDITION },
         { BL_FLUSH, blPAD, blPAD, blPAD, blPAD, blPAD, blPAD, blPAD,
           blPAD, blPAD, blPAD, blPAD, blPAD, blPAD, blPAD }
     },
@@ -288,10 +287,10 @@ boolean border;
           /*xspace*/ BL_HUNGER, BL_CAP,
           BL_FLUSH, blPAD, blPAD },
         { BL_LEVELDESC,
-          /*xspace*/ BL_TIME,
+          /*xspace*/ BL_TIME, BL_TILE,
           /*xspecial*/ BL_CONDITION,
           BL_FLUSH, blPAD, blPAD, blPAD, blPAD, blPAD, blPAD, blPAD,
-          blPAD, blPAD, blPAD, blPAD }
+          blPAD, blPAD, blPAD }
     };
     const enum statusfields (*fieldorder)[15];
     xchar spacing[MAXBLSTATS], valline[MAXBLSTATS];
@@ -427,6 +426,7 @@ boolean border;
             case BL_XP:
             case BL_HD:
             case BL_TIME:
+            case BL_TILE:
                 spacing[fld] = status_activefields[fld] ? 1 : 0;
                 break;
             case BL_SCORE:

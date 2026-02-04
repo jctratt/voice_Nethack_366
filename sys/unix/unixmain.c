@@ -206,6 +206,10 @@ char *argv[];
 #endif
 
     process_options(argc, argv); /* command line options */
+#ifdef VOICE_ENABLED
+    extern void check_tts_availability(void);
+    check_tts_availability(); /* verify TTS command is available if voice is enabled */
+#endif
 #ifdef WINCHAIN
     commit_windowchain();
 #endif

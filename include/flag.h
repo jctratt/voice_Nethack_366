@@ -93,6 +93,8 @@ struct flag {
     boolean sparkle;         /* show "resisting" special FX (Scott Bigham) */
     boolean standout;        /* use standout for --More-- */
     boolean time;            /* display elapsed 'time' */
+    boolean tile;            /* display current tile */
+    boolean tile_description; /* show tile description text */
     boolean tombstone;       /* print tombstone */
     boolean verbose;         /* max battle info */
 #ifdef VOICE_ENABLED

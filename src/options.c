@@ -228,6 +228,8 @@ static struct Bool_Opt {
     { "status_updates", &iflags.status_updates, TRUE, DISP_IN_GAME },
     { "tiled_map", &iflags.wc_tiled_map, PREFER_TILED, DISP_IN_GAME }, /*WC*/
     { "time", &flags.time, FALSE, SET_IN_GAME },
+    { "tile", &flags.tile, TRUE, SET_IN_GAME },
+    { "tile_description", &flags.tile_description, TRUE, SET_IN_GAME },
 #ifdef TIMED_DELAY
     { "timed_delay", &flags.nap, TRUE, SET_IN_GAME },
 #else
@@ -448,10 +450,10 @@ static struct Comp_Opt {
 #ifdef VOICE_ENABLED
     { "voice_command",
       "command for external voice engine (espeak, gtts, say, etc.)",
-      sizeof flags.voice_command * 2, DISP_IN_GAME },
+      sizeof flags.voice_command * 2, SET_IN_GAME },
     { "voice_engine",
       "external voice engine path (espeak, piper, gtts-cli, etc.)",
-      sizeof flags.voice_engine * 2, DISP_IN_GAME },
+      sizeof flags.voice_engine * 2, SET_IN_GAME },
 #endif /* VOICE_ENABLED */
     { "whatis_coord", "show coordinates when auto-describing cursor position",
       1, SET_IN_GAME },
@@ -4216,7 +4218,9 @@ boolean tinitial, tfrom_file;
 #ifdef SCORE_ON_BOTL
                 || boolopt[i].addr == &flags.showscore
 #endif
-                || boolopt[i].addr == &flags.showexp) {
+                || boolopt[i].addr == &flags.showexp
+                || boolopt[i].addr == &flags.tile
+                || boolopt[i].addr == &flags.tile_description) {
                 if (VIA_WINDOWPORT())
                     status_initialize(REASSESS_ONLY);
                 context.botl = TRUE;

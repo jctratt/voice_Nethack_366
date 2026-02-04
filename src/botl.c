@@ -1074,10 +1074,11 @@ boolean reassessment; /* TRUE: just recheck fields w/o other initialization */
         fld = initblstats[i].fld;
         fldenabl = (fld == BL_SCORE) ? flags.showscore
                    : (fld == BL_TIME) ? flags.time
-                     : (fld == BL_EXP) ? (boolean) (flags.showexp && !Upolyd)
-                       : (fld == BL_XP) ? (boolean) !Upolyd
-                         : (fld == BL_HD) ? (boolean) Upolyd
-                           : TRUE;
+                     : (fld == BL_TILE) ? flags.tile
+                       : (fld == BL_EXP) ? (boolean) (flags.showexp && !Upolyd)
+                         : (fld == BL_XP) ? (boolean) !Upolyd
+                           : (fld == BL_HD) ? (boolean) Upolyd
+                             : TRUE;
 
         fieldname = initblstats[i].fldname;
         fieldfmt = (fld == BL_TITLE && iflags.wc2_hitpointbar) ? "%-30.30s"
