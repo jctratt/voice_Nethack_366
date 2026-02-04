@@ -21,6 +21,9 @@ extern const char *status_fieldnm[MAXBLSTATS];
 extern char *status_vals[MAXBLSTATS];
 extern boolean status_activefields[MAXBLSTATS];
 
+/* decode_mixed is provided by mapglyph.c for glyph decoding when needed */
+extern char *decode_mixed(char *, const char *);
+
 /* Long format fields for vertical window */
 static char *status_vals_long[MAXBLSTATS];
 
@@ -188,6 +191,8 @@ unsigned long *colormasks;
                 if (fldidx == BL_HUNGER || fldidx == BL_LEVELDESC)
                     (void) trimspaces(status_vals[fldidx]);
             }
+
+            /* BL_TILE is provided by core via status fields; no curses-only append here */
 
             /* status_vals_long[] used to be set up here even when not
                in use; it has been moved to curs_vert_status_vals() */

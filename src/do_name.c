@@ -1359,10 +1359,10 @@ register struct obj *obj;
     obj = oname(obj, buf);
     --via_naming; /* ...but oname() is used in a lot of places, so defer. */
 
-    /* Save the name to persistent object type naming system */
-    if (*buf) {
-        set_objtype_name(obj->otyp, buf);
-    }
+    /* Do not automatically save an individual object's name as the
+     * persistent object-type name.  Naming a particular instance should
+     * not change the type's canonical name used by 'call' (#name o).
+     */
 }
 
 struct obj *

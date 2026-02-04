@@ -7,6 +7,9 @@
 #ifdef CURSES_GRAPHICS
 #include <curses.h>
 #endif
+#if 0
+/* forward decl for screen description helper is provided in extern.h */
+#endif
 #ifndef LONG_MAX
 #include <limits.h>
 #endif
@@ -573,6 +576,7 @@ STATIC_VAR struct istat_s initblstats[MAXBLSTATS] = {
     INIT_BLSTAT("armor-class", " AC:%s", ANY_INT, 10, BL_AC),
     INIT_BLSTAT("HD", " HD:%s", ANY_INT, 10, BL_HD),
     INIT_BLSTAT("time", " T:%s", ANY_LONG, 20, BL_TIME),
+    INIT_BLSTAT("tile", " Tile:%s", ANY_STR, MAXVALWIDTH, BL_TILE),
     /* hunger used to be 'ANY_UINT'; see note below in bot_via_windowport() */
     INIT_BLSTAT("hunger", " %s", ANY_INT, 40, BL_HUNGER),
     INIT_BLSTATP("hitpoints", " HP:%s", ANY_INT, 10, BL_HPMAX, BL_HP),
@@ -731,6 +735,23 @@ bot_via_windowport()
 
     /* Time (moves) */
     blstats[idx][BL_TIME].a.a_long = moves;
+
+    /* Tile description: describe glyph under the player for status display */
+    {
+        char tdesc[BUFSZ];
+        const char *firstmatch = (const char *) 0;
+        struct permonst *pm = (struct permonst *) 0;
+        coord cc;
+
+        cc.x = u.ux;
+        cc.y = u.uy;
+        if (do_screen_description(cc, TRUE, 0, tdesc, &firstmatch, &pm) > 0) {
+            /* copy description (may include encoded glyph sequence) */
+            Strcpy(blstats[idx][BL_TILE].val, tdesc);
+        } else
+            blstats[idx][BL_TILE].val[0] = '\0';
+        valset[BL_TILE] = TRUE;
+    }
 
     /* Hunger */
     /* note: u.uhs is unsigned, and 3.6.1's STATUS_HILITE defined
