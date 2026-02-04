@@ -4,6 +4,11 @@
 /* NetHack may be freely redistributed.  See license for details. */
 
 #include "hack.h"
+#include <ctype.h>
+
+/* shop helper exposed from shk.c */
+extern long shop_set_cost(struct obj *, struct monst *);
+extern long shop_get_cost(struct obj *, struct monst *);
 
 /* Forward declaration for curses popup dialog */
 #ifdef CURSES_GRAPHICS
@@ -1282,17 +1287,15 @@ register struct obj *obj;
     if (has_oname(obj)) {
         Strcpy(buf, ONAME(obj));
     } else {
-        /* Check for persistent object type name */
-        const char *objtype_name = get_objtype_name(obj->otyp);
-        if (objtype_name) {
-            Strcpy(buf, objtype_name);
+        /* Do not prefill with the persistent object-type name to avoid
+           conflating per-type and per-instance names.  For unidentified
+           items use the appearance description as a hint; otherwise start
+           with an empty edit buffer. */
+        descr = OBJ_DESCR(objects[obj->otyp]);
+        if (descr && !obj->dknown) {
+            Strcpy(buf, descr);
         } else {
-            /* Auto-append item description for unidentified items */
-            descr = OBJ_DESCR(objects[obj->otyp]);
-            if (descr && !obj->dknown) {
-                /* For unidentified items, start with the appearance description */
-                Strcpy(buf, descr);
-            }
+            buf[0] = '\0';
         }
         /* Auto-append price information for unpaid items */
         if (is_unpaid(obj)) {
@@ -1570,33 +1573,174 @@ struct obj *obj;
         (void) safe_qbuf(qbuf, "Call ", ":", obj,
                          docall_xname, simpleonames, "thing");
     }
+#ifdef EDIT_GETLIN
     /* pointer to old name */
     str1 = &(objects[obj->otyp].oc_uname);
     buf[0] = '\0';
-#ifdef EDIT_GETLIN
     /* if there's an existing name, make it be the default answer */
     if (*str1) {
         Strcpy(buf, *str1);
     } else {
-        /* Check for persistent object type name */
+        /* If there's a persistent per-type runtime name, use it. */
         const char *objtype_name = get_objtype_name(obj->otyp);
         if (objtype_name) {
             Strcpy(buf, objtype_name);
         } else {
-            /* Auto-append item description for unidentified items */
-            descr = OBJ_DESCR(objects[obj->otyp]);
-            if (descr && !obj->dknown) {
-                /* For unidentified items, start with the appearance description */
-                Strcpy(buf, descr);
+            /* No persistent name: build a short random-ish candidate name
+               (<=10 chars) based on the type's short xname and append
+               compact shop/unpaid price hints when available. */
+            /* Prefer the object's appearance/pseudo-name (oc_descr) which
+               holds scroll fake-names, potion colours, wand materials, etc. */
+            const char *base = OBJ_DESCR(objects[obj->otyp]);
+            if (!base || !*base)
+                base = simpleonames(obj);
+            char tmp[BUFSZ];
+            char shortname[11];
+            const char *p;
+            int si = 0;
+
+            Strcpy(tmp, base ? base : "item");
+            if ((p = index(tmp, ' ')) != 0)
+                *(char *) p = '\0';
+            for (p = tmp; *p && si < (int) sizeof shortname - 1; ++p) {
+                if (isalnum((unsigned char) *p))
+                    shortname[si++] = (char) *p;
+                else if (si > 0 && shortname[si - 1] != '-')
+                    shortname[si++] = '-';
             }
-        }
-        /* Auto-append price information for unpaid items */
-        if (is_unpaid(obj)) {
-            long price = unpaid_cost(obj, TRUE);
-            if (price > 0) {
-                if (buf[0] != '\0')
-                    Strcat(buf, " ");
-                Sprintf(eos(buf), "[%ld %s]", price, currency(price));
+            shortname[si] = '\0';
+            if (!shortname[0])
+                Sprintf(shortname, "item%u", rn2_on_display_rng(100));
+
+            Strcpy(buf, shortname);
+            /* always include a trailing space per request */
+            Strcat(buf, " ");
+
+            /* gather compact pricing hints */
+            {
+                long buy = 0L, sell = 0L, low = 0L, high = 0L, price_base = 0L;
+                int nochrg = -1;
+                boolean show_buy_hint = FALSE;
+
+                if (is_unpaid(obj)) {
+                    buy = unpaid_cost(obj, TRUE);
+                    nochrg = -1; /* unpaid_cost already implies bill status */
+                    if (buy > 0L) {
+                        price_base = buy;
+                        show_buy_hint = TRUE;
+                    }
+                } else {
+                    buy = get_cost_of_shop_item(obj, &nochrg);
+                    if (buy > 0L && nochrg == 0) {
+                        price_base = buy;
+                        show_buy_hint = TRUE;
+                    }
+                }
+
+                if (show_buy_hint) {
+                    /* Compute a plausible low/high range for candidate types
+                       sharing the same appearance, using shop pricing helpers
+                       so we don't leak exact identity but still narrow
+                       possibilities for the player.  Fall back to a simple
+                       heuristic if we can't find a shopkeeper or any
+                       candidates. */
+                    xchar ox, oy;
+                    struct monst *shkp = 0;
+                    boolean found_range = FALSE;
+                    long low = 0L, high = 0L;
+
+                    if (get_obj_location(obj, &ox, &oy, CONTAINED_TOO)
+                        && (shkp = shop_keeper(*in_rooms(ox, oy, SHOPBASE)))
+                        && inhishop(shkp)) {
+                        /* enumerate types with the same short appearance */
+                        for (int co = 1; co < NUM_OBJECTS; ++co) {
+                            const char *cdesc = OBJ_DESCR(objects[co]);
+                            char candshort[11];
+                            int csi = 0;
+
+                            if (!cdesc || !*cdesc)
+                                continue;
+                            /* build candidate shortname the same way we built
+                               `shortname` above */
+                            Strcpy(tmp, cdesc ? cdesc : "item");
+                            if ((p = index(tmp, ' ')) != 0)
+                                *(char *) p = '\0';
+                            for (p = tmp; *p && csi < (int) sizeof candshort - 1; ++p) {
+                                if (isalnum((unsigned char) *p))
+                                    candshort[csi++] = (char) *p;
+                                else if (csi > 0 && candshort[csi - 1] != '-')
+                                    candshort[csi++] = '-';
+                            }
+                            candshort[csi] = '\0';
+                            if (!candshort[0])
+                                Sprintf(candshort, "item%u", rn2_on_display_rng(100));
+                            if (strcmp(candshort, shortname) != 0)
+                                continue;
+
+                            struct obj tmpobj;
+                            (void) memset((genericptr_t) &tmpobj, 0, sizeof tmpobj);
+                            tmpobj.otyp = co;
+                            tmpobj.quan = 1L;
+                            long p = shop_get_cost(&tmpobj, shkp);
+                            long base_price = (long) objects[co].oc_cost;
+                            if (p > 0L) {
+                                if (!found_range) {
+                                    low = base_price;
+                                    high = p;
+                                    found_range = TRUE;
+                                } else {
+                                    if (base_price < low)
+                                        low = base_price;
+                                    if (p > high)
+                                        high = p;
+                                }
+                            }
+                        }
+                    }
+
+                    if (found_range) {
+                        /* show quoted buy price, then Low/High range */
+                        Sprintf(eos(buf), "[Buy %ld] [L%ld/H%ld]", price_base,
+                                low, high);
+                        Strcat(buf, " ");
+                    } else {
+                        /* fallback: retain compact form but avoid naive /2 */
+                        sell = (buy > 0L) ? (buy / 2L) : 0L;
+                        Sprintf(eos(buf), "[Buy %ld] [%ld/%ld]", price_base,
+                                buy, sell);
+                        Strcat(buf, " ");
+                    }
+                } else if (buy == 0L && nochrg > 0) {
+                    /* Item is no-charge on the floor; if the shop would
+                       nevertheless buy it from the player, show that
+                       sell price as a hint. */
+                    xchar ox, oy;
+                    struct monst *shkp = 0;
+                    long sellprice = 0L;
+                    long buyprice = 0L;
+
+                    if (get_obj_location(obj, &ox, &oy, CONTAINED_TOO)
+                        && (shkp = shop_keeper(*in_rooms(ox, oy, SHOPBASE)))
+                        && inhishop(shkp)) {
+                        if (saleable(shkp, obj)) {
+                            sellprice = shop_set_cost(obj, shkp);
+                            buyprice = shop_get_cost(obj, shkp);
+                        }
+                    }
+                    if (sellprice > 0L) {
+                        if (buyprice > 0L) {
+                            /* show known buy price then sell price */
+                            Sprintf(eos(buf), "[%ld] [sell %ld]", buyprice,
+                                    sellprice);
+                            Strcat(buf, " ");
+                        } else {
+                            /* fallback: show sell price as primary */
+                            Sprintf(eos(buf), "[%ld] [sell %ld]", sellprice,
+                                    sellprice);
+                            Strcat(buf, " ");
+                        }
+                    }
+                }
             }
         }
     }

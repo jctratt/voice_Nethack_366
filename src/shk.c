@@ -44,6 +44,21 @@ STATIC_DCL long FDECL(check_credit, (long, struct monst *));
 STATIC_DCL void FDECL(pay, (long, struct monst *));
 STATIC_DCL long FDECL(get_cost, (struct obj *, struct monst *));
 STATIC_DCL long FDECL(set_cost, (struct obj *, struct monst *));
+/* public wrappers for internal pricing helpers used by other modules */
+long
+shop_set_cost(obj, shkp)
+struct obj *obj;
+struct monst *shkp;
+{
+    return set_cost(obj, shkp);
+}
+long
+shop_get_cost(obj, shkp)
+struct obj *obj;
+struct monst *shkp;
+{
+    return get_cost(obj, shkp);
+}
 STATIC_DCL const char *FDECL(shk_embellish, (struct obj *, long));
 STATIC_DCL long FDECL(cost_per_charge, (struct monst *, struct obj *,
                                         BOOLEAN_P));
@@ -2171,6 +2186,11 @@ register struct monst *shkp; /* if angry, impose a surcharge */
 /* returns the price of a container's content.  the price
  * of the "top" container is added in the calling functions.
  * a different price quoted for selling as vs. buying.
+ *
+ * Note: public wrappers for internal pricing helpers (e.g.
+ * `shop_set_cost`/`shop_get_cost`) are defined near the top of
+ * this file so other modules may call them.  Do not add
+ * duplicate wrappers here.
  */
 long
 contained_cost(obj, shkp, price, usell, unpaid_only)
