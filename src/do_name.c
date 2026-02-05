@@ -30,6 +30,9 @@ STATIC_DCL boolean FDECL(alreadynamed, (struct monst *, char *, char *));
 STATIC_DCL void FDECL(do_oname, (struct obj *));
 STATIC_PTR char *FDECL(docall_xname, (struct obj *));
 STATIC_DCL void NDECL(namefloorobj);
+/* Prototype for helper that computes a shop price low/high range for an
+   object appearance; implemented later (after price_label_matches). */
+STATIC_DCL boolean FDECL(compute_shop_price_range_for_obj, (struct obj *, struct monst *, long *, long *));
 STATIC_DCL char *FDECL(bogusmon, (char *,char *));
 
 extern const char what_is_an_unknown_object[]; /* from pager.c */
@@ -1655,49 +1658,11 @@ struct obj *obj;
                     if (get_obj_location(obj, &ox, &oy, CONTAINED_TOO)
                         && (shkp = shop_keeper(*in_rooms(ox, oy, SHOPBASE)))
                         && inhishop(shkp)) {
-                        /* enumerate types with the same short appearance */
-                        for (int co = 1; co < NUM_OBJECTS; ++co) {
-                            const char *cdesc = OBJ_DESCR(objects[co]);
-                            char candshort[11];
-                            int csi = 0;
-
-                            if (!cdesc || !*cdesc)
-                                continue;
-                            /* build candidate shortname the same way we built
-                               `shortname` above */
-                            Strcpy(tmp, cdesc ? cdesc : "item");
-                            if ((p = index(tmp, ' ')) != 0)
-                                *(char *) p = '\0';
-                            for (p = tmp; *p && csi < (int) sizeof candshort - 1; ++p) {
-                                if (isalnum((unsigned char) *p))
-                                    candshort[csi++] = (char) *p;
-                                else if (csi > 0 && candshort[csi - 1] != '-')
-                                    candshort[csi++] = '-';
-                            }
-                            candshort[csi] = '\0';
-                            if (!candshort[0])
-                                Sprintf(candshort, "item%u", rn2_on_display_rng(100));
-                            if (strcmp(candshort, shortname) != 0)
-                                continue;
-
-                            struct obj tmpobj;
-                            (void) memset((genericptr_t) &tmpobj, 0, sizeof tmpobj);
-                            tmpobj.otyp = co;
-                            tmpobj.quan = 1L;
-                            long p = shop_get_cost(&tmpobj, shkp);
-                            long base_price = (long) objects[co].oc_cost;
-                            if (p > 0L) {
-                                if (!found_range) {
-                                    low = base_price;
-                                    high = p;
-                                    found_range = TRUE;
-                                } else {
-                                    if (base_price < low)
-                                        low = base_price;
-                                    if (p > high)
-                                        high = p;
-                                }
-                            }
+                        long tl = 0L, th = 0L;
+                        if (compute_shop_price_range_for_obj(obj, shkp, &tl, &th)) {
+                            low = tl;
+                            high = th;
+                            found_range = TRUE;
                         }
                     }
 
@@ -2601,6 +2566,124 @@ const char *fragment;
         tok = end + 1;
     }
     return TRUE;
+}
+
+/* Compute a reasonable low/high shop price range for items sharing the
+   same visible label as `obj`, using the same candidate filtering and
+   pricing helpers used by the interactive price-identify code.  Returns
+   TRUE and fills *plow/*phigh when at least one candidate with a known
+   shop price is found. */
+STATIC_OVL boolean
+compute_shop_price_range_for_obj(struct obj *obj, struct monst *shkp, long *plow, long *phigh)
+{
+    boolean found = FALSE;
+    long low = 0L, high = 0L;
+    char target[BUFSZ];
+    char cand[BUFSZ];
+    char *tname = safe_typename(obj->otyp);
+
+    /* Prefer a descriptive label if safe_typename falls back to a
+       placeholder like "glorkum[...]". */
+    if (tname && strncmp(tname, "glorkum[", 8) == 0) {
+        const char *desc = OBJ_DESCR(objects[obj->otyp]);
+        if (desc && *desc)
+            Strcpy(target, desc);
+        else
+            Strcpy(target, tname);
+    } else {
+        Strcpy(target, tname ? tname : "");
+    }
+
+    /* Enumerate candidate types and apply the same filtering rules as
+       `price_identify()`.  Restricting to the same object class helps
+       avoid unrelated noisy matches. */
+    for (int co = 1; co < NUM_OBJECTS; ++co) {
+        if (objects[co].oc_class != objects[obj->otyp].oc_class)
+            continue;
+
+        char *inamep = safe_typename(co);
+        if (inamep && strncmp(inamep, "glorkum[", 8) == 0) {
+            const char *desc = OBJ_DESCR(objects[co]);
+            if (desc && *desc)
+                Strcpy(cand, desc);
+            else
+                Strcpy(cand, inamep);
+        } else {
+            Strcpy(cand, inamep ? inamep : "");
+        }
+
+        /* Apply the same content-based filters as price-identify */
+        if (strncmp(cand, "glorkum[", 8) == 0)
+            continue;
+        if (objects[co].oc_class == WAND_CLASS && !strstr(cand, " of "))
+            continue;
+        if (objects[co].oc_class == SCROLL_CLASS && !strstri(cand, "scroll") && !strstri(cand, " of "))
+            continue;
+
+        /* consider this candidate only if its canonical tokens appear in
+           the target label, or vice versa */
+        if (!price_label_matches(target, cand) && !price_label_matches(cand, target))
+            continue;
+
+        struct obj tmpobj;
+        (void) memset((genericptr_t) &tmpobj, 0, sizeof tmpobj);
+        tmpobj.otyp = co;
+        tmpobj.quan = 1L;
+
+        /* Compute both the normal shop price and a surcharge variant (as
+           Price ID does by setting a non-zero o_id).  Use the max as the
+           high bound and a sensible non-zero min as the low bound when
+           objects[co].oc_cost is zero. */
+        long p1 = 0L, p2 = 0L;
+        if (shkp) {
+            p1 = shop_get_cost(&tmpobj, shkp);
+            {
+                struct obj tmpobj2 = tmpobj;
+                tmpobj2.o_id = 4; /* trigger surcharge branch */
+                p2 = shop_get_cost(&tmpobj2, shkp);
+            }
+        } else {
+            struct monst fake_shkp;
+            (void) memset((genericptr_t) &fake_shkp, 0, sizeof fake_shkp);
+            fake_shkp.m_id = 1; /* default non-zero id */
+            neweshk(&fake_shkp);
+            p1 = shop_get_cost(&tmpobj, &fake_shkp);
+            {
+                struct obj tmpobj2 = tmpobj;
+                tmpobj2.o_id = 4;
+                p2 = shop_get_cost(&tmpobj2, &fake_shkp);
+            }
+            free_eshk(&fake_shkp);
+            dealloc_mextra(&fake_shkp);
+        }
+
+        long pmax = (p1 > p2) ? p1 : p2;
+        long pmin_nonzero = 0L;
+        if (p1 > 0L && p2 > 0L)
+            pmin_nonzero = (p1 < p2) ? p1 : p2;
+        else
+            pmin_nonzero = (p1 > 0L) ? p1 : p2;
+
+        long base_price = (long) objects[co].oc_cost;
+        if (pmax > 0L) {
+            long cand_low = (base_price > 0L) ? base_price : pmin_nonzero;
+            if (!found) {
+                low = cand_low;
+                high = pmax;
+                found = TRUE;
+            } else {
+                if (cand_low < low)
+                    low = cand_low;
+                if (pmax > high)
+                    high = pmax;
+            }
+        }
+    }
+
+    if (found) {
+        *plow = low; *phigh = high;
+    }
+    return found;
 }
 
 STATIC_OVL void
