@@ -5,6 +5,9 @@
 
 #include "hack.h"
 #include <ctype.h>
+#ifdef CURSES_GRAPHICS
+#include "wincurs.h"
+#endif
 
 /* shop helper exposed from shk.c */
 extern long shop_set_cost(struct obj *, struct monst *);
@@ -2540,3 +2543,426 @@ int *idx;
 }
 
 /*do_name.c*/
+
+/* normalize query/candidate strings for price-id comparisons */
+STATIC_OVL void
+price_normalize_text(buf)
+char *buf;
+{
+    char *p;
+
+    for (p = buf; *p; ++p) {
+        if (letter(*p) || digit(*p))
+            *p = lowc(*p);
+        else
+            *p = ' ';
+    }
+    mungspaces(buf);
+}
+
+STATIC_OVL boolean
+price_label_matches(label, fragment)
+const char *label;
+const char *fragment;
+{
+    char canon_label[BUFSZ];
+    char canon_frag[QBUFSZ];
+    char *tok;
+    char *end;
+    char saved;
+
+    Strcpy(canon_label, label);
+    if (fragment && fragment[0])
+        Strcpy(canon_frag, fragment);
+    else
+        canon_frag[0] = '\0';
+
+    price_normalize_text(canon_label);
+    price_normalize_text(canon_frag);
+
+    if (!canon_frag[0])
+        return TRUE;
+
+    tok = canon_frag;
+    while (*tok) {
+        while (*tok == ' ')
+            ++tok;
+        if (!*tok)
+            break;
+        end = tok;
+        while (*end && *end != ' ')
+            ++end;
+        saved = *end;
+        *end = '\0';
+        if (!strstr(canon_label, tok))
+            return FALSE;
+        if (!saved)
+            break;
+        tok = end + 1;
+    }
+    return TRUE;
+}
+
+STATIC_OVL void
+price_refresh(winid win, BOOLEAN_P block)
+{
+#ifdef CURSES_GRAPHICS
+    if (WINDOWPORT("curses") && !block) {
+        /* If this is a menu window, ask the curses port to render it
+           without engaging the select loop.  This prevents the menu from
+           consuming keystrokes while still presenting a popup UI. */
+        curses_display_nhmenu_nonblocking(win);
+        return;
+    }
+    if (WINDOWPORT("curses") && block) {
+        /* For blocking cases use the normal blocking display */
+        curses_refresh_nhwin(win);
+        return;
+    }
+#endif
+    display_nhwindow(win, block);
+}
+
+/* Extended command: Price identification
+ * Interactive persistent input: live-updating list in the message window
+ * while typing; a blocking menu is shown on Enter with final matches.
+ */
+STATIC_OVL int
+price_choose_mode(void)
+{
+    winid win; menu_item *pick_list = 0; anything any; char ch;
+
+    win = create_nhwindow(NHW_MENU);
+    start_menu(win);
+    any = zeroany; any.a_char = 'b';
+    add_menu(win, NO_GLYPH, &any, 'b', 0, ATR_NONE, "Buy prices (shopkeeper charges)", MENU_UNSELECTED);
+    any = zeroany; any.a_char = 's';
+    add_menu(win, NO_GLYPH, &any, 's', 0, ATR_NONE, "Sell prices (shopkeeper pays)", MENU_UNSELECTED);
+    end_menu(win, "Price ID - choose mode");
+    if (select_menu(win, PICK_ONE, &pick_list) > 0) {
+        ch = pick_list[0].item.a_char;
+        free((genericptr_t) pick_list);
+    } else {
+        ch = '\0';
+    }
+    destroy_nhwindow(win);
+    if (!ch) return -1;
+    if (ch == 'b') return 0;
+    if (ch == 's') return 1;
+    return -1;
+}
+
+STATIC_OVL int
+price_choose_category(void)
+{
+    winid win; menu_item *pick_list = 0; anything any; char ch;
+
+    win = create_nhwindow(NHW_MENU);
+    start_menu(win);
+    any = zeroany; any.a_char = 'a';
+    add_menu(win, NO_GLYPH, &any, 'a', 0, ATR_NONE, "armor", MENU_UNSELECTED);
+    any = zeroany; any.a_char = 'b';
+    add_menu(win, NO_GLYPH, &any, 'b', 0, ATR_NONE, "book (spellbook)", MENU_UNSELECTED);
+    any = zeroany; any.a_char = 's';
+    add_menu(win, NO_GLYPH, &any, 's', 0, ATR_NONE, "scroll", MENU_UNSELECTED);
+    any = zeroany; any.a_char = 'p';
+    add_menu(win, NO_GLYPH, &any, 'p', 0, ATR_NONE, "potion", MENU_UNSELECTED);
+    any = zeroany; any.a_char = 'w';
+    add_menu(win, NO_GLYPH, &any, 'w', 0, ATR_NONE, "wand", MENU_UNSELECTED);
+    any = zeroany; any.a_char = 'r';
+    add_menu(win, NO_GLYPH, &any, 'r', 0, ATR_NONE, "ring", MENU_UNSELECTED);
+    any = zeroany; any.a_char = 't';
+    add_menu(win, NO_GLYPH, &any, 't', 0, ATR_NONE, "tool", MENU_UNSELECTED);
+    any = zeroany; any.a_char = 'g';
+    add_menu(win, NO_GLYPH, &any, 'g', 0, ATR_NONE, "gem", MENU_UNSELECTED);
+    any = zeroany; any.a_char = 'v';
+    add_menu(win, NO_GLYPH, &any, 'v', 0, ATR_NONE, "weapon", MENU_UNSELECTED);
+    end_menu(win, "Price ID - choose category");
+    if (select_menu(win, PICK_ONE, &pick_list) > 0) {
+        ch = pick_list[0].item.a_char;
+        free((genericptr_t) pick_list);
+    } else {
+        ch = '\0';
+    }
+    destroy_nhwindow(win);
+    if (!ch) return -1;
+    switch (ch) {
+    case 'a': return ARMOR_CLASS;
+    case 'b': return SPBOOK_CLASS;
+    case 's': return SCROLL_CLASS;
+    case 'p': return POTION_CLASS;
+    case 'w': return WAND_CLASS;
+    case 'r': return RING_CLASS;
+    case 't': return TOOL_CLASS;
+    case 'g': return GEM_CLASS;
+    case 'v': return WEAPON_CLASS;
+    default: return -1;
+    }
+}
+
+int
+price_identify()
+{
+    char searchbuf[QBUFSZ];
+    int cat = 0; /* object class */
+    struct monst *shkp = (struct monst *) 0;
+    int mode = 0; /* 0 = buy, 1 = sell */
+
+    /* category chooser (moved earlier to keep muscle memory consistent) */
+    {
+        int c = price_choose_category();
+        if (c < 0) return 0;
+        cat = c;
+    }
+
+    /* buy/sell chooser */
+    {
+        int m = price_choose_mode();
+        if (m < 0) return 0;
+        mode = m;
+    }
+
+    /* interactive input loop: use a persistent menu window for popup */
+    searchbuf[0] = '\0';
+    winid datawin = WIN_ERR;
+    for (;;) {
+        int sx = 0, sy = 0, smod = 0;
+        int ch = 0;
+        winid nextwin = create_nhwindow(NHW_MENU);
+        {
+            char prompt[QBUFSZ];
+            (void) snprintf(prompt, sizeof prompt, "Search: %s", searchbuf);
+            putstr(nextwin, 0, prompt);
+        }
+        if (mode == 0) {
+            putstr(nextwin, 0, "Base  Buy1   Buy2   Item");
+        } else {
+            putstr(nextwin, 0, "Base  Sell1  Sell2  Item");
+        }
+        /* Key bindings: Ctrl-B/Ctrl-S toggle Buy/Sell. Ctrl-G: change category. */
+        putstr(nextwin, 0, "(Ctrl-B/Ctrl-S to toggle Buy/Sell; Ctrl-G to change category)");
+#ifdef DEBUG
+        {
+            char dbg[QBUFSZ];
+            (void) snprintf(dbg, sizeof dbg, "[priceid dbg] built nextwin=%d search='%s'", nextwin, searchbuf);
+            curses_debug_log(dbg);
+        }
+#endif
+
+        /* shopkeeper context (prefer local) */
+        if (*u.ushops) {
+            shkp = shop_keeper(*u.ushops);
+            if (!shkp || !inhishop(shkp)) shkp = (struct monst *) 0;
+        }
+        if (!shkp) {
+            shkp = shop_keeper(*in_rooms(u.ux, u.uy, SHOPBASE));
+            if (!shkp || !inhishop(shkp)) shkp = (struct monst *) 0;
+        }
+
+        /* parse searchbuf into name fragment and optional numeric price fragment (prefix match) */
+        char namefrag[QBUFSZ]; char pricefrag[QBUFSZ];
+        namefrag[0] = '\0'; pricefrag[0] = '\0';
+        if (searchbuf[0]) {
+            char sbuf[QBUFSZ]; Strcpy(sbuf, searchbuf);
+            for (char *tok = strtok(sbuf, " \t"); tok; tok = strtok((char *) 0, " \t")) {
+                boolean isnumeric = TRUE;
+                for (char *c = tok; *c; ++c) if (!digit(*c)) { isnumeric = FALSE; break; }
+                /* Treat the first numeric token as a price prefix filter; subsequent
+                   numeric tokens are treated as name fragments. */
+                if (isnumeric && pricefrag[0] == '\0') Strcpy(pricefrag, tok);
+                else {
+                    if (namefrag[0]) Strcat(namefrag, " ");
+                    Strcat(namefrag, tok);
+                }
+            }
+        }
+
+        /* enumerate candidates and write matches to the message window */
+        boolean found = FALSE;
+        for (int co = 1; co < NUM_OBJECTS; ++co) {
+            if (objects[co].oc_class != cat) continue;
+            struct obj tmpobj;
+            (void) memset((genericptr_t) &tmpobj, 0, sizeof tmpobj);
+            tmpobj.otyp = co; tmpobj.quan = 1L;
+            tmpobj.oclass = objects[co].oc_class;
+            /* Use safe_typename() so we display the full type (e.g., "ring of protection")
+               even if the object name is not yet 'known' to the player. */
+            char *inamep = safe_typename(co);
+            /* If safe_typename() fell back to the placeholder ("glorkum[n]")
+               prefer the object's description (OBJ_DESCR) if available. */
+            if (inamep && strncmp(inamep, "glorkum[", 8) == 0) {
+                const char *desc = OBJ_DESCR(objects[co]);
+                if (desc && *desc) inamep = (char *) desc;
+            }
+            char iname[BUFSZ]; Strcpy(iname, inamep);
+
+            /* Skip placeholder/unidentified entries like "glorkum[...]" so
+               Price ID only lists legitimate items. Log under DEBUG. */
+            if (strncmp(iname, "glorkum[", 8) == 0) {
+#ifdef DEBUG
+                char dbg[QBUFSZ];
+                (void) snprintf(dbg, sizeof dbg, "[priceid dbg] skipping placeholder otyp=%d", co);
+                curses_debug_log(dbg);
+#endif
+                continue;
+            }
+
+            /* For wands, require a phrase like "wand of ..." so we don't list
+               base-material descriptors like "pine", "silver", or "jeweled". */
+            if (objects[co].oc_class == WAND_CLASS && !strstr(iname, " of ")) {
+#ifdef DEBUG
+                char dbg[QBUFSZ];
+                (void) snprintf(dbg, sizeof dbg, "[priceid dbg] skipping non-typed wand otyp=%d name='%.40s'", co, iname);
+                curses_debug_log(dbg);
+#endif
+                continue;
+            }
+
+            /* For scrolls, skip randomized/inscription-only names (e.g., "YUM YUM")
+               and only show entries that mention "scroll" or have a " of " phrase. */
+            if (objects[co].oc_class == SCROLL_CLASS && !strstri(iname, "scroll") && !strstri(iname, " of ")) {
+#ifdef DEBUG
+                char dbg[QBUFSZ];
+                (void) snprintf(dbg, sizeof dbg, "[priceid dbg] skipping non-typed scroll otyp=%d name='%.40s'", co, iname);
+                curses_debug_log(dbg);
+#endif
+                continue;
+            }
+
+            /* case-insensitive fragment match */
+            if (namefrag[0] && !price_label_matches(iname, namefrag))
+                continue;
+
+            /* Base price from object definition */
+            long base = (long) objects[co].oc_cost;
+            long price1, price2;
+
+            /* Compute two candidate prices: the normal value and an
+               alternate possibility (e.g., the "arbitrary surcharge"
+               or different shopkeeper-offer branch).  This mirrors the
+               behavior modeled by the external "dizzyprice" tool.
+               Credit: Aubrey Raech (dizzy/dizzyprice). */
+            if (shkp) {
+                if (mode == 0) {
+                    /* Buying: normal quoted buy price */
+                    price1 = shop_get_cost(&tmpobj, shkp);
+                    /* Alternate possibility: force a non-zero o_id so
+                       oid_price_adjustment() may apply, creating the
+                       surcharge branch. */
+                    {
+                        struct obj tmpobj2 = tmpobj;
+                        tmpobj2.o_id = 4; /* non-zero id to trigger surcharge */
+                        price2 = shop_get_cost(&tmpobj2, shkp);
+                    }
+                } else {
+                    /* Selling: normal quoted sell price */
+                    price1 = shop_set_cost(&tmpobj, shkp);
+                    /* Alternate possibility: some shks give different
+                       offers depending on (m_id % 4).  Simulate that
+                       by creating a temporary shopkeeper struct with
+                       an ESHK initialized and m_id == 0 to exercise
+                       that branch.  Clean up allocated memory. */
+                    {
+                        struct monst shkp_alt;
+                        (void) memset((genericptr_t) &shkp_alt, 0, sizeof shkp_alt);
+                        neweshk(&shkp_alt); /* allocates mextra + eshk */
+                        shkp_alt.m_id = 0; /* simulate (m_id % 4) == 0 */
+                        price2 = shop_set_cost(&tmpobj, &shkp_alt);
+                        free_eshk(&shkp_alt);
+                        dealloc_mextra(&shkp_alt);
+                    }
+                }
+            } else {
+                struct monst fake_shkp;
+                (void) memset((genericptr_t) &fake_shkp, 0, sizeof fake_shkp);
+                /* default fake ID to a non-zero value so (m_id % 4) != 0 */
+                fake_shkp.m_id = 1;
+                /* ensure fake has ESHK so branches depending on has_eshk()
+                   are reachable; clean up after use to avoid leaks */
+                neweshk(&fake_shkp);
+                if (mode == 0) {
+                    price1 = shop_get_cost(&tmpobj, &fake_shkp);
+                    /* Alternate: force an o_id to show surcharge possibility */
+                    {
+                        struct obj tmpobj2 = tmpobj;
+                        tmpobj2.o_id = 4;
+                        price2 = shop_get_cost(&tmpobj2, &fake_shkp);
+                    }
+                } else {
+                    price1 = shop_set_cost(&tmpobj, &fake_shkp);
+                    /* Alternate: simulate (m_id % 4) == 0 */
+                    fake_shkp.m_id = 0;
+                    price2 = shop_set_cost(&tmpobj, &fake_shkp);
+                }
+                free_eshk(&fake_shkp);
+                dealloc_mextra(&fake_shkp);
+            }
+
+            /* If a numeric fragment was provided, do a prefix match on the price1 value */
+            if (pricefrag[0]) {
+                char qbuf[32]; (void) snprintf(qbuf, sizeof qbuf, "%ld", price1);
+                if (strncmp(qbuf, pricefrag, strlen(pricefrag)) != 0) continue;
+            }
+
+            char line[BUFSZ]; (void) snprintf(line, sizeof line, "%5ld  %6ld  %6ld  %s", base, price1, price2, iname);
+            putstr(nextwin, 0, line);
+            found = TRUE;
+        }
+        if (!found) putstr(nextwin, 0, "(no matches)");
+        /* Destroy previous popup before showing the new one to avoid
+           potential window lifecycle races in curses ports. */
+        if (datawin != WIN_ERR) {
+#ifdef DEBUG
+            char dbg[QBUFSZ];
+            (void) snprintf(dbg, sizeof dbg, "[priceid dbg] destroying old datawin=%d before drawing nextwin=%d", datawin, nextwin);
+            curses_debug_log(dbg);
+#endif
+            destroy_nhwindow(datawin);
+            datawin = WIN_ERR;
+        }
+
+        price_refresh(nextwin, FALSE);
+        datawin = nextwin;
+
+        ch = nh_poskey(&sx, &sy, &smod);
+#ifdef DEBUG
+        {
+            char dbg[QBUFSZ];
+            (void) snprintf(dbg, sizeof dbg, "[priceid dbg] got ch=%d ('%c') sx=%d sy=%d smod=%d datawin=%d", ch, (ch >= ' ' && ch < 127) ? (char) ch : '?', sx, sy, smod, datawin);
+            curses_debug_log(dbg);
+        }
+#endif
+        if (ch == '\033') { /* ESC: cancel */
+            destroy_nhwindow(datawin);
+            return 0;
+        } else if (ch == '\n' || ch == '\r') {
+            /* Enter: block on the same popup to show final results */
+            price_refresh(datawin, TRUE);
+            destroy_nhwindow(datawin);
+            return 0;
+        } else if (ch == '\002' /* Ctrl-B */ || ch == '\023' /* Ctrl-S */) {
+            /* Toggle buy/sell */
+            mode = !mode;
+            /* let loop refresh the listing */
+        } else if (ch == '\007' /* Ctrl-G */) {
+            /* Change category on-the-fly */
+            int c = price_choose_category();
+            if (c >= 0) {
+                cat = c;
+#ifdef DEBUG
+                {
+                    char dbg[QBUFSZ];
+                    (void) snprintf(dbg, sizeof dbg, "[priceid dbg] changed category to %d", cat);
+                    curses_debug_log(dbg);
+                }
+#endif
+            }
+        } else if (ch == '\b' || ch == 127) {
+            int len = (int) strlen(searchbuf);
+            if (len > 0) searchbuf[len - 1] = '\0';
+        } else if (ch >= ' ' && ch < 127 && strlen(searchbuf) < (sizeof searchbuf - 1)) {
+            int len = (int) strlen(searchbuf);
+            searchbuf[len] = (char) ch; searchbuf[len + 1] = '\0';
+        }
+    }
+}
