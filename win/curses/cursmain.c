@@ -707,6 +707,24 @@ curses_print_glyph(winid wid, XCHAR_P x, XCHAR_P y, int glyph,
     curses_putch(wid, x, y, ch, color, attr);
 }
 
+/* Draw the mapped glyph at (x,y) but force color/attribute for overlays. */
+void
+curses_draw_glyph_colored(winid wid, XCHAR_P x, XCHAR_P y, int glyph,
+                          int color, int attr)
+{
+    int ch;
+    unsigned int special;
+    /* Map glyph to character and ignore the glyph's normal color by
+       using a temporary color variable so the caller's requested color
+       remains intact. */
+    int tmpcolor;
+    mapglyph(glyph, &ch, &tmpcolor, &special, x, y, 0);
+    if (SYMHANDLING(H_DEC))
+        ch = curses_convert_glyph(ch, glyph);
+    /* Use the caller-provided color and attribute for overlays. */
+    curses_putch(wid, x, y, ch, color, attr);
+}
+
 /*
 raw_print(str)  -- Print directly to a screen, or otherwise guarantee that
                    the user sees str.  raw_print() appends a newline to str.

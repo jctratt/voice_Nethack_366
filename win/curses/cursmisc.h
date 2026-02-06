@@ -30,6 +30,13 @@ int curses_convert_attr(int attr);
 int curses_read_attrs(const char *attrs);
 char *curses_fmt_attrs(char *);
 int curses_convert_keys(int key);
+
+/* Background highlight helpers (curses only) */
+void curses_highlight_tile(int x, int y, int ch);
+void curses_clear_highlight_tile(int x, int y);
+/* Highlight a single tile with a specific color and attribute, drawing
+   the given character (temporary overlay). */
+void curses_highlight_tile_colored(int x, int y, int ch, int color, int attr);
 int curses_get_mouse(int *mousex, int *mousey, int *mod);
 void curses_mouse_support(int);
 

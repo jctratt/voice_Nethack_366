@@ -749,14 +749,26 @@ int *spell_no;
 }
 
 /* the 'Z' command -- cast a spell */
+/* forward declarations for showlines helper (implemented in cmd.c) */
+extern int NDECL(doshowlines);
+extern void clear_showlines(void);
+
 int
 docast()
 {
     int spell_no;
+    int ret = 0;
 
-    if (getspell(&spell_no))
-        return spelleffects(spell_no, FALSE);
-    return 0;
+    /* Show sight lines for the player before selecting a spell */
+    (void) doshowlines();
+
+    if (getspell(&spell_no)) {
+        ret = spelleffects(spell_no, FALSE);
+    }
+
+    /* Clear showlines on completion or cancellation */
+    clear_showlines();
+    return ret;
 }
 
 STATIC_OVL const char *

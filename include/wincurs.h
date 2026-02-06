@@ -93,6 +93,10 @@ extern void curses_wait_synch(void);
 extern void curses_cliparound(int x, int y);
 extern void curses_print_glyph(winid wid, XCHAR_P x, XCHAR_P y,
                                int glyph, int bkglyph);
+/* Draw the mapped glyph at (x,y) but force color/attribute for a temporary
+   overlay (used for sight-line rays and similar effects). */
+extern void curses_draw_glyph_colored(winid wid, XCHAR_P x, XCHAR_P y,
+                                     int glyph, int color, int attr);
 extern void curses_raw_print(const char *str);
 extern void curses_raw_print_bold(const char *str);
 extern int curses_nhgetch(void);

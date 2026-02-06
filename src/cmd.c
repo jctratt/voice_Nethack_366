@@ -8,6 +8,14 @@
 #include "lev.h"
 #include "func_tab.h"
 
+#ifdef CURSES_GRAPHICS
+/* curses highlight helpers (implemented in win/curses) */
+#include "wincurs.h"
+void curses_highlight_tile(int x, int y, int ch);
+void curses_clear_highlight_tile(int x, int y);
+void curses_highlight_tile_colored(int x, int y, int ch, int color, int attr);
+#endif
+
 /* Macros for meta and ctrl modifiers:
  *   M and C return the meta/ctrl code for the given character;
  *     e.g., (C('c') is ctrl-c
@@ -3395,6 +3403,8 @@ dotogglevoice(void) /* toggle voice_enabled */
 #endif /* VOICE_ENABLED */
 
 /* ordered by command name */
+int doshowlines(VOID_ARGS);
+
 struct ext_func_tab extcmdlist[] = {
     { '#', "#", "perform an extended command",
             doextcmd, IFBURIED | GENERALCMD },
@@ -3520,6 +3530,7 @@ struct ext_func_tab extcmdlist[] = {
                        | CMD_NOT_AVAILABLE
 #endif /* SHELL */
     },
+    { C('.'), "showlines", "show sight lines", doshowlines, IFBURIED | GENERALCMD | AUTOCOMPLETE },
     { M('s'), "sit", "sit down", dosit, AUTOCOMPLETE },
     { '\0', "stats", "show memory statistics",
             wiz_show_stats, IFBURIED | AUTOCOMPLETE | WIZMODECMD },
@@ -3714,6 +3725,8 @@ commands_init()
     /*       'g', 'G' : multiple go */
     /*       'h', 'H' : go west */
     (void) bind_key('h',    "help"); /* if number_pad is set */
+    /* alternate binding for showlines in case Ctrl-. is swallowed by terminal */
+    (void) bind_key(C('g'), "showlines");
     (void) bind_key('j',    "jump"); /* if number_pad is on */
     /*       'j', 'J', 'k', 'K', 'l', 'L', 'm', 'M', 'n', 'N' move commands */
     (void) bind_key('k',    "kick"); /* if number_pad is on */
@@ -6003,6 +6016,41 @@ readchar()
 
 /* '_' command, #travel, via keyboard rather than mouse click */
 STATIC_PTR int
+dotravel(VOID_ARGS);
+int
+doshowlines(VOID_ARGS);
+
+/* showlines state for automatic clearing */
+static coord *showlines_hits = (coord *) 0;
+static int showlines_hcnt = 0;
+static boolean showlines_active = FALSE;
+
+void
+clear_showlines(void)
+{
+    if (!showlines_active)
+        return;
+
+    if (WINDOWPORT("curses")) {
+        /* Restore saved tiles and free the hit buffer */
+        while (showlines_hcnt-- > 0) {
+            newsym(showlines_hits[showlines_hcnt].x,
+                   showlines_hits[showlines_hcnt].y);
+        }
+        free((genericptr_t) showlines_hits);
+        showlines_hits = (coord *) 0;
+        showlines_hcnt = 0;
+    } else {
+        /* For non-curses we used tmp_at; end it to clear glyphs */
+        tmp_at(DISP_END, 0);
+    }
+
+    showlines_active = FALSE;
+    /* Redraw screen to ensure no stale overlays remain */
+    docrt();
+}
+
+STATIC_PTR int
 dotravel(VOID_ARGS)
 {
     static char cmd[2];
@@ -6048,6 +6096,196 @@ dotravel(VOID_ARGS)
     iflags.travelcc.y = u.ty = cc.y;
     cmd[0] = Cmd.spkeys[NHKF_TRAVEL];
     readchar_queue = cmd;
+    return 0;
+}
+
+/* showlines command: draw 8-direction sight beams until obstacles, hold until keypress */
+int
+doshowlines(VOID_ARGS)
+{
+    static const int dxs[8] = { 0, 1, 1, 1, 0, -1, -1, -1 };
+    static const int dys[8] = { -1, -1, 0, 1, 1, 1, 0, -1 };
+    int i, sx, sy;
+    int ux = u.ux, uy = u.uy;
+    int beam_glyph = cmap_to_glyph(S_goodpos);
+
+    if (u.uswallow) {
+        pline("You can't show sight lines while swallowed.");
+        return 0;
+    }
+
+    /* initialize temporary beam glyph */
+    tmp_at(DISP_BEAM, beam_glyph);
+
+    /* clear any existing showlines so we don't stack effects */
+    clear_showlines();
+
+    /* Use curses background highlighting when available to avoid
+       covering monsters/objects.  Fallback to tmp_at() for other ports. */
+    if (WINDOWPORT("curses")) {
+        /* allocate a persistent hit buffer that we'll clear later on move */
+        showlines_hits = (coord *) alloc((unsigned) (COLNO * ROWNO * sizeof(coord)));
+        showlines_hcnt = 0;
+        /* Determine visible window bounds; unseen-area rays will project
+           to this boundary rather than stopping at known terrain. */
+        int sx0, sy0, ex, ey;
+        (void) curses_map_borders(&sx0, &sy0, &ex, &ey, -1, -1);
+
+        /* Draw rays: visible tiles are red and obey visible obstacles/monsters;
+           unseen tiles are drawn as yellow and do not stop the ray (no cheat). */
+        for (i = 0; i < 8; ++i) {
+            sx = ux; sy = uy;
+            while (1) {
+                sx += dxs[i];
+                sy += dys[i];
+                /* Stop at window boundary */
+                if (sx < sx0 || sx > ex || sy < sy0 || sy > ey)
+                    break;
+
+                if (cansee(sx, sy)) {
+                    /* visible tile: stop only on hard boundaries (where a wand would bounce)
+                       unless the tile displays as blank (player-seen blank space) in which
+                       case treat it like an unseen tile and draw a yellow ray through it. */
+                    if (!ZAP_POS(levl[sx][sy].typ) || closed_door(sx, sy)) {
+                        /* Check the displayed glyph at this location -- if it is just a blank
+                           (the player sees nothing here), don't treat it as a hard obstacle. */
+                        int bg_glyph = back_to_glyph(sx, sy);
+                        int bg_ch, bg_color; unsigned bg_spec;
+                        mapglyph(bg_glyph, &bg_ch, &bg_color, &bg_spec, sx, sy, 0);
+                        if (bg_ch == ' ') {
+                            /* Draw yellow beam in place of red and continue */
+                            int zg = zapdir_to_glyph(dxs[i], dys[i], 0);
+                            int ch_tmp, tmpcolor;
+                            unsigned spec_tmp;
+                            mapglyph(zg, &ch_tmp, &tmpcolor, &spec_tmp, sx, sy, 0);
+                            if (ch_tmp == '?') {
+                                int rch = (dxs[i] == 0) ? '|' : (dys[i] == 0 ? '-' : (dxs[i] == dys[i] ? '\\' : '/'));
+                                curses_highlight_tile_colored(sx, sy, rch, CLR_YELLOW, A_BOLD);
+                            } else {
+                                curses_draw_glyph_colored(MAP_WIN, sx, sy, zg, CLR_YELLOW, A_BOLD);
+                            }
+                            showlines_hits[showlines_hcnt].x = sx;
+                            showlines_hits[showlines_hcnt].y = sy;
+                            showlines_hcnt++;
+                            /* continue the ray */
+                        } else {
+                            break; /* stop at visible obstacle */
+                        }
+                    } else {
+                        /* normal visible open tile: draw visible red beam only if tile not occupied by object or monster */
+                        if (!OBJ_AT(sx, sy) && !m_at(sx, sy)) {
+                            int zg = zapdir_to_glyph(dxs[i], dys[i], 0);
+                            int ch_tmp, tmpcolor;
+                            unsigned spec_tmp;
+                            mapglyph(zg, &ch_tmp, &tmpcolor, &spec_tmp, sx, sy, 0);
+                            if (ch_tmp == '?') {
+                                int rch = (dxs[i] == 0) ? '|' : (dys[i] == 0 ? '-' : (dxs[i] == dys[i] ? '\\' : '/'));
+                                curses_highlight_tile_colored(sx, sy, rch, CLR_RED, A_BOLD);
+                            } else {
+                                curses_draw_glyph_colored(MAP_WIN, sx, sy, zg, CLR_RED, A_BOLD);
+                            }
+                            showlines_hits[showlines_hcnt].x = sx;
+                            showlines_hits[showlines_hcnt].y = sy;
+                            showlines_hcnt++;
+                        }
+                    }
+                } else {
+                    /* Unknown to player: draw a yellow beam glyph for every tile
+                       and continue to the window boundary (no checking/cheating). */
+                    int zg = zapdir_to_glyph(dxs[i], dys[i], 0);
+                    int ch_tmp, tmpcolor;
+                    unsigned spec_tmp;
+                    mapglyph(zg, &ch_tmp, &tmpcolor, &spec_tmp, sx, sy, 0);
+                    if (ch_tmp == '?') {
+                        int rch = (dxs[i] == 0) ? '|' : (dys[i] == 0 ? '-' : (dxs[i] == dys[i] ? '\\' : '/'));
+                        curses_highlight_tile_colored(sx, sy, rch, CLR_YELLOW, A_BOLD);
+                    } else {
+                        curses_draw_glyph_colored(MAP_WIN, sx, sy, zg, CLR_YELLOW, A_BOLD);
+                    }
+                    showlines_hits[showlines_hcnt].x = sx;
+                    showlines_hits[showlines_hcnt].y = sy;
+                    showlines_hcnt++;
+                }
+            }
+        }
+
+        if (showlines_hcnt == 0) {
+            pline("No tiles available to highlight.");
+            free((genericptr_t) showlines_hits);
+            showlines_hits = (coord *) 0;
+            showlines_hcnt = 0;
+            showlines_active = FALSE;
+        } else {
+            /* Activate the persistent showlines; they will be cleared on move */
+            showlines_active = TRUE;
+        }
+    } else {
+        /* Non-curses path: use tmp_at glyph-based highlighting */
+        int count_shown = 0;
+        for (i = 0; i < 8; ++i) {
+            sx = ux; sy = uy;
+            while (1) {
+                sx += dxs[i];
+                sy += dys[i];
+                if (!isok(sx, sy) || levl[sx][sy].typ == STONE)
+                    break;
+                if (cansee(sx, sy)) {
+                    /* visible tile: stop only on hard boundaries unless visually blank */
+                    if (!ZAP_POS(levl[sx][sy].typ) || closed_door(sx, sy)) {
+                        int bg_glyph = back_to_glyph(sx, sy);
+                        int bg_ch, bg_color; unsigned bg_spec;
+                        mapglyph(bg_glyph, &bg_ch, &bg_color, &bg_spec, sx, sy, 0);
+                        if (bg_ch == ' ') {
+                            /* treat as unseen-looking tile: draw tmp_at (yellow-ish fallback)
+                               and continue */
+                            tmp_at(sx, sy);
+                            count_shown++;
+                        } else {
+                            break;
+                        }
+                    } else {
+                        if (!m_at(sx, sy) && !OBJ_AT(sx, sy)) {
+                            tmp_at(sx, sy);
+                            count_shown++;
+                        }
+                    }
+                }
+            }
+            tmp_at(DISP_END, 0);
+            tmp_at(DISP_ALWAYS, beam_glyph);
+            for (i = 0; i < 8; ++i) {
+                sx = ux; sy = uy;
+                while (1) {
+                    sx += dxs[i];
+                    sy += dys[i];
+                    if (!isok(sx, sy) || levl[sx][sy].typ == STONE)
+                        break;
+                    if (!m_at(sx, sy) && !OBJ_AT(sx, sy)) {
+                        tmp_at(sx, sy);
+                        count_shown++;
+                    }
+                    /* If this is a hard boundary, stop only if it is not visually blank */
+                    if (!ZAP_POS(levl[sx][sy].typ) || closed_door(sx, sy)) {
+                        int bg_glyph = back_to_glyph(sx, sy);
+                        int bg_ch, bg_color; unsigned bg_spec;
+                        mapglyph(bg_glyph, &bg_ch, &bg_color, &bg_spec, sx, sy, 0);
+                        if (bg_ch == ' ')
+                            ; /* continue */
+                        else
+                            break;
+                    }
+                }
+            }
+            if (count_shown > 0) {
+                /* leave the tmp_at beam active; it will be cleared on move */
+                showlines_active = TRUE;
+            } else {
+                pline("No tiles available to highlight.");
+            }
+        }
+        /* do not wait; beam remains active until player moves */
+    }
+
     return 0;
 }
 

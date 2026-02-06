@@ -2214,17 +2214,28 @@ struct obj *otmp;
 static NEARDATA const char zap_syms[] = { WAND_CLASS, 0 };
 
 /* 'z' command (or 'y' if numbed_pad==-1) */
+/* forward declarations for showlines helper (implemented in cmd.c) */
+extern int NDECL(doshowlines);
+extern void clear_showlines(void);
+
 int
 dozap()
 {
     register struct obj *obj;
     int damage;
+    int ret = 1; /* default return value */
 
     if (check_capacity((char *) 0))
         return 0;
+
+    /* Show sight lines for the player before selecting a wand/target */
+    (void) doshowlines();
+
     obj = getobj(zap_syms, "zap");
-    if (!obj)
-        return 0;
+    if (!obj) {
+        ret = 0;
+        goto cleanup;
+    }
 
     check_unpaid(obj);
 
@@ -2234,7 +2245,8 @@ dozap()
     else if (obj->cursed && !rn2(WAND_BACKFIRE_CHANCE)) {
         backfire(obj); /* the wand blows up in your face! */
         exercise(A_STR, FALSE);
-        return 1;
+        ret = 1;
+        goto cleanup;
     } else if (!(objects[obj->otyp].oc_dir == NODIR) && !getdir((char *) 0)) {
         if (!Blind)
             pline("%s glows and fades.", The(xname(obj)));
@@ -2264,7 +2276,11 @@ dozap()
         useup(obj);
     }
     update_inventory(); /* maybe used a charge */
-    return 1;
+
+cleanup:
+    /* Clear any showlines that were active during the command */
+    clear_showlines();
+    return ret;
 }
 
 int

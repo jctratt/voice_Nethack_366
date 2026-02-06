@@ -1348,10 +1348,16 @@ u_rooted()
     return FALSE;
 }
 
+/* forward declaration for showlines clearing (implemented in cmd.c) */
+void clear_showlines(void);
+
 void
 domove()
 {
         int ux1 = u.ux, uy1 = u.uy;
+
+        /* clear any transient showlines before movement so they don't linger */
+        clear_showlines();
 
         domove_succeeded = 0L;
         domove_core();

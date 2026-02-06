@@ -696,6 +696,92 @@ clear_map()
     }
 }
 
+/*
+ * Highlight a single map tile by drawing its existing character with the
+ * highlight color/attribute.  This is purely visual and does not modify
+ * the stored map contents; it should be followed by a call to newsym()
+ * to restore the original appearance.
+ */
+void
+curses_highlight_tile(int x, int y, int ch)
+{
+    int sx, sy, ex, ey;
+    int bspace = curses_window_has_border(MAP_WIN) ? 1 : 0;
+
+    /* Ensure we have the current map boundaries; the function returns
+       TRUE only when they have changed, but we still need the values to
+       determine whether the requested tile is within view. */
+    (void) curses_map_borders(&sx, &sy, &ex, &ey, -1, -1);
+
+    if (x < sx || x > ex || y < sy || y > ey)
+        return;
+
+    /* screen coords relative to mapwin.  NetHack x coordinates are
+       1-based for map drawing; the `map` array stores characters with
+       a zero-based X index (curses_putch decrements incoming X).  Use
+       xidx for map[] access and adjust scrx accordingly. */
+    int xidx = (x > 0) ? (x - 1) : 0;
+    int scrx = xidx - sx + bspace;
+    int scry = y - sy + bspace;
+
+    nethack_char nch = map[y][xidx];
+
+    /* Use a more visible color for temporary highlights to stand out
+       better on a variety of terminal color schemes. */
+    curses_toggle_color_attr(mapwin, MORECOLOR, A_REVERSE|A_BOLD, ON);
+#ifdef PDCURSES
+    mvwaddrawch(mapwin, scry, scrx, (ch ? ch : nch.ch));
+#else
+    mvwaddch(mapwin, scry, scrx, (ch ? ch : nch.ch));
+#endif
+    curses_toggle_color_attr(mapwin, MORECOLOR, A_REVERSE|A_BOLD, OFF);
+    wnoutrefresh(mapwin);
+    doupdate();
+}
+
+void
+curses_highlight_tile_colored(int x, int y, int ch, int color, int attr)
+{
+    int sx, sy, ex, ey;
+    int bspace = curses_window_has_border(MAP_WIN) ? 1 : 0;
+
+    /* Ensure we have the current map boundaries; the function returns
+       TRUE only when they have changed, but we still need the values to
+       determine whether the requested tile is within view. */
+    (void) curses_map_borders(&sx, &sy, &ex, &ey, -1, -1);
+
+    if (x < sx || x > ex || y < sy || y > ey)
+        return;
+
+    /* screen coords relative to mapwin.  NetHack x coordinates are
+       1-based for map drawing; the `map` array stores characters with
+       a zero-based X index (curses_putch decrements incoming X).  Use
+       xidx for map[] access and adjust scrx accordingly. */
+    int xidx = (x > 0) ? (x - 1) : 0;
+    int scrx = xidx - sx + bspace;
+    int scry = y - sy + bspace;
+
+    nethack_char nch = map[y][xidx];
+
+    /* Use the caller-specified color/attribute for temporary highlights. */
+    curses_toggle_color_attr(mapwin, color, attr, ON);
+#ifdef PDCURSES
+    mvwaddrawch(mapwin, scry, scrx, (ch ? ch : nch.ch));
+#else
+    mvwaddch(mapwin, scry, scrx, (ch ? ch : nch.ch));
+#endif
+    curses_toggle_color_attr(mapwin, color, attr, OFF);
+    wnoutrefresh(mapwin);
+    doupdate();
+}
+
+void
+curses_clear_highlight_tile(int x, int y)
+{
+    /* Restore tile by triggering a normal redraw via newsym() */
+    newsym(x, y);
+}
+
 
 /* Determine visible boundaries of map, and determine if it needs to be
 based on the location of the player. */
