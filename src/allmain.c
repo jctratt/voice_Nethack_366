@@ -180,6 +180,10 @@ boolean resuming;
                     /* once-per-turn things go here */
                     /********************************/
 
+                    /* Play any pending random-monster notification recorded
+                       during actions in this move. */
+                    rndmon_msg_play_if_pending();
+
                     if (Glib)
                         glibr();
                     nh_timeout();

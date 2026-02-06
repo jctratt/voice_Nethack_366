@@ -11,6 +11,8 @@
 #include "dlb.h"
 
 #include <ctype.h>
+#include <stdio.h>
+#include <time.h>
 
 /* Misc. curses interface functions */
 
@@ -290,6 +292,28 @@ curses_num_lines(const char *str, int width)
     }
 
     return curline;
+}
+
+/* Write a debug message to disk to avoid spamming the on-screen message window.
+   Messages are appended to "nethack_debug.log" in the working directory. */
+void
+curses_debug_log(const char *msg)
+{
+    FILE *f = fopen("nethack_debug.log", "a");
+    if (!f)
+        return;
+    time_t t = time((time_t *) 0);
+    struct tm *tm = localtime(&t);
+    if (tm) {
+        char ts[64];
+        if (strftime(ts, sizeof ts, "%Y-%m-%d %H:%M:%S", tm) > 0)
+            fprintf(f, "%s %s\n", ts, msg);
+        else
+            fprintf(f, "%s\n", msg);
+    } else {
+        fprintf(f, "%s\n", msg);
+    }
+    fclose(f);
 }
 
 

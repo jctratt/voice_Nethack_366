@@ -258,8 +258,18 @@ unsigned mgflags;
             mon_color(glyph);
 #ifdef TEXTCOLOR
             /* special case the hero for `showrace' option */
-            if (iflags.use_color && is_you && flags.showrace && !Upolyd)
-                color = HI_DOMESTIC;
+            if (iflags.use_color && is_you) {
+                /* highlight ability to confuse monsters (u.umconf)
+                 * red = lots of charges (>10), bright magenta = few (1-10)
+                 * otherwise fall back to showrace handling */
+                if (u.umconf > 10L) {
+                    color = CLR_RED;
+                } else if (u.umconf > 0L) {
+                    color = CLR_BRIGHT_MAGENTA;
+                } else if (flags.showrace && !Upolyd) {
+                    color = HI_DOMESTIC;
+                }
+            }
 #endif
         }
     }

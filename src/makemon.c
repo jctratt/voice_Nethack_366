@@ -25,6 +25,122 @@ STATIC_DCL void FDECL(m_initinv, (struct monst *));
 STATIC_DCL boolean FDECL(makemon_rnd_goodpos, (struct monst *,
                                                unsigned, coord *));
 
+/* per-turn guard to avoid revealing counts when multiple random
+   monsters are generated during a single action */
+static NEARDATA long rndmon_msg_lastmoves = -1L;
+/* pending flag for normal gameplay: set when 1+ random monsters are generated
+   during a player action; the actual feeling message will be played at the
+   end of the player's turn so it doesn't leak counts during multi-creation
+   actions for fast players. */
+static NEARDATA boolean rndmon_msg_pending = FALSE;
+/* accumulated categories for monsters created during this move */
+static NEARDATA unsigned rndmon_msg_catbits = 0u;
+/* whether any of the newly-created monsters were visible to the player */
+static NEARDATA boolean rndmon_msg_visible = FALSE;
+#define RMM_BREATH   0x001u
+#define RMM_UNDEAD   0x002u
+#define RMM_SLIME    0x004u
+#define RMM_CONSTR   0x008u
+#define RMM_ETHEREAL 0x010u
+#define RMM_GENERIC  0x020u
+
+/* sense types for short cues */
+enum rmm_sense { RMM_SENSE_HEAR = 1, RMM_SENSE_FEEL = 2, RMM_SENSE_SEE = 3 };
+struct rmm_msg { const char *txt; enum rmm_sense sense; };
+
+/* candidate messages for categories (text, preferred sense) */
+static const struct rmm_msg rmm_breath_msgs[] = {
+    { "a hollow rattle.", RMM_SENSE_HEAR },
+    { "faint skittering.", RMM_SENSE_HEAR },
+    { "a wet thud.", RMM_SENSE_HEAR },
+    { "distant rasping.", RMM_SENSE_HEAR },
+    { "air curdles.", RMM_SENSE_FEEL },
+    { "abrupt chill.", RMM_SENSE_FEEL },
+    { "unseen breathing.", RMM_SENSE_HEAR }
+};
+static const struct rmm_msg rmm_undead_msgs[] = {
+    { "dry rattling.", RMM_SENSE_HEAR },
+    { "brittle clicking.", RMM_SENSE_HEAR },
+    { "dusty sigh.", RMM_SENSE_HEAR },
+    { "joints creak.", RMM_SENSE_HEAR }
+};
+static const struct rmm_msg rmm_slime_msgs[] = {
+    { "wet sliding.", RMM_SENSE_HEAR },
+    { "thick bubbling.", RMM_SENSE_HEAR },
+    { "viscous drip.", RMM_SENSE_HEAR },
+    { "soft squelch.", RMM_SENSE_HEAR }
+};
+static const struct rmm_msg rmm_construct_msgs[] = {
+    { "internal grinding.", RMM_SENSE_HEAR },
+    { "cold scraping.", RMM_SENSE_HEAR },
+    { "rhythmic ticking.", RMM_SENSE_HEAR },
+    { "metallic hum.", RMM_SENSE_HEAR }
+};
+static const struct rmm_msg rmm_ethereal_msgs[] = {
+    { "static hiss.", RMM_SENSE_HEAR },
+    { "air ripples.", RMM_SENSE_SEE },
+    { "faint keening.", RMM_SENSE_HEAR },
+    { "dissonant pulse.", RMM_SENSE_FEEL }
+};
+static const struct rmm_msg rmm_generic_msgs[] = {
+    { "uneasy.", RMM_SENSE_FEEL },
+    { "something stirs nearby.", RMM_SENSE_HEAR },
+    { "a faint disturbance.", RMM_SENSE_HEAR }
+};
+
+/* play the pending message at end-of-turn, if one was recorded during
+   the current player move */
+void
+rndmon_msg_play_if_pending()
+{
+    if (rndmon_msg_pending && rndmon_msg_lastmoves == moves) {
+        const struct rmm_msg *chosen = (const struct rmm_msg *) 0;
+        if (rndmon_msg_catbits & RMM_BREATH) {
+            int ct = sizeof rmm_breath_msgs / sizeof rmm_breath_msgs[0];
+            chosen = &rmm_breath_msgs[rn2(ct)];
+        } else if (rndmon_msg_catbits & RMM_UNDEAD) {
+            int ct = sizeof rmm_undead_msgs / sizeof rmm_undead_msgs[0];
+            chosen = &rmm_undead_msgs[rn2(ct)];
+        } else if (rndmon_msg_catbits & RMM_SLIME) {
+            int ct = sizeof rmm_slime_msgs / sizeof rmm_slime_msgs[0];
+            chosen = &rmm_slime_msgs[rn2(ct)];
+        } else if (rndmon_msg_catbits & RMM_CONSTR) {
+            int ct = sizeof rmm_construct_msgs / sizeof rmm_construct_msgs[0];
+            chosen = &rmm_construct_msgs[rn2(ct)];
+        } else if (rndmon_msg_catbits & RMM_ETHEREAL) {
+            int ct = sizeof rmm_ethereal_msgs / sizeof rmm_ethereal_msgs[0];
+            chosen = &rmm_ethereal_msgs[rn2(ct)];
+        } else if (rndmon_msg_catbits & RMM_GENERIC) {
+            int ct = sizeof rmm_generic_msgs / sizeof rmm_generic_msgs[0];
+            chosen = &rmm_generic_msgs[rn2(ct)];
+        }
+        if (chosen) {
+            /* choose appropriate output based on sense and visibility */
+            if (chosen->sense == RMM_SENSE_FEEL) {
+                You_feel("%s", chosen->txt);
+            } else if (chosen->sense == RMM_SENSE_SEE) {
+                if (rndmon_msg_visible && !Blind)
+                    You_see("%s", chosen->txt);
+                else if (!Deaf && flags.acoustics)
+                    You_hear("%s", chosen->txt);
+                else
+                    You_feel("%s", chosen->txt);
+            } else { /* RMM_SENSE_HEAR */
+                if (!Deaf && flags.acoustics)
+                    You_hear("%s", chosen->txt);
+                else
+                    You_feel("%s", chosen->txt);
+            }
+        } else
+            You_feel("anguish!");
+        rndmon_msg_pending = FALSE;
+        rndmon_msg_catbits = 0u;
+        rndmon_msg_visible = FALSE;
+        rndmon_msg_pending = FALSE;
+        rndmon_msg_catbits = 0u;
+    }
+}
+
 #define m_initsgrp(mtmp, x, y, mmf) m_initgrp(mtmp, x, y, 3, mmf)
 #define m_initlgrp(mtmp, x, y, mmf) m_initgrp(mtmp, x, y, 10, mmf)
 #define toostrong(monindx, lev) (mons[monindx].difficulty > lev)
@@ -1366,6 +1482,82 @@ int mmflags;
                               : eminp->renegade;
     }
     set_malign(mtmp); /* having finished peaceful changes */
+
+    /* If this was a randomly-chosen monster and we're not building a level,
+       give a short message once per player turn (so multi-creation events
+       like scrolls/wands don't leak counts). */
+    /* Notify for any monster created during normal gameplay (not mklev).
+       This covers monsters created by spells, traps, wandering spawns, etc.
+       We still defer to end-of-turn and suppress during level creation. */
+    if (!in_mklev) {
+        /* Sokoban gets immediate per-monster cues so the player can
+           detect potential boulder-blocking critters as they appear. */
+        if (In_sokoban(&u.uz)) {
+            const struct rmm_msg *smsg = (const struct rmm_msg *)0;
+            if (can_breathe(ptr)) {
+                int ct = sizeof rmm_breath_msgs / sizeof rmm_breath_msgs[0];
+                smsg = &rmm_breath_msgs[rn2(ct)];
+            } else if (is_undead(ptr)) {
+                int ct = sizeof rmm_undead_msgs / sizeof rmm_undead_msgs[0];
+                smsg = &rmm_undead_msgs[rn2(ct)];
+            } else if ((ptr->mlet == S_BLOB) || (ptr->mlet == S_JELLY) || (ptr->mlet == S_PUDDING) || (ptr->mlet == S_FUNGUS)) {
+                int ct = sizeof rmm_slime_msgs / sizeof rmm_slime_msgs[0];
+                smsg = &rmm_slime_msgs[rn2(ct)];
+            } else if (is_golem(ptr)) {
+                int ct = sizeof rmm_construct_msgs / sizeof rmm_construct_msgs[0];
+                smsg = &rmm_construct_msgs[rn2(ct)];
+            } else if (noncorporeal(ptr) || likes_magic(ptr) || (ptr->mlet == S_ELEMENTAL) || (ptr->mlet == S_VORTEX)) {
+                int ct = sizeof rmm_ethereal_msgs / sizeof rmm_ethereal_msgs[0];
+                smsg = &rmm_ethereal_msgs[rn2(ct)];
+            } else {
+                int ct = sizeof rmm_generic_msgs / sizeof rmm_generic_msgs[0];
+                smsg = &rmm_generic_msgs[rn2(ct)];
+            }
+            if (smsg) {
+                /* choose appropriate sense for Sokoban immediate messages */
+                if (smsg->sense == RMM_SENSE_FEEL) {
+                    You_feel("%s", smsg->txt);
+                } else if (smsg->sense == RMM_SENSE_SEE) {
+                    if (canspotmon(mtmp) && !Blind)
+                        You_see("%s", smsg->txt);
+                    else if (!Deaf && flags.acoustics)
+                        You_hear("%s", smsg->txt);
+                    else
+                        You_feel("%s", smsg->txt);
+                } else { /* default to hear */
+                    if (!Deaf && flags.acoustics)
+                        You_hear("%s", smsg->txt);
+                    else
+                        You_feel("%s", smsg->txt);
+                }
+            }
+        } else {
+            if (rndmon_msg_lastmoves != moves) {
+                rndmon_msg_pending = TRUE;
+                /* schedule for end-of-turn playback (moves will be
+                   incremented before once-per-turn processing occurs) */
+                rndmon_msg_lastmoves = moves + 1;
+                /* categorize this monster so the pending notification can be
+                   more informative (pick highest-priority category observed) */
+                if (can_breathe(ptr))
+                    rndmon_msg_catbits |= RMM_BREATH;
+                else if (is_undead(ptr))
+                    rndmon_msg_catbits |= RMM_UNDEAD;
+                else if ((ptr->mlet == S_BLOB) || (ptr->mlet == S_JELLY) || (ptr->mlet == S_PUDDING) || (ptr->mlet == S_FUNGUS))
+                    rndmon_msg_catbits |= RMM_SLIME;
+                else if (is_golem(ptr))
+                    rndmon_msg_catbits |= RMM_CONSTR;
+                else if (noncorporeal(ptr) || likes_magic(ptr) || (ptr->mlet == S_ELEMENTAL) || (ptr->mlet == S_VORTEX))
+                    rndmon_msg_catbits |= RMM_ETHEREAL;
+                else
+                    rndmon_msg_catbits |= RMM_GENERIC;
+                /* record visibility for aggregated notices */
+                if (canspotmon(mtmp))
+                    rndmon_msg_visible = TRUE;
+            }
+        }
+    }
+
     if (anymon && !(mmflags & MM_NOGRP)) {
         if ((ptr->geno & G_SGROUP) && rn2(2)) {
             m_initsgrp(mtmp, mtmp->mx, mtmp->my, mmflags);

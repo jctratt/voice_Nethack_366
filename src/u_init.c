@@ -28,14 +28,23 @@ STATIC_DCL boolean FDECL(restricted_spell_discipline, (int));
 
 static struct trobj Archeologist[] = {
     /* if adventure has a name...  idea from tan@uvm-gen */
-    { BULLWHIP, 2, WEAPON_CLASS, 1, UNDEF_BLESS },
+    /* { BULLWHIP, 2, WEAPON_CLASS, 1, UNDEF_BLESS },
     { LEATHER_JACKET, 0, ARMOR_CLASS, 1, UNDEF_BLESS },
     { FEDORA, 0, ARMOR_CLASS, 1, UNDEF_BLESS },
     { FOOD_RATION, 0, FOOD_CLASS, 3, 0 },
     { PICK_AXE, UNDEF_SPE, TOOL_CLASS, 1, UNDEF_BLESS },
     { TINNING_KIT, UNDEF_SPE, TOOL_CLASS, 1, UNDEF_BLESS },
     { TOUCHSTONE, 0, GEM_CLASS, 1, 0 },
+    { SACK, 0, TOOL_CLASS, 1, 0 }, */
+    { BULLWHIP, 2, WEAPON_CLASS, 1, 1 },
+    { LEATHER_JACKET, 1, ARMOR_CLASS, 1, 1 },
+    { FEDORA, 1, ARMOR_CLASS, 1, 1 },
+    { FOOD_RATION, 0, FOOD_CLASS, 5, 0 },
+    { PICK_AXE, 2, TOOL_CLASS, 1, 1 },
+    { TINNING_KIT, UNDEF_SPE, TOOL_CLASS, 1, 1 },
+    { TOUCHSTONE, 0, GEM_CLASS, 1, 1 },
     { SACK, 0, TOOL_CLASS, 1, 0 },
+    { OIL_LAMP, 0, TOOL_CLASS, 1, 0 },
     { 0, 0, 0, 0, 0 }
 };
 static struct trobj Barbarian[] = {

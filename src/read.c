@@ -1219,19 +1219,27 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
                      Blind ? (const char *) "tingle" : hcolor(NH_RED),
                      u.umconf ? " even more" : "");
                 u.umconf++;
+                /* refresh hero glyph and force full redraw so color change is visible immediately */
+                newsym(u.ux, u.uy);
+                docrt();
             } else {
                 if (Blind)
                     Your("%s tingle %s sharply.", makeplural(body_part(HAND)),
-                         u.umconf ? "even more" : "very");
+                         u.umconf ? "evenmore" : "very");
                 else
                     Your("%s glow a%s brilliant %s.",
                          makeplural(body_part(HAND)),
                          u.umconf ? "n even more" : "", hcolor(NH_RED));
                 /* after a while, repeated uses become less effective */
-                if (u.umconf >= 40)
+                if (u.umconf >= 40) {
                     u.umconf++;
-                else
+                    newsym(u.ux, u.uy);
+                    docrt();
+                } else {
                     u.umconf += rn1(8, 2);
+                    newsym(u.ux, u.uy);
+                    docrt();
+                }
             }
         }
         break;

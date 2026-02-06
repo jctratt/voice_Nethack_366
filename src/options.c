@@ -226,10 +226,10 @@ static struct Bool_Opt {
     { "splash_screen", &iflags.wc_splash_screen, TRUE, DISP_IN_GAME }, /*WC*/
     { "standout", &flags.standout, FALSE, SET_IN_GAME },
     { "status_updates", &iflags.status_updates, TRUE, DISP_IN_GAME },
-    { "tiled_map", &iflags.wc_tiled_map, PREFER_TILED, DISP_IN_GAME }, /*WC*/
     { "time", &flags.time, FALSE, SET_IN_GAME },
-    { "tile", &flags.tile, TRUE, SET_IN_GAME },
+    { "tiles", &flags.tile, TRUE, SET_IN_GAME },
     { "tile_description", &flags.tile_description, TRUE, SET_IN_GAME },
+    { "tiled_map", &iflags.wc_tiled_map, PREFER_TILED, DISP_IN_GAME }, /*WC*/
 #ifdef TIMED_DELAY
     { "timed_delay", &flags.nap, TRUE, SET_IN_GAME },
 #else

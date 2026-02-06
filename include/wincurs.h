@@ -121,6 +121,10 @@ extern void curses_add_nhwin(winid wid, int height, int width, int y,
                              int x, orient orientation, boolean border);
 extern void curses_add_wid(winid wid);
 extern void curses_refresh_nhwin(winid wid);
+/* Draw a menu-type NetHack window without entering the menu input loop.
+ * This renders the menu content and leaves it visible until the menu
+ * is destroyed via destroy_nhwindow(). */
+extern void curses_display_nhmenu_nonblocking(winid wid);
 extern void curses_refresh_nethack_windows(void);
 extern void curses_del_nhwin(winid wid);
 extern void curses_del_wid(winid wid);
@@ -224,6 +228,9 @@ extern void curses_prev_mesg(void);
 extern void curses_count_window(const char *count_text);
 char *curses_getmsghistory(BOOLEAN_P);
 void curses_putmsghistory(const char *, BOOLEAN_P);
+
+/* Debug logging: write debug messages to a file instead of spamming message window */
+extern void curses_debug_log(const char *msg);
 
 #endif  /* WINCURS_H */
 

@@ -5,9 +5,128 @@
 
 #include "hack.h"
 #include "lev.h"
+#include <ctype.h>
+
+/* Case-insensitive word-boundary check for the substring "Elbereth".
+   Returns TRUE only if "Elbereth" appears as a standalone word (start/end
+   or non-alpha boundaries), avoiding false positives like "nElbereth". */
+STATIC_OVL boolean
+elbereth_word_in(s)
+const char *s;
+{
+    const char *p;
+    const int elen = (int) strlen("Elbereth");
+
+    if (!s || !*s)
+        return FALSE;
+    p = strstri(s, "Elbereth");
+    while (p) {
+        /* check preceding char */
+        if (p == s || !isalpha((unsigned char)p[-1])) {
+            /* check following char */
+            if (!isalpha((unsigned char)p[elen]))
+                return TRUE;
+        }
+        p = strstri(p + 1, "Elbereth");
+    }
+    return FALSE;
+}
 
 STATIC_VAR NEARDATA struct engr *head_engr;
 STATIC_DCL const char *NDECL(blengr);
+
+/* Track whether player attempted to engrave Elbereth; defined here */
+int g_tried_elbereth = 0;
+char last_engraved_input[BUFSZ] = ""; /* the last typed engraving text */
+
+/* Case-insensitive suffix match: does `final` end with `input`? */
+STATIC_OVL boolean
+engrave_suffix_match(final, input)
+const char *final;
+const char *input;
+{
+    int lf = (int) strlen(final), li = (int) strlen(input);
+
+    if (!li || li > lf)
+        return FALSE;
+    return (!strncmpi(final + lf - li, input, li));
+}
+
+/* Called when a multi-turn engraving finishes (via afternmv) or when a
+   single-turn engraving finishes (called directly).  Prints the proper
+   message immediately so monsters react after the player has been
+   notified. */
+STATIC_DCL int NDECL(engraving_done);
+STATIC_OVL int
+engraving_done()
+{
+    int state = -1; /* -1 none, 0 Elbereth, 1 other */
+    char textbuf[BUFSZ] = "";
+    struct engr *ep = engr_at(u.ux, u.uy);
+
+    if (sengr_at("Elbereth", u.ux, u.uy, TRUE)) {
+        state = 0;
+        Strcpy(textbuf, "Elbereth");
+    } else if (ep && ep->engr_txt && ep->engr_txt[0]) {
+        state = 1;
+        Strcpy(textbuf, ep->engr_txt);
+    } else
+        state = -1;
+
+    /* If player attempted Elbereth this action, report success/failure */
+    if (g_tried_elbereth) {
+        /* If they typed something and it appears in the final engraving,
+           acknowledge a non-Elbereth success (but avoid a redundant "Success."
+           when the final result is Elbereth, since we will print
+           "You feel safer."). */
+        if (last_engraved_input[0] && state != -1
+            && engrave_suffix_match(textbuf, last_engraved_input) && state != 0) {
+            pline("Success.");
+            last_engraved_input[0] = '\0';
+        }
+
+        if (state == 0) {
+            pline("You feel safer.");
+            pending_engraving_message = 0;
+            g_has_spoken_elbereth = 1;
+            g_has_spoken_no_elbereth = 0;
+        } else {
+            pline("Your hands were too shaky.");
+            g_has_spoken_elbereth = 0;
+            g_has_spoken_no_elbereth = 1;
+            /* clear typed input after reporting failure */
+            last_engraved_input[0] = '\0';
+        }
+        g_tried_elbereth = 0;
+        last_engraving_state = state;
+        Strcpy(last_engraving_text, textbuf);
+        return 0;
+    }
+
+    /* Otherwise, detect state change (erosion/being overwritten or new elbereth)
+       and print the appropriate message immediately. */
+    if (state != last_engraving_state) {
+        /* If the most recent typed input actually appears as the suffix of
+           the new engraving, acknowledge that success unless the new
+           engraving is Elbereth (we avoid printing both "Success." and
+           "You feel safer."). */
+        if (last_engraved_input[0] && state != -1
+            && engrave_suffix_match(textbuf, last_engraved_input) && state != 0) {
+            pline("Success.");
+            last_engraved_input[0] = '\0';
+        }
+
+        if (state == 0) {
+            pline("You feel safer.");
+        } else if (last_engraving_state == 0) {
+            pline("You feel vulnerable.");
+        }
+        pending_engraving_message = 0;
+        last_engraving_state = state;
+        Strcpy(last_engraving_text, textbuf);
+    }
+    return 0;
+}
 
 char *
 random_engraving(outbuf)
@@ -301,11 +420,27 @@ boolean magical;
                 cnt = rn2(1 + 50 / (cnt + 1)) ? 0 : 1;
                 debugpline1("actually eroding %d characters", cnt);
             }
+            /* Remember whether this engraving contained Elbereth before
+               we destroy it so we can report vulnerability immediately
+               if it was erased while the player stood on it. */
+            boolean had_elbereth = (strstri(ep->engr_txt, "Elbereth") != 0);
             wipeout_text(ep->engr_txt, (int) cnt, 0);
             while (ep->engr_txt[0] == ' ')
                 ep->engr_txt++;
-            if (!ep->engr_txt[0])
+            if (!ep->engr_txt[0]) {
+                /* If an Elbereth engraving is erased while the player is on
+                   the same square, notify them immediately that they are
+                   no longer protected. */
+                if (x == u.ux && y == u.uy && had_elbereth) {
+                    pline("You feel vulnerable.");
+                    pending_engraving_message = 0;
+                    g_has_spoken_elbereth = 0;
+                    g_has_spoken_no_elbereth = 1;
+                    last_engraving_state = -1;
+                    last_engraving_text[0] = '\0';
+                }
                 del_engr(ep);
+            }
         }
     }
 }
@@ -487,6 +622,8 @@ doengrave()
     char post_engr_text[BUFSZ]; /* Text displayed after engraving prompt */
     const char *everb;          /* Present tense of engraving type */
     const char *eloc; /* Where the engraving is (ie dust/floor/...) */
+    /* Track whether the player attempted to engrave Elbereth this action */
+    static int g_tried_elbereth_local = 0; /* local per-call marker */
     char *sp;         /* Place holder for space count of engr text */
     int len;          /* # of nonspace chars of new engraving text */
     int maxelen;      /* Max allowable length of engraving text */
@@ -1031,6 +1168,37 @@ doengrave()
         if (*sp == ' ')
             len -= 1;
 
+    /* Detect whether the player attempted to engrave Elbereth (case-insensitive).
+       If so, remember that attempt so we can report success/failure immediately
+       after engraving finishes.  This also handles multi-step engraving when the
+       concatenation of the existing engraving + the newly typed text forms
+       "Elbereth" (e.g., writing "Elber" then adding "eth"). */
+    if (len > 0) {
+        char combine[BUFSZ];
+
+        /* build what the new engraving text would be if added to existing */
+        if (oep && oep->engr_txt && oep->engr_txt[0])
+            Strcpy(combine, oep->engr_txt);
+        else
+            combine[0] = '\0';
+        /* append the new typed text */
+        (void) strncat(combine, ebuf, BUFSZ - (int) strlen(combine) - 1);
+
+        /* Use word-boundary check to avoid false positives like "nElbereth". */
+        if (elbereth_word_in(ebuf) || elbereth_word_in(combine)) {
+            g_tried_elbereth = 1;
+            g_tried_elbereth_local = 1;
+        } else
+            g_tried_elbereth_local = 0;
+
+        /* Remember the exact string the user typed this action so we can
+           acknowledge success when it actually appears in the final engraving. */
+        Strcpy(last_engraved_input, ebuf);
+    } else {
+        g_tried_elbereth_local = 0;
+        last_engraved_input[0] = '\0';
+    }
+
     if (len == 0 || index(ebuf, '\033')) {
         if (zapwand) {
             if (!Blind)
@@ -1157,6 +1325,100 @@ doengrave()
 
     if (post_engr_text[0])
         pline("%s", post_engr_text);
+
+    /* If this engraving finished immediately, handle message now.  For
+       multi-turn engraving, register an afternmv handler so we can
+       deliver the message right when the engraving action completes. */
+    if (multi == 0) {
+        /* immediate finish */
+        if (g_tried_elbereth_local) {
+            /* user tried to engrave Elbereth; check final result */
+            if (sengr_at("Elbereth", u.ux, u.uy, TRUE)) {
+                pline("You feel safer.");
+                /* clear any deferred pending message */
+                pending_engraving_message = 0;
+                g_has_spoken_elbereth = 1;
+                g_has_spoken_no_elbereth = 0;
+            } else {
+                pline("Your hands were too shaky.");
+                g_has_spoken_elbereth = 0;
+                g_has_spoken_no_elbereth = 1;
+            }
+            /* Update tracking state now so bot() doesn't also schedule a message */
+            {
+                struct engr *ep2 = engr_at(u.ux, u.uy);
+                if (sengr_at("Elbereth", u.ux, u.uy, TRUE)) {
+                    last_engraving_state = 0;
+                    Strcpy(last_engraving_text, "Elbereth");
+                } else if (ep2 && ep2->engr_txt && ep2->engr_txt[0]) {
+                    last_engraving_state = 1;
+                    Strcpy(last_engraving_text, ep2->engr_txt);
+                } else {
+                    last_engraving_state = -1;
+                    last_engraving_text[0] = '\0';
+                }
+                pending_engraving_message = 0;
+                last_engraved_input[0] = '\0';
+            }
+            g_tried_elbereth = 0;
+        } else {
+            /* Examine final engraving to determine outcome and messages. */
+            struct engr *ep2 = engr_at(u.ux, u.uy);
+            int new_state = -1; /* -1 none, 0 Elbereth, 1 other */
+            char epbuf[BUFSZ] = "";
+
+            if (sengr_at("Elbereth", u.ux, u.uy, TRUE)) {
+                new_state = 0;
+                Strcpy(epbuf, "Elbereth");
+            } else if (ep2 && ep2->engr_txt && ep2->engr_txt[0]) {
+                new_state = 1;
+                Strcpy(epbuf, ep2->engr_txt);
+            } else {
+                new_state = -1;
+            }
+
+            /* If the player typed some text, make sure it survived. If not,
+               report shaky hands; otherwise acknowledge non-Elbereth success. */
+            if (last_engraved_input[0]) {
+                if (!ep2 || !engrave_suffix_match(ep2->engr_txt, last_engraved_input)) {
+                    pline("Your hands were too shaky.");
+                    last_engraved_input[0] = '\0';
+                } else {
+                    /* matched */
+                    if (new_state != 0) {
+                        pline("Success.");
+                        last_engraved_input[0] = '\0';
+                    }
+                    /* If new_state == 0 (Elbereth), we'll print "You feel safer."
+                       below, so don't print Success in that case. */
+                }
+            }
+
+            /* State-change messages: entering Elbereth or losing it. */
+            if (new_state != last_engraving_state) {
+                if (new_state == 0) {
+                    pline("You feel safer.");
+                    pending_engraving_message = 0;
+                    g_has_spoken_elbereth = 1;
+                    g_has_spoken_no_elbereth = 0;
+                } else if (last_engraving_state == 0) {
+                    pline("You feel vulnerable.");
+                    pending_engraving_message = 0;
+                    g_has_spoken_elbereth = 0;
+                    g_has_spoken_no_elbereth = 1;
+                }
+            }
+
+            /* Update last engraving state/text to avoid duplicate bot() messages */
+            last_engraving_state = new_state;
+            Strcpy(last_engraving_text, epbuf);
+        }
+    } else {
+        /* multi-turn engraving — arrange to print message as soon as
+           the action completes (in unmul's afternmv call). */
+        afternmv = engraving_done;
+    }
+
     if (doblind && !resists_blnd(&youmonst)) {
         You("are blinded by the flash!");
         make_blinded((long) rnd(50), FALSE);

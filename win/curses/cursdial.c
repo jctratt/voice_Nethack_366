@@ -97,6 +97,7 @@ typedef struct nhm {
     int width;                  /* Window width of menu */
     boolean reuse_accels;       /* Non-unique accelerators per page */
     boolean bottom_heavy;       /* display multi-page menu starting at end */
+    WINDOW *cwin;               /* Curses window used for non-blocking display */
     struct nhm *prev_menu;      /* Pointer to previous entry */
     struct nhm *next_menu;      /* Pointer to next entry */
 } nhmenu;
@@ -968,6 +969,7 @@ curses_create_nhmenu(winid wid)
             free((genericptr_t) new_menu->prompt);
             new_menu->prompt = NULL;
         }
+        new_menu->num_entries = 0;
         new_menu->num_pages = 0;
         new_menu->height = 0;
         new_menu->width = 0;
@@ -980,11 +982,13 @@ curses_create_nhmenu(winid wid)
     new_menu->wid = wid;
     new_menu->prompt = NULL;
     new_menu->entries = NULL;
+    new_menu->num_entries = 0;
     new_menu->num_pages = 0;
     new_menu->height = 0;
     new_menu->width = 0;
     new_menu->reuse_accels = FALSE;
     new_menu->bottom_heavy = FALSE;
+    new_menu->cwin = (WINDOW *) 0;
     new_menu->next_menu = NULL;
 
     if (nhmenus == NULL) {      /* no menus in memory yet */
@@ -1201,6 +1205,7 @@ curses_display_nhmenu(winid wid, int how, MENU_ITEM_P ** _selected)
     num_chosen = menu_get_selections(win, current_menu, how);
     curses_destroy_win(win);
 
+
     if (num_chosen > 0) {
         selected = (MENU_ITEM_P *) alloc((unsigned)
                                          (num_chosen * sizeof (MENU_ITEM_P)));
@@ -1233,6 +1238,154 @@ curses_display_nhmenu(winid wid, int how, MENU_ITEM_P ** _selected)
     return num_chosen;
 }
 
+/* Draw a menu without entering the input loop; keeps it visible until
+   destroy_nhwindow() is called for the menu. */
+void
+curses_display_nhmenu_nonblocking(winid wid)
+{
+    nhmenu *current_menu = get_menu(wid);
+    nhmenu_item *menu_item_ptr;
+    WINDOW *win;
+    int page_num = 1;
+    char selectors[256];
+
+    if (!current_menu)
+        return;
+
+#ifdef DEBUG
+    {
+        char dbg[QBUFSZ];
+        int dbgpage = !current_menu->bottom_heavy ? 1 : current_menu->num_pages;
+        (void) snprintf(dbg, sizeof dbg, "[curses dbg] display_nonblocking wid=%d menu=%p cwin=%p page=%d",
+                       wid, (void *) current_menu, (void *) current_menu->cwin, dbgpage);
+        curses_debug_log(dbg);
+    }
+#endif
+
+    /* Fast-path: if this menu contains only a single non-selectable header
+       line (the situation we observe for the Price ID popup), render it
+       directly as a simple dialog instead of going through the full
+       multi-page menu sizing/display code.  This avoids edge cases where
+       menu sizing and page determination access uninitialized fields. */
+    if (current_menu->entries
+        && current_menu->entries->next_item == NULL
+        && current_menu->entries->identifier.a_void == NULL) {
+#ifdef DEBUG
+        {
+            char dbg[QBUFSZ];
+            (void) snprintf(dbg, sizeof dbg, "[curses dbg] fast-path single-header menu wid=%d str='%.80s'",
+                           wid, current_menu->entries->str ? current_menu->entries->str : "(null)");
+            curses_debug_log(dbg);
+        }
+#endif
+        /* Determine size */
+        int inner_width = (int) strlen(current_menu->entries->str);
+        if (inner_width < 25) inner_width = 25;
+        if (inner_width > term_cols - 2) inner_width = term_cols - 2;
+        int inner_height = curses_num_lines(current_menu->entries->str, inner_width);
+
+        WINDOW *hwin = current_menu->cwin;
+        if (!hwin) {
+            if ((moves <= 1 && !invent) || program_state.gameover)
+                hwin = curses_create_window(inner_width, inner_height, CENTER);
+            else
+                hwin = curses_create_window(inner_width, inner_height, RIGHT);
+            current_menu->cwin = hwin;
+        }
+
+        if (!hwin) {
+#ifdef DEBUG
+            curses_debug_log("[curses dbg] fast-path: could not create curses window");
+#endif
+            return;
+        }
+
+        werase(hwin);
+        {
+            int lines = curses_num_lines(current_menu->entries->str, inner_width);
+            for (int i = 0; i < lines; ++i) {
+                char *s = curses_break_str(current_menu->entries->str, inner_width, i + 1);
+                mvwprintw(hwin, i + 1, 1, "%s", s);
+                free(s);
+            }
+        }
+        curses_toggle_color_attr(hwin, DIALOG_BORDER_COLOR, NONE, ON);
+        box(hwin, 0, 0);
+        curses_toggle_color_attr(hwin, DIALOG_BORDER_COLOR, NONE, OFF);
+        wrefresh(hwin);
+        return;
+    }
+    /* Defensive checks and richer diagnostics to avoid crashes when a menu
+       has no entries yet or has an unexpected state (helps debug the
+       segfault observed in price_identify()). */
+#ifdef DEBUG
+    if (current_menu->entries == NULL) {
+        char dbg[QBUFSZ];
+        (void) snprintf(dbg, sizeof dbg, "[curses dbg] menu wid=%d has no entries (entries==NULL) prompt=%p num_pages=%d num_entries=%d",
+                       wid, (void *) current_menu->prompt, current_menu->num_pages, current_menu->num_entries);
+        curses_debug_log(dbg);
+    } else {
+        char dbg[QBUFSZ];
+        (void) snprintf(dbg, sizeof dbg, "[curses dbg] menu wid=%d first_entry=%p str='%.30s' num_entries=%d",
+                       wid, (void *) current_menu->entries, current_menu->entries->str ? current_menu->entries->str : "(null)", current_menu->num_entries);
+        curses_debug_log(dbg);
+    }
+#endif
+
+    /* If no menu entries exist, insert a single placeholder entry so that
+       subsequent sizing and display logic has at least one entry to work with.
+       This prevents a NULL traversal or an empty-page condition that can
+       trigger undefined behaviour in display routines. */
+    if (current_menu->entries == NULL) {
+        nhmenu_item *dummy = curs_new_menu_item(current_menu->wid, "(no items)");
+        current_menu->entries = dummy;
+        current_menu->num_entries = 1;
+    }
+
+    menu_win_size(current_menu);
+    menu_determine_pages(current_menu);
+
+    page_num = !current_menu->bottom_heavy ? 1 : current_menu->num_pages;
+
+    if (current_menu->cwin) {
+        /* reuse existing curses window */
+        win = current_menu->cwin;
+    } else {
+        if ((moves <= 1 && !invent) || program_state.gameover)
+            win = curses_create_window(current_menu->width, current_menu->height, CENTER);
+        else
+            win = curses_create_window(current_menu->width, current_menu->height, RIGHT);
+        current_menu->cwin = win;
+    }
+
+    /* Safety: if curses returned NULL (e.g., window creation failed), log and bail */
+    if (!win) {
+#ifdef DEBUG
+        {
+            char dbg[QBUFSZ];
+            (void) snprintf(dbg, sizeof dbg, "[curses dbg] display_nonblocking wid=%d cwin==NULL (create failed). width=%d height=%d",
+                           wid, current_menu->width, current_menu->height);
+            curses_debug_log(dbg);
+        }
+#endif
+        return;
+    }
+
+    /* Safety: protect menu_display_page() with a final sanity check; if
+       page_num is out of range, clamp it to 1 to avoid invalid page access. */
+    if (page_num < 1) page_num = 1;
+
+    menu_display_page(current_menu, win, page_num, selectors);
+
+#ifdef DEBUG
+    {
+        char dbg[QBUFSZ];
+        (void) snprintf(dbg, sizeof dbg, "[curses dbg] finish display_nonblocking wid=%d cwin=%p",
+                       wid, (void *) current_menu->cwin);
+        curses_debug_log(dbg);
+    }
+#endif
+}
 
 boolean
 curses_menu_exists(winid wid)
@@ -1285,6 +1438,27 @@ curses_del_menu(winid wid, boolean del_wid_too)
 
     if (current_menu->prompt)
         free((genericptr_t) current_menu->prompt);
+    /* if we had a non-blocking curses window associated, destroy it */
+    if (current_menu->cwin) {
+#ifdef DEBUG
+        {
+            char dbg[QBUFSZ];
+            (void) snprintf(dbg, sizeof dbg, "[curses dbg] deleting menu wid=%d cwin=%p",
+                           wid, (void *) current_menu->cwin);
+            curses_debug_log(dbg);
+        }
+#endif
+        curses_destroy_win(current_menu->cwin);
+        current_menu->cwin = (WINDOW *) 0;
+#ifdef DEBUG
+        {
+            char dbg[QBUFSZ];
+            (void) snprintf(dbg, sizeof dbg, "[curses dbg] deleted menu wid=%d cwin now=%p",
+                           wid, (void *) current_menu->cwin);
+            curses_debug_log(dbg);
+        }
+#endif
+    }
     free((genericptr_t) current_menu);
 
     if (del_wid_too)
@@ -1344,11 +1518,24 @@ menu_is_multipage(nhmenu *menu, int width, int height)
     int curline = 0, accel_per_page = 0;
     nhmenu_item *menu_item_ptr = menu->entries;
 
-    if (*menu->prompt) {
+#ifdef DEBUG
+    curses_debug_log("[curses dbg] menu_is_multipage: start");
+#endif
+
+    if (menu->prompt && *menu->prompt) {
         curline += curses_num_lines(menu->prompt, width) + 1;
     }
 
     while (menu_item_ptr != NULL) {
+#ifdef DEBUG
+        {
+            char dbg[QBUFSZ];
+            (void) snprintf(dbg, sizeof dbg, "[curses dbg] menu_is_multipage: item=%p next=%p str='%.60s' curline=%d",
+                           (void *) menu_item_ptr, (void *) menu_item_ptr->next_item,
+                           menu_item_ptr->str ? menu_item_ptr->str : "(null)", curline);
+            curses_debug_log(dbg);
+        }
+#endif
         menu_item_ptr->line_num = curline;
         if (menu_item_ptr->identifier.a_void == NULL) {
             num_lines = curses_num_lines(menu_item_ptr->str, width);
@@ -1368,6 +1555,9 @@ menu_is_multipage(nhmenu *menu, int width, int height)
             break;
         }
     }
+#ifdef DEBUG
+    curses_debug_log("[curses dbg] menu_is_multipage: end");
+#endif
     return (menu_item_ptr != NULL) ? TRUE : FALSE;
 }
 
@@ -1386,7 +1576,7 @@ menu_determine_pages(nhmenu *menu)
     int page_end = height;
 
 
-    if (*menu->prompt) {
+    if (menu->prompt && *menu->prompt) {
         curline += curses_num_lines(menu->prompt, width) + 1;
     }
     tmpline = curline;
@@ -1434,6 +1624,10 @@ menu_win_size(nhmenu *menu)
     int maxheaderwidth = menu->prompt ? (int) strlen(menu->prompt) : 0;
     nhmenu_item *menu_item_ptr;
 
+#ifdef DEBUG
+    curses_debug_log("[curses dbg] menu_win_size: start");
+#endif
+
     if (program_state.gameover) {
         /* for final inventory disclosure, use full width */
         maxwidth = term_cols - 2; /* +2: borders assumed */
@@ -1453,6 +1647,15 @@ menu_win_size(nhmenu *menu)
     /* First, determine the width of the longest menu entry */
     for (menu_item_ptr = menu->entries; menu_item_ptr != NULL;
          menu_item_ptr = menu_item_ptr->next_item) {
+#ifdef DEBUG
+        {
+            char dbg[QBUFSZ];
+            (void) snprintf(dbg, sizeof dbg, "[curses dbg] menu_win_size: item=%p next=%p str='%.80s'",
+                           (void *) menu_item_ptr, (void *) menu_item_ptr->next_item,
+                           menu_item_ptr->str ? menu_item_ptr->str : "(null)");
+            curses_debug_log(dbg);
+        }
+#endif
         curentrywidth = (int) strlen(menu_item_ptr->str);
         if (menu_item_ptr->identifier.a_void == NULL) {
             if (curentrywidth > maxheaderwidth) {
@@ -1470,7 +1673,9 @@ menu_win_size(nhmenu *menu)
             maxentrywidth = curentrywidth;
         }
     }
-
+#ifdef DEBUG
+    curses_debug_log("[curses dbg] menu_win_size: after width scan");
+#endif
     /*
      * 3.6.3: This used to set maxwidth to maxheaderwidth when that was
      * bigger but only set it to maxentrywidth if the latter was smaller,
@@ -1525,6 +1730,22 @@ menu_display_page(nhmenu *menu, WINDOW * win, int page_num, char *selectors)
     int color = NO_COLOR, attr = A_NORMAL;
     boolean menu_color = FALSE;
 
+#ifdef DEBUG
+    {
+        char dbg[QBUFSZ];
+        (void) snprintf(dbg, sizeof dbg, "[curses dbg] menu_display_page menu=%p win=%p page=%d num_pages=%d width=%d height=%d",
+                       (void *) menu, (void *) win, page_num, menu->num_pages, menu->width, menu->height);
+        curses_debug_log(dbg);
+    }
+#endif
+
+    if (!win) {
+#ifdef DEBUG
+        curses_debug_log("[curses dbg] menu_display_page: win is NULL, aborting display");
+#endif
+        return;
+    }
+
     /* letters assigned to entries on current page */
     if (selectors)
         (void) memset((genericptr_t) selectors, 0, 256);
@@ -1547,22 +1768,63 @@ menu_display_page(nhmenu *menu, WINDOW * win, int page_num, char *selectors)
 
     werase(win);
 
+#ifdef DEBUG
+    curses_debug_log("[curses dbg] menu_display_page: after werase and before prompt");
+#endif
+
     if (menu->prompt && *menu->prompt) {
         num_lines = curses_num_lines(menu->prompt, menu->width);
 
         for (count = 0; count < num_lines; count++) {
             tmpstr = curses_break_str(menu->prompt, menu->width, count + 1);
-            mvwprintw(win, count + 1, 1, "%s", tmpstr);
+#ifdef DEBUG
+            {
+                char dbg[QBUFSZ];
+                (void) snprintf(dbg, sizeof dbg, "[curses dbg] prompt line %d: '%.80s'", count + 1, tmpstr);
+                curses_debug_log(dbg);
+            }
+#endif
+            /* Highlight the top 'Search:' line so it stands out from header/items */
+            if (count == 0 && menu->prompt && strncmp(menu->prompt, "Search:", 7) == 0) {
+                /* Use reverse + bold to make Search line more visible */
+                curses_toggle_color_attr(win, HIGHLIGHT_COLOR, A_REVERSE|A_BOLD, ON);
+                mvwprintw(win, count + 1, 1, "%s", tmpstr);
+                curses_toggle_color_attr(win, HIGHLIGHT_COLOR, A_REVERSE|A_BOLD, OFF);
+            } else {
+                mvwprintw(win, count + 1, 1, "%s", tmpstr);
+            }
             free(tmpstr);
+#ifdef DEBUG
+            curses_debug_log("[curses dbg] printed prompt line");
+#endif
         }
     }
 
     /* Display items for current page */
 
+#ifdef DEBUG
+    if (menu_item_ptr) {
+        char dbg[QBUFSZ];
+        (void) snprintf(dbg, sizeof dbg, "[curses dbg] first item line_num=%d str='%.60s'",
+                       menu_item_ptr->line_num, menu_item_ptr->str ? menu_item_ptr->str : "(null)");
+        curses_debug_log(dbg);
+    } else {
+        curses_debug_log("[curses dbg] no menu_item_ptr at start of page display");
+    }
+#endif
+
     while (menu_item_ptr != NULL) {
         if (menu_item_ptr->page_num != page_num) {
             break;
         }
+#ifdef DEBUG
+        {
+            char dbg[QBUFSZ];
+            (void) snprintf(dbg, sizeof dbg, "[curses dbg] processing item line_num=%d page_num=%d str='%.80s'",
+                           menu_item_ptr->line_num, menu_item_ptr->page_num, menu_item_ptr->str ? menu_item_ptr->str : "(null)");
+            curses_debug_log(dbg);
+        }
+#endif
         if (menu_item_ptr->identifier.a_void != NULL) {
             if (menu_item_ptr->accelerator != 0) {
                 curletter = menu_item_ptr->accelerator;
@@ -1579,8 +1841,11 @@ menu_display_page(nhmenu *menu, WINDOW * win, int page_num, char *selectors)
                 menu_item_ptr->accelerator = curletter;
             }
             /* we have a selector letter; tell caller about it */
-            if (selectors)
-                selectors[(unsigned) (curletter & 0xFF)]++;
+            if (selectors) {
+                unsigned char uc = (unsigned char) curletter;
+                selectors[uc]++;
+                /* keep case distinct: don't mark both cases as equivalent */
+            }
 
             if (menu_item_ptr->selected) {
                 curses_toggle_color_attr(win, HIGHLIGHT_COLOR, A_REVERSE, ON);
@@ -1658,8 +1923,16 @@ menu_display_page(nhmenu *menu, WINDOW * win, int page_num, char *selectors)
             if (menu_item_ptr->str && *menu_item_ptr->str) {
                 tmpstr = curses_break_str(menu_item_ptr->str,
                                           entry_cols, count + 1);
-                mvwprintw(win, menu_item_ptr->line_num + count + 1, start_col,
-                          "%s", tmpstr);
+                /* Highlight the Search line (first menu entry beginning with "Search:") */
+                if (menu_item_ptr == menu->entries && menu_item_ptr->str && strncmp(menu_item_ptr->str, "Search:", 7) == 0 && count == 0) {
+                    curses_toggle_color_attr(win, HIGHLIGHT_COLOR, A_REVERSE|A_BOLD, ON);
+                    mvwprintw(win, menu_item_ptr->line_num + count + 1, start_col,
+                              "%s", tmpstr);
+                    curses_toggle_color_attr(win, HIGHLIGHT_COLOR, A_REVERSE|A_BOLD, OFF);
+                } else {
+                    mvwprintw(win, menu_item_ptr->line_num + count + 1, start_col,
+                              "%s", tmpstr);
+                }
                 free(tmpstr);
             }
         }
@@ -1867,11 +2140,21 @@ menu_get_selections(WINDOW * win, nhmenu *menu, int how)
         menu_item_ptr = menu->entries;
         while (menu_item_ptr != NULL) {
             if (menu_item_ptr->identifier.a_void != NULL) {
-                if ((curletter == menu_item_ptr->accelerator
-                     && (curpage == menu_item_ptr->page_num
-                         || !menu->reuse_accels))
-                    || (menu_item_ptr->group_accel
-                        && curletter == menu_item_ptr->group_accel)) {
+                int accel_match = 0;
+                /* case-insensitive accelerator/group checks for letters */
+                if ((curpage == menu_item_ptr->page_num || !menu->reuse_accels)) {
+                    if (menu_item_ptr->accelerator) {
+                        /* exact, case-sensitive accelerator match */
+                        if (curletter == menu_item_ptr->accelerator)
+                            accel_match = 1;
+                    }
+                }
+                if (!accel_match && menu_item_ptr->group_accel) {
+                    if (curletter == menu_item_ptr->group_accel)
+                        accel_match = 1;
+                }
+
+                if (accel_match) {
                     if (curpage != menu_item_ptr->page_num) {
                         curpage = menu_item_ptr->page_num;
                         menu_display_page(menu, win, curpage, selectors);
@@ -1886,7 +2169,8 @@ menu_get_selections(WINDOW * win, nhmenu *menu, int how)
                         num_selected = 1;
                         dismiss = TRUE;
                         break;
-                    } else if (how == PICK_ANY && curletter == count_letter) {
+                    } else if (how == PICK_ANY && (curletter == count_letter)) {
+                        /* count + letter must be exact (case-sensitive) */
                         menu_select_deselect(win, menu_item_ptr,
                                              SELECT, curpage);
                         menu_item_ptr->count = count;

@@ -2056,26 +2056,38 @@ donamelevel()
 {
     mapseen *mptr;
     char nbuf[BUFSZ]; /* Buffer for response */
+    char promptbuf[BUFSZ];
+#ifdef CURSES_GRAPHICS
+    extern void curses_name_input_dialog(const char *prompt, char *answer, int buffer);
+#endif
 
     if (!(mptr = find_mapseen(&u.uz)))
         return 0;
 
     nbuf[0] = '\0';
-#ifdef EDIT_GETLIN
     if (mptr->custom) {
+        /* When editing is enabled, prefill the buffer with the existing
+           annotation so the user can edit it; otherwise prompt to replace. */
+#ifdef EDIT_GETLIN
         (void) strncpy(nbuf, mptr->custom, BUFSZ);
         nbuf[BUFSZ - 1] = '\0';
-    }
+        Sprintf(promptbuf, "What do you want to call this dungeon level?");
 #else
-    if (mptr->custom) {
-        char tmpbuf[BUFSZ];
+        Sprintf(promptbuf, "Replace annotation \"%.30s%s\" with?",
+                mptr->custom, (strlen(mptr->custom) > 30) ? "..." : "");
+#endif
+    } else {
+        Sprintf(promptbuf, "What do you want to call this dungeon level?");
+    }
 
-        Sprintf(tmpbuf, "Replace annotation \"%.30s%s\" with?", mptr->custom,
-                (strlen(mptr->custom) > 30) ? "..." : "");
-        getlin(tmpbuf, nbuf);
+    /* Use curses pop-up input dialog when available; otherwise fall back */
+    pline("(Arrows/Ctrl+B/F=move, Home/Ctrl+A=start, End/Ctrl+E=end, Del/Ctrl+D=delete, Ctrl+W=word, Ctrl+U=line)");
+#ifdef CURSES_GRAPHICS
+    if (WINDOWPORT("curses")) {
+        curses_name_input_dialog(promptbuf, nbuf, BUFSZ);
     } else
 #endif
-        getlin("What do you want to call this dungeon level?", nbuf);
+        getlin(promptbuf, nbuf);
 
     /* empty input or ESC means don't add or change annotation;
        space-only means discard current annotation without adding new one */

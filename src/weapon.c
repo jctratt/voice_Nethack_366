@@ -9,6 +9,7 @@
  *      code for monsters.
  */
 #include "hack.h"
+#include <ctype.h>
 
 STATIC_DCL void FDECL(give_may_advance_msg, (int));
 STATIC_DCL boolean FDECL(could_advance, (int));
@@ -1145,6 +1146,14 @@ static const struct skill_range {
     { P_FIRST_SPELL, P_LAST_SPELL, "Spellcasting Skills" },
 };
 
+static int
+skill_name_cmp(const void *a, const void *b)
+{
+    const int ia = *(const int *)a;
+    const int ib = *(const int *)b;
+    return strcasecmp(P_NAME(ia), P_NAME(ib));
+}
+
 /*
  * The `#enhance' extended command.  What we _really_ would like is
  * to keep being able to pick things to advance until we couldn't any
@@ -1163,6 +1172,11 @@ enhance_weapon_skill()
     anything any;
     winid win;
     boolean speedy = FALSE;
+    static char custom_accel[P_NUM_SKILLS]; /* persistent user-assigned accelerators */
+    char accel_map[P_NUM_SKILLS];
+    boolean used_accel[256];
+    const char accel_pool[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const int ASSIGN_ID = P_NUM_SKILLS + 1;
 
     if (wizard && yn("Advance skills without practice?") == 'y')
         speedy = TRUE;
@@ -1214,17 +1228,70 @@ enhance_weapon_skill()
            selectable.  List the miscellaneous skills first.
            Possible future enhancement:  list spell skills before
            weapon skills for spellcaster roles. */
-        for (pass = 0; pass < SIZE(skill_ranges); pass++)
-            for (i = skill_ranges[pass].first; i <= skill_ranges[pass].last;
-                 i++) {
+        /* Build accel map for this pass: honor custom assignments and
+           allocate remaining letters from the pool to ensure any chosen
+           accelerator is available and unique. */
+        (void) memset((genericptr_t) used_accel, 0, sizeof used_accel);
+        for (i = 0; i < P_NUM_SKILLS; ++i) {
+            accel_map[i] = '\0';
+            if (custom_accel[i]) {
+                accel_map[i] = custom_accel[i];
+                used_accel[(unsigned char) custom_accel[i]] = TRUE;
+            }
+        }
+        {
+            int pidx = 0;
+            for (i = 0; i < P_NUM_SKILLS; ++i) {
+                if (accel_map[i])
+                    continue;
+                /* only consider assignable skills below when allocating */
+                /* we'll leave restricted skills to remain without accelerator */
+            }
+            /* allocate sequentially for visible skills when building menu entries */
+            ;
+        }
+
+        for (pass = 0; pass < SIZE(skill_ranges); pass++) {
+            int idxs[P_NUM_SKILLS];
+            int cnt = 0, j;
+
+            /* gather non-restricted skills for this range */
+            for (i = skill_ranges[pass].first; i <= skill_ranges[pass].last; i++)
+                if (!P_RESTRICTED(i))
+                    idxs[cnt++] = i;
+
+            if (cnt == 0)
+                continue;
+
+            /* sort by skill name A-Z, case-insensitive */
+            qsort(idxs, cnt, sizeof(idxs[0]), skill_name_cmp);
+
+            /* allocate pool letters for any skills that don't have custom accel */
+            {
+                int pidx = 0;
+                for (j = 0; j < cnt; ++j) {
+                    int si = idxs[j];
+                    if (accel_map[si])
+                        continue;
+                    while (accel_pool[pidx]) {
+                        unsigned char c = (unsigned char) accel_pool[pidx++];
+                        if (!used_accel[c]) {
+                            accel_map[si] = (char) c;
+                            used_accel[c] = TRUE;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            for (j = 0; j < cnt; j++) {
+                i = idxs[j];
                 /* Print headings for skill types */
                 any = zeroany;
-                if (i == skill_ranges[pass].first)
+                if (j == 0)
                     add_menu(win, NO_GLYPH, &any, 0, 0, iflags.menu_headings,
                              skill_ranges[pass].name, MENU_UNSELECTED);
 
-                if (P_RESTRICTED(i))
-                    continue;
                 /*
                  * Sigh, this assumes a monospaced font unless
                  * iflags.menu_tab_sep is set in which case it puts
@@ -1262,9 +1329,29 @@ enhance_weapon_skill()
                                 sklnambuf);
                 }
                 any.a_int = can_advance(i, speedy) ? i + 1 : 0;
-                add_menu(win, NO_GLYPH, &any, 0, 0, ATR_NONE, buf,
+                add_menu(win, NO_GLYPH, &any, accel_map[i], 0, ATR_NONE, buf,
                          MENU_UNSELECTED);
             }
+        }
+
+        /* Provide a way to assign custom accelerators */
+        any = zeroany;
+        any.a_int = ASSIGN_ID;
+        /* pick an accelerator for the assign action too */
+        {
+            int pidx = 0;
+            char assign_char = '\0';
+            while (accel_pool[pidx]) {
+                unsigned char c = (unsigned char) accel_pool[pidx++];
+                if (!used_accel[c]) {
+                    assign_char = (char) c;
+                    used_accel[c] = TRUE;
+                    break;
+                }
+            }
+            add_menu(win, NO_GLYPH, &any, assign_char, 0, ATR_NONE,
+                     "Assign accelerator to skill", MENU_UNSELECTED);
+        }
 
         Strcpy(buf, (to_advance > 0) ? "Pick a skill to advance:"
                                      : "Current skills:");
@@ -1275,16 +1362,64 @@ enhance_weapon_skill()
         n = select_menu(win, to_advance ? PICK_ONE : PICK_NONE, &selected);
         destroy_nhwindow(win);
         if (n > 0) {
-            n = selected[0].item.a_int - 1; /* get item selected */
+            int selid = selected[0].item.a_int;
             free((genericptr_t) selected);
-            skill_advance(n);
-            /* check for more skills able to advance, if so then .. */
-            for (n = i = 0; i < P_NUM_SKILLS; i++) {
-                if (can_advance(i, speedy)) {
-                    if (!speedy)
-                        You_feel("you could be more dangerous!");
-                    n++;
-                    break;
+
+            if (selid == ASSIGN_ID) {
+                /* Show a chooser for which skill to assign */
+                winid twin = create_nhwindow(NHW_MENU);
+                menu_item *pick = (menu_item *) 0;
+                int pres, si;
+                start_menu(twin);
+                for (si = 0; si < P_NUM_SKILLS; ++si) {
+                    if (P_RESTRICTED(si))
+                        continue;
+                    any = zeroany;
+                    any.a_int = si + 1;
+                    add_menu(twin, NO_GLYPH, &any, 0, 0, ATR_NONE, P_NAME(si), MENU_UNSELECTED);
+                }
+                end_menu(twin, "Pick a skill to assign accelerator to:");
+                pres = select_menu(twin, PICK_ONE, &pick);
+                destroy_nhwindow(twin);
+                if (pres > 0) {
+                    int chosen = pick[0].item.a_int - 1;
+                    char qbuf[QBUFSZ];
+                    char inbuf[QBUFSZ];
+                    free((genericptr_t) pick);
+                    Sprintf(qbuf, "Assign which letter (a-zA-Z) to %s? ", P_NAME(chosen));
+                    inbuf[0] = '\0'; /* avoid showing garbage as default */
+                    getlin(qbuf, inbuf);
+                    /* strip leading whitespace then validate */
+                    if (inbuf[0]) {
+                        char *p = inbuf;
+                        while (*p && isspace((unsigned char)*p))
+                            p++;
+                        if (*p && isalpha((unsigned char)*p)) {
+                            char c = *p;
+                            /* clear same-char custom from any other skill */
+                            for (i = 0; i < P_NUM_SKILLS; ++i) {
+                                if (custom_accel[i] == c)
+                                    custom_accel[i] = '\0';
+                            }
+                            custom_accel[chosen] = c;
+                        } else {
+                            You("didn't pick a valid letter.");
+                        }
+                    } else {
+                        You("didn't pick a valid letter.");
+                    }
+                }
+            } else {
+                n = selid - 1; /* get item selected */
+                skill_advance(n);
+                /* check for more skills able to advance, if so then .. */
+                for (n = i = 0; i < P_NUM_SKILLS; i++) {
+                    if (can_advance(i, speedy)) {
+                        if (!speedy)
+                            You_feel("you could be more dangerous!");
+                        n++;
+                        break;
+                    }
                 }
             }
         }

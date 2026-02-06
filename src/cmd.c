@@ -35,6 +35,7 @@ struct cmd Cmd = { 0 }; /* flag.h */
 
 extern const char *hu_stat[];  /* hunger status from eat.c */
 extern const char *enc_stat[]; /* encumbrance status from botl.c */
+extern int price_identify(void);
 
 #ifdef UNIX
 /*
@@ -103,6 +104,7 @@ extern int NDECL(dowhatdoes);         /**/
 extern int NDECL(dohelp);             /**/
 extern int NDECL(dohistory);          /**/
 extern int NDECL(doloot);             /**/
+extern int price_identify(void);
 extern int NDECL(dodrink);            /**/
 extern int NDECL(dodip);              /**/
 extern int NDECL(dosacrifice);        /**/
@@ -3462,6 +3464,8 @@ struct ext_func_tab extcmdlist[] = {
             domonability, IFBURIED | AUTOCOMPLETE },
     { 'N', "name", "name a monster or an object",
             docallcmd, IFBURIED | AUTOCOMPLETE },
+        { '\0', "priceid", "price identification (search shop prices)",
+            price_identify, IFBURIED | AUTOCOMPLETE },
     { M('o'), "offer", "offer a sacrifice to the gods",
             dosacrifice, AUTOCOMPLETE },
     { 'o', "open", "open a door", doopen },
@@ -3504,7 +3508,7 @@ struct ext_func_tab extcmdlist[] = {
     { RING_SYM, "seerings", "show the ring(s) currently worn",
             doprring, IFBURIED },
     { SPBOOK_SYM, "seespells", "list and reorder known spells",
-            dovspell, IFBURIED },
+            dovspell, IFBURIED | AUTOCOMPLETE },
     { TOOL_SYM, "seetools", "show the tools currently in use",
             doprtool, IFBURIED },
     { '^', "seetrap", "show the type of adjacent trap", doidtrap, IFBURIED },

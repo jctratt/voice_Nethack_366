@@ -2,10 +2,16 @@
 	"folders": [
 		{
 			"path": "."
+		},
+		{
+			"path": "../../bin/dizzy"
 		}
 	],
 	"settings": {
 		"zenMode.hideActivityBar": true,
-		"workbench.editor.editorActionsLocation": "titleBar"
+		"workbench.editor.editorActionsLocation": "titleBar",
+		"chat.tools.terminal.autoApprove": {
+			"make": true
+		}
 	}
 }

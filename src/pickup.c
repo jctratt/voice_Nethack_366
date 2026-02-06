@@ -578,15 +578,46 @@ int what; /* should be a long */
 
             Sprintf(qbuf, "Pick %d of what?", count);
             val_for_n_or_more = count; /* set up callback selector */
-            n = query_objlist(qbuf, objchain_p, traverse_how,
-                              &pick_list, PICK_ONE, n_or_more);
+            {
+                int qflags = traverse_how;
+#ifdef STICKY_OBJECTS
+                {
+                    struct obj *check;
+                    boolean have_sticky = FALSE;
+                    for (check = *objchain_p; check; check = FOLLOW(check, traverse_how))
+                        if (check->sticky) { have_sticky = TRUE; break; }
+                    if (flags.invlet_constant || have_sticky)
+                        qflags |= USE_INVLET;
+                }
+#else
+                if (flags.invlet_constant)
+                    qflags |= USE_INVLET;
+#endif
+                n = query_objlist(qbuf, objchain_p, qflags,
+                                  &pick_list, PICK_ONE, n_or_more);
+            }
             /* correct counts, if any given */
             for (i = 0; i < n; i++)
                 pick_list[i].count = count;
         } else {
-            n = query_objlist("Pick up what?", objchain_p,
-                              (traverse_how | FEEL_COCKATRICE),
-                              &pick_list, PICK_ANY, all_but_uchain);
+            {
+                int qflags = (traverse_how | FEEL_COCKATRICE);
+#ifdef STICKY_OBJECTS
+                {
+                    struct obj *check;
+                    boolean have_sticky = FALSE;
+                    for (check = *objchain_p; check; check = FOLLOW(check, traverse_how))
+                        if (check->sticky) { have_sticky = TRUE; break; }
+                    if (flags.invlet_constant || have_sticky)
+                        qflags |= USE_INVLET;
+                }
+#else
+                if (flags.invlet_constant)
+                    qflags |= USE_INVLET;
+#endif
+                n = query_objlist("Pick up what?", objchain_p, qflags,
+                                  &pick_list, PICK_ANY, all_but_uchain);
+            }
         }
 
  menu_pickup:
@@ -876,12 +907,15 @@ boolean FDECL((*allow), (OBJ_P)); /* allow function */
         return 1;
     }
 
-    sortflags = (((flags.sortloot == 'f'
-                   || (flags.sortloot == 'l' && !(qflags & USE_INVLET)))
-                  ? SORTLOOT_LOOT
-                  : ((qflags & USE_INVLET) ? SORTLOOT_INVLET : 0))
-                 | (flags.sortpack ? SORTLOOT_PACK : 0)
-                 | ((qflags & FEEL_COCKATRICE) ? SORTLOOT_PETRIFY : 0));
+    /* Prefer invlet-based sorting if requested; in that case, avoid
+       mixing in SORTLOOT_PACK which would group by class and disrupt a..z A..Z ordering. */
+    {
+        unsigned base = ((flags.sortloot == 'f' || (flags.sortloot == 'l' && !(qflags & USE_INVLET)))
+                         ? SORTLOOT_LOOT
+                         : ((qflags & USE_INVLET) ? SORTLOOT_INVLET : 0));
+        unsigned packflag = (flags.sortpack && !(base & SORTLOOT_INVLET)) ? SORTLOOT_PACK : 0;
+        sortflags = (base | packflag | ((qflags & FEEL_COCKATRICE) ? SORTLOOT_PETRIFY : 0));
+    }
     sortedolist = sortloot(&olist, sortflags,
                            (qflags & BY_NEXTHERE) ? TRUE : FALSE, allow);
 
@@ -2856,8 +2890,25 @@ boolean put_in;
         }
     } else {
         mflags = INVORDER_SORT;
-        if (put_in && flags.invlet_constant)
+        /* If invlet constants (sticky letters) are enabled, or if any
+           contained object is marked sticky (from sticky patch), preserve
+           and use invlets so listings sort by letter. */
+#ifdef STICKY_OBJECTS
+        {
+            struct obj *check;
+            boolean have_sticky = FALSE;
+            for (check = current_container ? current_container->cobj : (struct obj *)0; check; check = check->nobj)
+                if (check->sticky) {
+                    have_sticky = TRUE;
+                    break;
+                }
+            if (flags.invlet_constant || have_sticky)
+                mflags |= USE_INVLET;
+        }
+#else
+        if (flags.invlet_constant)
             mflags |= USE_INVLET;
+#endif
         if (!put_in)
             current_container->cknown = 1;
         Sprintf(buf, "%s what?", action);

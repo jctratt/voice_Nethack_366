@@ -3,11 +3,21 @@
 /* NetHack may be freely redistributed.  See license for details. */
 
 #include "hack.h"
+#include <ctype.h>
 
 /* spellmenu arguments; 0 thru n-1 used as spl_book[] index when swapping */
 #define SPELLMENU_CAST (-2)
 #define SPELLMENU_VIEW (-1)
 #define SPELLMENU_SORT (MAXSPELL) /* special menu entry */
+#define SPELLMENU_SWAP (MAXSPELL + 1) /* swap two spells */
+#define SPELLMENU_VIEW_LINK (MAXSPELL + 2) /* link to open the view/reorder UI */
+
+/* per-session custom spell letter assignments keyed by spl_book index */
+static char custom_spellet[MAXSPELL];
+
+/* array mapping display position -> spl_book index when non-NULL */
+static int *spl_orderindx = 0;
+
 
 /* spell retention period, in turns; at 10% of this value, player becomes
    eligible to reread the spellbook and regain 100% retention (the threshold
@@ -106,7 +116,22 @@ spell_let_to_idx(ilet)
 char ilet;
 {
     int indx;
+    int nspells = 0;
+    int i;
+    int splnum;
 
+    /* count known spells */
+    for (nspells = 0; nspells < MAXSPELL && spellid(nspells) != NO_SPELL; ++nspells)
+        ;
+
+    /* First, check custom assignments (case-sensitive) for visible spells */
+    for (i = 0; i < nspells; ++i) {
+        splnum = !spl_orderindx ? i : spl_orderindx[i];
+        if (custom_spellet[splnum] && custom_spellet[splnum] == ilet)
+            return i; /* return display index */
+    }
+
+    /* Fall back to the default mapping (a-z then A-Z) which maps to position */
     indx = ilet - 'a';
     if (indx >= 0 && indx < 26)
         return indx;
@@ -669,7 +694,7 @@ STATIC_OVL boolean
 getspell(spell_no)
 int *spell_no;
 {
-    int nspells, idx;
+    int nspells, idx, i;
     char ilet, lets[BUFSZ], qbuf[QBUFSZ];
 
     if (spellid(0) == NO_SPELL) {
@@ -685,23 +710,30 @@ int *spell_no;
              nspells++)
             continue;
 
-        if (nspells == 1)
-            Strcpy(lets, "a");
-        else if (nspells < 27)
-            Sprintf(lets, "a-%c", 'a' + nspells - 1);
-        else if (nspells == 27)
-            Sprintf(lets, "a-zA");
-        /* this assumes that there are at most 52 spells... */
-        else
-            Sprintf(lets, "a-zA-%c", 'A' + nspells - 27);
+        /* Build 'lets' string from current assignments (custom or default) */
+        {
+            int p = 0;
+            for (i = 0; i < nspells && p < (int) sizeof lets - 2; ++i) {
+                int sn = !spl_orderindx ? i : spl_orderindx[i];
+                char ch = custom_spellet[sn] ? custom_spellet[sn] : spellet(sn);
+                lets[p++] = ch;
+            }
+            lets[p] = '\0';
+        }
 
         for (;;) {
-            Sprintf(qbuf, "Cast which spell? [%s *?]", lets);
+            Sprintf(qbuf, "Cast which spell? [%s *?] (press '%c' to view/reorder — this cancels casting)", lets, SPBOOK_SYM);
             ilet = yn_function(qbuf, (char *) 0, '\0');
             if (ilet == '*' || ilet == '?')
                 break; /* use menu mode */
             if (index(quitchars, ilet))
                 return FALSE;
+
+            /* allow '+' to open the spell viewer/reorderer */
+            if (ilet == SPBOOK_SYM) {
+                (void) dovspell();
+                return FALSE; /* cancel casting and return to main loop */
+            }
 
             idx = spell_let_to_idx(ilet);
             if (idx < 0 || idx >= nspells) {
@@ -1438,7 +1470,7 @@ static const char *spl_sortchoices[NUM_SPELL_SORTBY] = {
     "reassign casting letters to retain current order",
 };
 static int spl_sortmode = 0;   /* index into spl_sortchoices[] */
-static int *spl_orderindx = 0; /* array of spl_book[] indices */
+/* spl_orderindx moved earlier */
 
 /* qsort callback routine */
 STATIC_PTR int CFDECLSPEC
@@ -1598,6 +1630,7 @@ dovspell()
     char qbuf[QBUFSZ];
     int splnum, othnum;
     struct spell spl_tmp;
+    anything any;
 
     if (spellid(0) == NO_SPELL) {
         You("don't know any spells right now.");
@@ -1607,15 +1640,58 @@ dovspell()
             if (splnum == SPELLMENU_SORT) {
                 if (spellsortmenu())
                     sortspells();
-            } else {
-                Sprintf(qbuf, "Reordering spells; swap '%c' with",
-                        spellet(splnum));
-                if (!dospellmenu(qbuf, splnum, &othnum))
-                    break;
+            } else if (splnum == SPELLMENU_SWAP) {
+                /* user chose the explicit swap action: pick two spells to swap */
+                winid twin = create_nhwindow(NHW_MENU);
+                menu_item *pick = (menu_item *) 0;
+                int pres, chosen, si;
+                any = zeroany;
+                start_menu(twin);
+                for (si = 0; si < MAXSPELL && spellid(si) != NO_SPELL; ++si) {
+                    int s = !spl_orderindx ? si : spl_orderindx[si];
+                    any.a_int = s + 1;
+                    add_menu(twin, NO_GLYPH, &any, 0, 0, ATR_NONE, spellname(s), MENU_UNSELECTED);
+                }
+                end_menu(twin, "Pick the first spell to swap:");
+                pres = select_menu(twin, PICK_ONE, &pick);
+                destroy_nhwindow(twin);
+                if (pres > 0) {
+                    chosen = pick[0].item.a_int - 1;
+                    free((genericptr_t) pick);
+                    Sprintf(qbuf, "Reordering spells; swap '%c' with", spellet(chosen));
+                    if (!dospellmenu(qbuf, chosen, &othnum))
+                        break;
 
-                spl_tmp = spl_book[splnum];
-                spl_book[splnum] = spl_book[othnum];
-                spl_book[othnum] = spl_tmp;
+                    spl_tmp = spl_book[chosen];
+                    spl_book[chosen] = spl_book[othnum];
+                    spl_book[othnum] = spl_tmp;
+                } else
+                    break;
+            } else {
+                /* selecting a spell in view mode now invokes assignment */
+                int si;
+                char inbuf[QBUFSZ], qbuf2[QBUFSZ];
+                Sprintf(qbuf2, "Assign which letter (a-zA-Z) to %s? ", spellname(splnum));
+                inbuf[0] = '\0'; /* ensure no garbage is shown as default */
+                getlin(qbuf2, inbuf);
+                /* ignore leading spaces */
+                if (inbuf[0]) {
+                    char *p = inbuf;
+                    while (*p && isspace((unsigned char)*p))
+                        p++;
+                    if (*p && isalpha((unsigned char)*p)) {
+                        char c = *p;
+                        for (si = 0; si < MAXSPELL; ++si) {
+                            if (custom_spellet[si] == c)
+                                custom_spellet[si] = '\0';
+                        }
+                        custom_spellet[splnum] = c;
+                    } else {
+                        You("didn't pick a valid letter.");
+                    }
+                } else {
+                    You("didn't pick a valid letter.");
+                }
             }
         }
     }
@@ -1661,6 +1737,8 @@ int *spell_no;
     }
     add_menu(tmpwin, NO_GLYPH, &any, 0, 0, iflags.menu_headings, buf,
              MENU_UNSELECTED);
+
+
     for (i = 0; i < MAXSPELL && spellid(i) != NO_SPELL; i++) {
         splnum = !spl_orderindx ? i : spl_orderindx[i];
         Sprintf(buf, fmt, spellname(splnum), spellev(splnum),
@@ -1669,8 +1747,11 @@ int *spell_no;
                 spellretention(splnum, retentionbuf));
 
         any.a_int = splnum + 1; /* must be non-zero */
-        add_menu(tmpwin, NO_GLYPH, &any, spellet(splnum), 0, ATR_NONE, buf,
-                 (splnum == splaction) ? MENU_SELECTED : MENU_UNSELECTED);
+        {
+            char accel = custom_spellet[splnum] ? custom_spellet[splnum] : spellet(splnum);
+            add_menu(tmpwin, NO_GLYPH, &any, accel, 0, ATR_NONE, buf,
+                     (splnum == splaction) ? MENU_SELECTED : MENU_UNSELECTED);
+        }
     }
     how = PICK_ONE;
     if (splaction == SPELLMENU_VIEW) {
@@ -1678,28 +1759,54 @@ int *spell_no;
             /* only one spell => nothing to swap with */
             how = PICK_NONE;
         } else {
-            /* more than 1 spell, add an extra menu entry */
+            /* more than 1 spell, add extra menu entries */
             any.a_int = SPELLMENU_SORT + 1;
             add_menu(tmpwin, NO_GLYPH, &any, '+', 0, ATR_NONE,
                      "[sort spells]", MENU_UNSELECTED);
+            any.a_int = SPELLMENU_SWAP + 1;
+            add_menu(tmpwin, NO_GLYPH, &any, '!', 0, ATR_NONE,
+                     "[swap two spells]", MENU_UNSELECTED);
         }
     }
-    end_menu(tmpwin, prompt);
+    /* add a selectable link at the bottom to open the viewer/reorder UI */
+    if (splaction == SPELLMENU_CAST) {
+        any.a_int = SPELLMENU_VIEW_LINK + 1;
+        add_menu(tmpwin, NO_GLYPH, &any, '+', 0, ATR_NONE,
+                 "[view/reorder known spells] (cancels casting)", MENU_UNSELECTED);
+    }
+
+    if (splaction == SPELLMENU_CAST) {
+        char prompt_with_hint[QBUFSZ];
+        Sprintf(prompt_with_hint, "%s  (press '%c' to view/reorder — cancels casting)", prompt, SPBOOK_SYM);
+        end_menu(tmpwin, prompt_with_hint);
+    } else {
+        end_menu(tmpwin, prompt);
+    }
 
     n = select_menu(tmpwin, how, &selected);
     destroy_nhwindow(tmpwin);
     if (n > 0) {
-        *spell_no = selected[0].item.a_int - 1;
-        /* menu selection for `PICK_ONE' does not
-           de-select any preselected entry */
-        if (n > 1 && *spell_no == splaction)
-            *spell_no = selected[1].item.a_int - 1;
+        int sel = selected[0].item.a_int - 1;
         free((genericptr_t) selected);
-        /* default selection of preselected spell means that
-           user chose not to swap it with anything */
-        if (*spell_no == splaction)
-            return FALSE;
-        return TRUE;
+        if (sel == SPELLMENU_SORT) {
+            if (spellsortmenu())
+                sortspells();
+            return TRUE; /* redisplay */
+        } else if (sel == SPELLMENU_VIEW_LINK) {
+            (void) dovspell();
+            return FALSE; /* cancel selection and don't cast */
+        } else {
+            *spell_no = sel;
+            /* menu selection for `PICK_ONE' does not
+               de-select any preselected entry */
+            if (n > 1 && *spell_no == splaction)
+                *spell_no = selected[1].item.a_int - 1;
+            /* default selection of preselected spell means that
+               user chose not to swap it with anything */
+            if (*spell_no == splaction)
+                return FALSE;
+            return TRUE;
+        }
     } else if (splaction >= 0) {
         /* explicit de-selection of preselected spell means that
            user is still swapping but not for the current spell */

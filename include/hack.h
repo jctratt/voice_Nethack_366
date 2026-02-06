@@ -27,6 +27,7 @@ extern int current_engraving_state;
 extern char current_engraving_text[BUFSZ];
 extern int message_output_done;
 extern int pending_engraving_message;
+extern int g_tried_elbereth; /* set when player attempts to engrave Elbereth */
 
 /* symbolic names for capacity levels */
 enum encumbrance_types {

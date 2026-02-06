@@ -3111,6 +3111,10 @@ struct monst *mon;
             Your("%s no longer glow so brightly %s.", hands, hcolor(NH_RED));
     }
     u.umconf--;
+    /* refresh hero glyph so color change is visible immediately */
+    newsym(u.ux, u.uy);
+    /* full screen redraw to ensure terminal updates */
+    docrt();
 }
 
 int

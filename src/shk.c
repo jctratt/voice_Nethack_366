@@ -2134,7 +2134,7 @@ register struct monst *shkp; /* if angry, impose a surcharge */
                 break;
             }
             tmp = (long) objects[i].oc_cost;
-        } else if (oid_price_adjustment(obj, obj->o_id) > 0) {
+        } else if (obj->o_id != 0 && oid_price_adjustment(obj, obj->o_id) > 0) {
             /* unid'd, arbitrarily impose surcharge: tmp *= 4/3 */
             multiplier *= 4L;
             divisor *= 3L;
@@ -2178,7 +2178,8 @@ register struct monst *shkp; /* if angry, impose a surcharge */
 
     /* anger surcharge should match rile_shk's, so we do it separately
        from the multiplier/divisor calculation */
-    if (shkp && ESHK(shkp)->surcharge)
+    /* ESHK(shkp) dereferences shkp->mextra; guard against missing mextra. */
+    if (shkp && has_eshk(shkp) && ESHK(shkp)->surcharge)
         tmp += (tmp + 2L) / 3L;
     return tmp;
 }
@@ -2364,10 +2365,13 @@ register struct monst *shkp;
             /* different shop keepers give different prices */
             if (objects[obj->otyp].oc_material == GEMSTONE
                 || objects[obj->otyp].oc_material == GLASS) {
-                tmp = (obj->otyp % (6 - shkp->m_id % 3));
+                /* shkp may be NULL (e.g., Price ID helper); use a safe
+                   default m_id (0) when shkp is absent to avoid crashes. */
+                unsigned mid = shkp ? shkp->m_id : 0U;
+                tmp = (obj->otyp % (6 - mid % 3));
                 tmp = (tmp + 3) * obj->quan;
             }
-        } else if (tmp > 1L && !(shkp->m_id % 4))
+        } else if (tmp > 1L && shkp && has_eshk(shkp) && !(shkp->m_id % 4))
             multiplier *= 3L, divisor *= 4L;
     }
 

@@ -1697,14 +1697,13 @@ struct obj *obj;
                     }
                     if (sellprice > 0L) {
                         if (buyprice > 0L) {
-                            /* show known buy price then sell price */
-                            Sprintf(eos(buf), "[%ld] [sell %ld]", buyprice,
-                                    sellprice);
+                            /* show sell price then buy price */
+                            Sprintf(eos(buf), "[sell %ld] [%ld]", sellprice,
+                                    buyprice);
                             Strcat(buf, " ");
                         } else {
                             /* fallback: show sell price as primary */
-                            Sprintf(eos(buf), "[%ld] [sell %ld]", sellprice,
-                                    sellprice);
+                            Sprintf(eos(buf), "[sell %ld]", sellprice);
                             Strcat(buf, " ");
                         }
                     }

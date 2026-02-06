@@ -4522,7 +4522,24 @@ register struct obj *obj;
                      "that");
 
     if (obj->cobj) {
-        n = query_objlist(qbuf, &(obj->cobj), INVORDER_SORT,
+        int qflags = INVORDER_SORT;
+#ifdef STICKY_OBJECTS
+        {
+            struct obj *check;
+            boolean have_sticky = FALSE;
+            for (check = obj->cobj; check; check = check->nobj)
+                if (check->sticky) {
+                    have_sticky = TRUE;
+                    break;
+                }
+            if (flags.invlet_constant || have_sticky)
+                qflags |= USE_INVLET;
+        }
+#else
+        if (flags.invlet_constant)
+            qflags |= USE_INVLET;
+#endif
+        n = query_objlist(qbuf, &(obj->cobj), qflags,
                           &selected, PICK_NONE, allow_all);
     } else {
         invdisp_nothing(qbuf, "(empty)");
