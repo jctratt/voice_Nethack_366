@@ -1,0 +1,22 @@
+# Changelog
+
+Commits since `README.md` was last updated (commit c012979 — 2025-03-05):
+
+- 6c2e5be 2026-02-06 Jeff Tratt — Add #showlines: transient sight-lines aid (curses highlights + tmp_at fallback), persistent until move, auto-clear on cancel/move, integrate with 'z' and 'Z'
+- 6376f7f 2026-02-05 Jeff Tratt — color: show hero color for confuse-monster charges and force redraw
+- 84e4ff0 2026-02-05 Jeff Tratt — name: use price-identify logic for #name floor price ranges; compute surcharge variant to avoid L0 ranges
+- 8a2cde9 2026-02-04 Jeff Tratt — priceid: show alternate candidate prices; move category selection earlier; add Ctrl-B/Ctrl-S toggle and Ctrl-G category jump; credit dizzy (Aubrey Raech/dizzyprice)
+- 935e871 2026-02-04 Jeff Tratt — docall: add appearance-based short prefill and labeled shop L/H hints; use shop_get_cost/shop_set_cost
+- ff3ecbb 2026-02-03 Jeff Tratt — Reapply WIP tile options and resolve BL_TILE merge conflicts
+- a42aa3d 2026-02-03 Jeff Tratt — Add BL_TILE status field; populate with do_screen_description; fix do_oname not to set type name
+- fc448c5 2026-02-03 Jeff Tratt — Implement engraving status display and voice messages
+- ee2b7e2 2026-02-03 Jeff Tratt — Add Ctrl+Arrow key support for word jumping in naming dialog
+- 5ecc497 2025-03-09 Jeff Tratt — Update pline.c with TTS_CMD changes from Claude
+- d95853e 2025-03-09 Jeff Tratt — A bit of cleanup
+- 79beda6 2025-03-09 Jeff Tratt — TTS to espeak from gTTS
+- 7a929ec 2025-03-09 Jeff Tratt — Ignore make_all files in repo root
+- 9353c85 2025-03-09 Jeff Tratt — Remove outdated make_all output files
+- 372ebbe 2025-03-09 Jeff Tratt — Ignore build artifacts in parent directory
+
+Notes:
+- This list contains every commit on `main` since the README was last updated. For more context or to build release notes, I can expand each entry with file-level diffs or PR links.

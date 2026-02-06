@@ -23,6 +23,15 @@ A modified version of NetHack 3.6.6 with text-to-speech capabilities using espea
   - Toggle with `#sticky` command or Meta-y
   - Sticky items show with `=` instead of `-` in inventory listings
 
+- **Showlines (sight-lines helper)** 🟡
+  - Adds an extended command `#showlines` (also bound by default to a Ctrl key) that draws transient sight/ray lines out from the player to help judge line-of-sight and zap direction.
+  - Visuals (curses): **red** for tiles the player can see (stops at real obstacles), **yellow** for tiles unknown to the player (projects to window edge). For non-curses ports it uses the `tmp_at` temporary glyph mechanism with similar behavior.
+  - Non-destructive and non-cheating: it does not reveal hidden monsters or objects and will not overwrite visible monsters/objects.
+  - Persistence & clearing: the rays persist as a no-move visual until the player moves (they are cleared automatically), and they are also cleared if you cancel an action (Esc) or after performing an action that consumes a move.
+  - Integration: invoking `z` (zap wand) or `Z` (cast spell) will showlines automatically before prompting for wand/spell selection so you can judge direction; Esc cancels selection and clears the rays without performing the action.
+  - Tagged: this feature was added as `v0.1-showlines`.
+
+
 ### More Additional Enhancements
   - A lot of minor visual changes, some of which might be considered cheats (inventory information providing various stats; sorry I made this for myself--just sharing)
   - Some changes to items (silver elven arrows)
@@ -114,3 +123,15 @@ This project is licensed under the NetHack General Public License - see the orig
 - "L" for the original specialcolors patch (from NetHack 3.4.3)
 - Contributors of the sticky patch
 - The espeak project for text-to-speech capabilities
+
+---
+
+## Changelog 📜
+
+Recent work is summarized in `CHANGELOG.md` (commits since the last README update). Notable recent additions include:
+
+- **Showlines**: transient sight-lines visual aid with curses highlighting and tmp_at fallback; persists until move; integrated into `z` (wand) and `Z` (spell cast) flows; tagged as `v0.1-showlines`.
+- **Status line tile**: `BL_TILE` status field and related display/voice improvements.
+- **Pricing & shop UX**: price identification and shop UI improvements (priceid, #name price ranges, shop hints).
+
+For the full commit list and dates, see `CHANGELOG.md`.
