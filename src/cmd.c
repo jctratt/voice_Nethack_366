@@ -6041,6 +6041,26 @@ static coord *showboom_temp = (coord *) 0;
 static int showboom_temp_cnt = 0;
 static int showboom_temp_cap = 0;
 
+/* Structure to track a single trajectory point for multi-trajectory display */
+struct trajectory_point {
+    int x, y;
+    char display_char;
+    int color;
+};
+
+/* Structure to track all points in one trajectory */
+struct trajectory {
+    struct trajectory_point *points;
+    int point_count;
+    int point_capacity;
+    char key_pressed;
+};
+
+/* Array to track multiple trajectories */
+static struct trajectory *trajectories = (struct trajectory *) 0;
+static int trajectory_count = 0;
+static int trajectory_capacity = 0;
+
 static void
 add_showboom_temp(int x, int y)
 {
@@ -6063,6 +6083,74 @@ clear_showboom_temp(void)
         newsym(showboom_temp[i].x, showboom_temp[i].y);
     }
     showboom_temp_cnt = 0;
+}
+
+static void
+clear_all_trajectories(void)
+{
+    /* Free all trajectory data and reset to clean state */
+    for (int i = 0; i < trajectory_count; ++i) {
+        if (trajectories[i].points)
+            free((genericptr_t) trajectories[i].points);
+    }
+    if (trajectories)
+        free((genericptr_t) trajectories);
+    trajectories = (struct trajectory *) 0;
+    trajectory_count = 0;
+    trajectory_capacity = 0;
+}
+
+static void
+redraw_all_trajectories(boolean only_last_bold)
+{
+    /* Redraw all stored trajectories; if only_last_bold, make all but the last dimmed */
+    if (!WINDOWPORT("curses"))
+        return;
+    
+    for (int i = 0; i < trajectory_count; ++i) {
+        struct trajectory *traj = &trajectories[i];
+        int attr = (only_last_bold && i < trajectory_count - 1) ? A_DIM : A_BOLD;
+        
+        for (int j = 0; j < traj->point_count; ++j) {
+            struct trajectory_point *pt = &traj->points[j];
+            curses_highlight_tile_colored(pt->x, pt->y, pt->display_char, pt->color, attr);
+        }
+    }
+}
+
+static struct trajectory *
+start_new_trajectory(char key)
+{
+    /* Add a new trajectory to the array */
+    if (trajectory_count >= trajectory_capacity) {
+        int newcap = trajectory_capacity ? trajectory_capacity * 2 : 8;
+        trajectories = (struct trajectory *) realloc((genericptr_t) trajectories, 
+                                                      newcap * sizeof(struct trajectory));
+        trajectory_capacity = newcap;
+    }
+    struct trajectory *traj = &trajectories[trajectory_count++];
+    traj->points = (struct trajectory_point *) 0;
+    traj->point_count = 0;
+    traj->point_capacity = 0;
+    traj->key_pressed = key;
+    return traj;
+}
+
+static void
+add_trajectory_point(struct trajectory *traj, int x, int y, char display_char, int color)
+{
+    /* Expand points array if needed */
+    if (traj->point_count >= traj->point_capacity) {
+        int newcap = traj->point_capacity ? traj->point_capacity * 2 : 32;
+        traj->points = (struct trajectory_point *) realloc((genericptr_t) traj->points,
+                                                            newcap * sizeof(struct trajectory_point));
+        traj->point_capacity = newcap;
+    }
+    struct trajectory_point *pt = &traj->points[traj->point_count++];
+    pt->x = x;
+    pt->y = y;
+    pt->display_char = display_char;
+    pt->color = color;
 }
 
 void
@@ -6560,6 +6648,7 @@ restart:
 
         if (ch == '\033') { /* ESC */
             pline("Never mind.");
+            clear_all_trajectories();
             docrt();
             return 0;
         }
@@ -6571,6 +6660,7 @@ restart:
                no-op if no tmp_at session is active (avoids "tglyph not initialized"). */
             clear_showboomerang();
             clear_showboom_temp();
+            clear_all_trajectories();
             tmp_at(DISP_FREEMEM, 0);
             docrt();
             /* Restart the command loop (equivalent to ESC followed by
@@ -6596,7 +6686,7 @@ restart:
             continue;
         }
 
-        /* animate the selected direction once */
+        /* Calculate and store the trajectory for this direction */
         if (WINDOWPORT("curses")) {
             int dx = dxs[dir], dy = dys[dir];
             coord pos;
@@ -6618,6 +6708,9 @@ restart:
             if (i_idx >= 8)
                 continue;
 
+            /* Start a new trajectory for this direction */
+            struct trajectory *traj = start_new_trajectory(ch);
+
             boolean counterclockwise = TRUE;
             for (int ct = 0; ct < 10; ++ct) {
                 i_idx = (i_idx + 8) % 8;
@@ -6634,33 +6727,34 @@ restart:
                     int bg_ch, bg_color; unsigned bg_spec;
                     mapglyph(bg_glyph, &bg_ch, &bg_color, &bg_spec, sx, sy, 0);
                     if (bg_ch != ' ') {
-                        curses_highlight_tile_colored(sx, sy, ch, color, A_BOLD);
-                        nh_delay_output();
-                        newsym(sx, sy);
+                        /* Hit a wall - store and stop */
+                        add_trajectory_point(traj, sx, sy, ch, color);
                         break;
                     }
                 }
                 if (m_at(sx, sy)) {
-                    curses_highlight_tile_colored(sx, sy, ch, CLR_RED, A_BOLD);
-                    add_showboom_temp(sx, sy);
-                    nh_delay_output();
-                    clear_showboom_temp();
+                    /* Hit a monster - store and stop */
+                    add_trajectory_point(traj, sx, sy, ch, CLR_RED);
                     break;
                 }
-                curses_highlight_tile_colored(sx, sy, '.', color, A_BOLD);
-                add_showboom_temp(sx, sy);
-                nh_delay_output();
-                clear_showboom_temp();
+                
+                /* Normal trajectory point */
+                add_trajectory_point(traj, sx, sy, '.', color);
+                
                 if (ct % 5 != 0)
                     i_idx += (counterclockwise ? -1 : 1);
                 if (sx == u.ux && sy == u.uy) {
-                    curses_highlight_tile_colored(sx, sy, ch, CLR_WHITE, A_BOLD);
-                    nh_delay_output();
-                    newsym(sx, sy);
+                    /* Caught - store catch point and stop */
+                    add_trajectory_point(traj, sx, sy, ch, CLR_WHITE);
                     break;
                 }
             }
+
+            /* Redraw all trajectories: previous ones in non-bold, new one in bold */
+            redraw_all_trajectories(TRUE);
+            
         } else {
+            /* Non-curses fallback: keep original tmp_at animation */
             int dx = dxs[dir], dy = dys[dir];
             int bx = u.ux, by = u.uy;
             int beam_glyph = cmap_to_glyph(S_goodpos);
