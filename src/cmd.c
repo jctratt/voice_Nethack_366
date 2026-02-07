@@ -6545,7 +6545,7 @@ doshowboomerang_interactive(VOID_ARGS)
 
 restart:
     /* Prompt user for repeated single-direction previews until ESC */
-    pline("Show boomerang direction (press y k u l n j b h or 1-9; ESC to finish)");
+    pline("Show boomerang direction (press y k u l 5 n j b h or 1-9; ESC to finish)");
 
     for (;;) {
         ch = readchar();
@@ -6568,7 +6568,6 @@ restart:
             clear_showboomerang();
             clear_showboom_temp();
             tmp_at(DISP_FREEMEM, 0);
-            pline("Preview cleared.");
             docrt();
             /* Restart the command loop (equivalent to ESC followed by
                re-invoking #showboomerang) without using recursion. */
