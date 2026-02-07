@@ -2,6 +2,8 @@
 
 Commits since `README.md` was last updated (commit c012979 — 2025-03-05):
 
+- 8db68ef 2026-02-07 Jeff Tratt — Add #showboomerang interactive preview for boomerang trajectories; integrate #showlines into 't' (throw) and 'f' (fire/quiver) flows; map keypad-center to '5' to clear preview; pressing '5' now clears preview and restarts the command.
+
 - 6c2e5be 2026-02-06 Jeff Tratt — Add #showlines: transient sight-lines aid (curses highlights + tmp_at fallback), persistent until move, auto-clear on cancel/move, integrate with 'z' and 'Z'
 - 6376f7f 2026-02-05 Jeff Tratt — color: show hero color for confuse-monster charges and force redraw
 - 84e4ff0 2026-02-05 Jeff Tratt — name: use price-identify logic for #name floor price ranges; compute surcharge variant to avoid L0 ranges
