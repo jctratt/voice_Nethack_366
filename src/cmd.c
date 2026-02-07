@@ -3404,6 +3404,7 @@ dotogglevoice(void) /* toggle voice_enabled */
 
 /* ordered by command name */
 int doshowlines(VOID_ARGS);
+int doshowboomerang(VOID_ARGS);
 
 struct ext_func_tab extcmdlist[] = {
     { '#', "#", "perform an extended command",
@@ -3531,6 +3532,7 @@ struct ext_func_tab extcmdlist[] = {
 #endif /* SHELL */
     },
     { C('.'), "showlines", "show sight lines", doshowlines, IFBURIED | GENERALCMD | AUTOCOMPLETE },
+    { '\0', "showboomerang", "show boomerang trajectories", doshowboomerang, IFBURIED | GENERALCMD | AUTOCOMPLETE },
     { M('s'), "sit", "sit down", dosit, AUTOCOMPLETE },
     { '\0', "stats", "show memory statistics",
             wiz_show_stats, IFBURIED | AUTOCOMPLETE | WIZMODECMD },
@@ -6019,11 +6021,49 @@ STATIC_PTR int
 dotravel(VOID_ARGS);
 int
 doshowlines(VOID_ARGS);
+int
+doshowboomerang(VOID_ARGS);
+int
+doshowboomerang_interactive(VOID_ARGS);
 
 /* showlines state for automatic clearing */
 static coord *showlines_hits = (coord *) 0;
 static int showlines_hcnt = 0;
 static boolean showlines_active = FALSE;
+
+/* showboomerang state for automatic clearing */
+static coord *showboom_hits = (coord *) 0;
+static int showboom_hcnt = 0;
+static boolean showboom_active = FALSE;
+
+/* transient interactive highlights; tracked so they can be cleared on demand */
+static coord *showboom_temp = (coord *) 0;
+static int showboom_temp_cnt = 0;
+static int showboom_temp_cap = 0;
+
+static void
+add_showboom_temp(int x, int y)
+{
+    if (showboom_temp_cnt >= showboom_temp_cap) {
+        int newcap = showboom_temp_cap ? showboom_temp_cap * 2 : 64;
+        showboom_temp = (coord *) realloc((genericptr_t) showboom_temp, newcap * sizeof(coord));
+        showboom_temp_cap = newcap;
+    }
+    showboom_temp[showboom_temp_cnt].x = x;
+    showboom_temp[showboom_temp_cnt].y = y;
+    showboom_temp_cnt++;
+}
+
+static void
+clear_showboom_temp(void)
+{
+    if (showboom_temp_cnt <= 0)
+        return;
+    for (int i = 0; i < showboom_temp_cnt; ++i) {
+        newsym(showboom_temp[i].x, showboom_temp[i].y);
+    }
+    showboom_temp_cnt = 0;
+}
 
 void
 clear_showlines(void)
@@ -6046,6 +6086,29 @@ clear_showlines(void)
     }
 
     showlines_active = FALSE;
+    /* Redraw screen to ensure no stale overlays remain */
+    docrt();
+}
+
+void
+clear_showboomerang(void)
+{
+    if (!showboom_active)
+        return;
+
+    if (WINDOWPORT("curses")) {
+        while (showboom_hcnt-- > 0) {
+            newsym(showboom_hits[showboom_hcnt].x,
+                   showboom_hits[showboom_hcnt].y);
+        }
+        free((genericptr_t) showboom_hits);
+        showboom_hits = (coord *) 0;
+        showboom_hcnt = 0;
+    } else {
+        tmp_at(DISP_END, 0);
+    }
+
+    showboom_active = FALSE;
     /* Redraw screen to ensure no stale overlays remain */
     docrt();
 }
@@ -6284,6 +6347,363 @@ doshowlines(VOID_ARGS)
             }
         }
         /* do not wait; beam remains active until player moves */
+    }
+
+    return 0;
+}
+
+/* showboomerang command: animate a short preview of boomerang trajectories */
+int
+doshowboomerang(VOID_ARGS)
+{
+    /* direction vectors ordered N,NE,E,SE,S,SW,W,NW (indices 0..7) */
+    static const int dxs[8] = { 0, 1, 1, 1, 0, -1, -1, -1 };
+    static const int dys[8] = { -1, -1, 0, 1, 1, 1, 0, -1 };
+    int i, sx, sy, idx;
+    int ux = u.ux, uy = u.uy;
+
+    if (u.uswallow) {
+        pline("You can't show boomerang trajectories while swallowed.");
+        return 0;
+    }
+
+    /* Delegate to the interactive preview that accepts direction keys */
+    return doshowboomerang_interactive();
+
+    /* We'll animate each of the 8 initial directions sequentially.  Use
+       a color mapping based on numpad groupings:
+         1/9 -> color1 (CLR_MAGENTA)
+         4/6 -> color2 (CLR_GREEN)
+         7/3 -> color3 (CLR_CYAN)
+         8/2 -> color4 (CLR_YELLOW)
+    */
+
+    if (WINDOWPORT("curses")) {
+        /* Curses path: draw characters and clear them per-step with newsym() */
+        for (i = 0; i < 8; ++i) {
+            int dx = dxs[i], dy = dys[i];
+            int i_idx;
+            coord pos;
+            pos.x = ux; pos.y = uy;
+
+            /* map index to color group */
+            int color;
+            if (i == 1 || i == 5)
+                color = CLR_MAGENTA; /* 1/9 group (NE/SW) */
+            else if (i == 2 || i == 6)
+                color = CLR_GREEN;   /* 4/6 group (E/W) */
+            else if (i == 3 || i == 7)
+                color = CLR_CYAN;    /* 7/3 group (SE/NW) */
+            else
+                color = CLR_YELLOW;  /* 8/2 group (N/S) */
+
+            /* find starting index in xdir/ydir matching dx/dy */
+            for (idx = 0; idx < 8; ++idx)
+                if (xdir[idx] == dx && ydir[idx] == dy)
+                    break;
+            if (idx >= 8)
+                continue;
+
+            /* Simulate boomhit stepping and animate */
+            i_idx = idx;
+            boolean counterclockwise = TRUE; /* right-handed throw */
+            for (int ct = 0; ct < 10; ++ct) {
+                /* boomhit increments i at top of each iteration */
+                i_idx = (i_idx + 8) % 8;
+                dx = xdir[i_idx];
+                dy = ydir[i_idx];
+                pos.x += dx;
+                pos.y += dy;
+                sx = pos.x; sy = pos.y;
+
+                if (!isok(sx, sy) || levl[sx][sy].typ == STONE)
+                    break; /* off-map or solid rock */
+
+                /* stop on hard boundaries like boomhit unless visually blank */
+                if (cansee(sx, sy) && (!ZAP_POS(levl[sx][sy].typ) || closed_door(sx, sy))) {
+                    int bg_glyph = back_to_glyph(sx, sy);
+                    int bg_ch, bg_color; unsigned bg_spec;
+                    mapglyph(bg_glyph, &bg_ch, &bg_color, &bg_spec, sx, sy, 0);
+                    if (bg_ch != ' ') {
+                        /* show blocking tile briefly and stop */
+                        curses_highlight_tile_colored(sx, sy, 'X', color, A_BOLD);
+                        add_showboom_temp(sx, sy);
+                        nh_delay_output();
+                        clear_showboom_temp();
+                        newsym(sx, sy);
+                        break;
+                    }
+                    /* otherwise fall through and animate through visually-blank tile */
+                }
+
+                /* if there's a monster here, mark it briefly and stop (preview) */
+                if (m_at(sx, sy)) {
+                    curses_highlight_tile_colored(sx, sy, '!', CLR_RED, A_BOLD);
+                    add_showboom_temp(sx, sy);
+                    nh_delay_output();
+                    clear_showboom_temp();
+                    newsym(sx, sy);
+                    break;
+                }
+
+                /* animate step (dot) */
+                curses_highlight_tile_colored(sx, sy, '.', color, A_BOLD);
+                add_showboom_temp(sx, sy);
+                nh_delay_output();
+                /* clear the step before continuing so only the moving dot is visible */
+                clear_showboom_temp();
+                newsym(sx, sy);
+
+                /* special stepping rule from boomhit: rotate the index except at ct%5==0 */
+                if (ct % 5 != 0)
+                    i_idx += (counterclockwise ? -1 : 1);
+
+                /* if we returned to the hero's tile, indicate catch possibility and stop */
+                if (sx == u.ux && sy == u.uy) {
+                    /* player catch: show 'C' for a moment */
+                    curses_highlight_tile_colored(sx, sy, 'C', CLR_WHITE, A_BOLD);
+                    nh_delay_output();
+                    newsym(sx, sy);
+                    break;
+                }
+            }
+            /* small pause between direction previews */
+            nh_delay_output();
+        }
+    } else {
+        /* Non-curses fallback: use tmp_at animation per-direction (no colors) */
+        int beam_glyph = cmap_to_glyph(S_goodpos);
+        for (i = 0; i < 8; ++i) {
+            int dx = dxs[i], dy = dys[i];
+            int i_idx;
+            int bx = ux, by = uy;
+
+            for (idx = 0; idx < 8; ++idx)
+                if (xdir[idx] == dx && ydir[idx] == dy)
+                    break;
+            if (idx >= 8)
+                continue;
+
+            i_idx = idx;
+            boolean counterclockwise = TRUE;
+            for (int ct = 0; ct < 10; ++ct) {
+                i_idx = (i_idx + 8) % 8;
+                dx = xdir[i_idx];
+                dy = ydir[i_idx];
+                bx += dx; by += dy;
+                if (!isok(bx, by) || levl[bx][by].typ == STONE)
+                    break;
+
+                /* show tmp glyph and pause */
+                tmp_at(DISP_CHANGE, beam_glyph);
+                tmp_at(bx, by);
+                nh_delay_output();
+                tmp_at(DISP_END, 0);
+
+                if (m_at(bx, by)) {
+                    /* show marker for monster briefly */
+                    tmp_at(DISP_CHANGE, beam_glyph);
+                    tmp_at(bx, by);
+                    nh_delay_output();
+                    tmp_at(DISP_END, 0);
+                    break;
+                }
+
+                if (!ZAP_POS(levl[bx][by].typ) || closed_door(bx, by)) {
+                    int bg_glyph = back_to_glyph(bx, by);
+                    int bg_ch, bg_color; unsigned bg_spec;
+                    mapglyph(bg_glyph, &bg_ch, &bg_color, &bg_spec, bx, by, 0);
+                    if (bg_ch != ' ')
+                        break;
+                }
+
+                if (bx == u.ux && by == u.uy) {
+                    tmp_at(DISP_CHANGE, cmap_to_glyph(S_goodpos));
+                    tmp_at(bx, by);
+                    nh_delay_output();
+                    tmp_at(DISP_END, 0);
+                    break;
+                }
+
+                if (ct % 5 != 0)
+                    i_idx += (counterclockwise ? -1 : 1);
+            }
+            nh_delay_output();
+        }
+    }
+
+    return 0;
+}
+
+/* Interactive showboomerang implementation: animate a chosen direction */
+int
+doshowboomerang_interactive(VOID_ARGS)
+{
+    static const int dxs[8] = { 0, 1, 1, 1, 0, -1, -1, -1 };
+    static const int dys[8] = { -1, -1, 0, 1, 1, 1, 0, -1 };
+    char ch;
+
+restart:
+    /* Prompt user for repeated single-direction previews until ESC */
+    pline("Show boomerang direction (press y k u l n j b h or 1-9; ESC to finish)");
+
+    for (;;) {
+        ch = readchar();
+
+        /* Map keypad-center to '5' when numeric keypad mode is enabled so
+           numpad-center will clear the preview (equivalent to pressing '5'). */
+        if (iflags.num_pad && (ch == 'g' || ch == 'G'))
+            ch = '5';
+
+        if (ch == '\033') { /* ESC */
+            docrt();
+            return 0;
+        }
+        /* '5' refreshes/clears the preview. Treat it as ESC + restart so
+           the command is re-invoked immediately. */
+        if (ch == '5') {
+            /* Clear any boomerang highlights and end tmp_at overlays for non-curses
+               without redrawing the entire map. Use DISP_FREEMEM which is a safe
+               no-op if no tmp_at session is active (avoids "tglyph not initialized"). */
+            clear_showboomerang();
+            clear_showboom_temp();
+            tmp_at(DISP_FREEMEM, 0);
+            pline("Preview cleared.");
+            docrt();
+            /* Restart the command loop (equivalent to ESC followed by
+               re-invoking #showboomerang) without using recursion. */
+            goto restart;
+        }
+        if (ch == '\n' || ch == '\r')
+            continue;
+
+        int dir = -1;
+        switch (ch) {
+        case 'k': case 'K': case '8': dir = 0; break; /* N */
+        case 'u': case 'U': case '9': dir = 1; break; /* NE */
+        case 'l': case 'L': case '6': dir = 2; break; /* E */
+        case 'n': case 'N': case '3': dir = 3; break; /* SE */
+        case 'j': case 'J': case '2': dir = 4; break; /* S */
+        case 'b': case 'B': case '1': dir = 5; break; /* SW */
+        case 'h': case 'H': case '4': dir = 6; break; /* W */
+        case 'y': case 'Y': case '7': dir = 7; break; /* NW */
+        default:
+            nhbell();
+            continue;
+        }
+
+        /* animate the selected direction once */
+        if (WINDOWPORT("curses")) {
+            int dx = dxs[dir], dy = dys[dir];
+            coord pos;
+            pos.x = u.ux; pos.y = u.uy;
+            int color;
+            if (dir == 1 || dir == 5)
+                color = CLR_MAGENTA; /* 1/9 group */
+            else if (dir == 2 || dir == 6)
+                color = CLR_GREEN;   /* 4/6 group */
+            else if (dir == 3 || dir == 7)
+                color = CLR_CYAN;    /* 7/3 group */
+            else
+                color = CLR_YELLOW;  /* 8/2 group */
+
+            int i_idx;
+            for (i_idx = 0; i_idx < 8; ++i_idx)
+                if (xdir[i_idx] == dx && ydir[i_idx] == dy)
+                    break;
+            if (i_idx >= 8)
+                continue;
+
+            boolean counterclockwise = TRUE;
+            for (int ct = 0; ct < 10; ++ct) {
+                i_idx = (i_idx + 8) % 8;
+                dx = xdir[i_idx];
+                dy = ydir[i_idx];
+                pos.x += dx; pos.y += dy;
+                int sx = pos.x, sy = pos.y;
+
+                if (!isok(sx, sy) || levl[sx][sy].typ == STONE)
+                    break;
+
+                if (cansee(sx, sy) && (!ZAP_POS(levl[sx][sy].typ) || closed_door(sx, sy))) {
+                    int bg_glyph = back_to_glyph(sx, sy);
+                    int bg_ch, bg_color; unsigned bg_spec;
+                    mapglyph(bg_glyph, &bg_ch, &bg_color, &bg_spec, sx, sy, 0);
+                    if (bg_ch != ' ') {
+                        curses_highlight_tile_colored(sx, sy, 'X', color, A_BOLD);
+                        nh_delay_output();
+                        newsym(sx, sy);
+                        break;
+                    }
+                }
+                if (m_at(sx, sy)) {
+                    curses_highlight_tile_colored(sx, sy, '!', CLR_RED, A_BOLD);
+                    add_showboom_temp(sx, sy);
+                    nh_delay_output();
+                    clear_showboom_temp();
+                    break;
+                }
+                curses_highlight_tile_colored(sx, sy, '.', color, A_BOLD);
+                add_showboom_temp(sx, sy);
+                nh_delay_output();
+                clear_showboom_temp();
+                if (ct % 5 != 0)
+                    i_idx += (counterclockwise ? -1 : 1);
+                if (sx == u.ux && sy == u.uy) {
+                    curses_highlight_tile_colored(sx, sy, 'C', CLR_WHITE, A_BOLD);
+                    nh_delay_output();
+                    newsym(sx, sy);
+                    break;
+                }
+            }
+        } else {
+            int dx = dxs[dir], dy = dys[dir];
+            int bx = u.ux, by = u.uy;
+            int beam_glyph = cmap_to_glyph(S_goodpos);
+
+            int i_idx;
+            for (i_idx = 0; i_idx < 8; ++i_idx)
+                if (xdir[i_idx] == dx && ydir[i_idx] == dy)
+                    break;
+            if (i_idx >= 8)
+                continue;
+
+            boolean counterclockwise = TRUE;
+            for (int ct = 0; ct < 10; ++ct) {
+                i_idx = (i_idx + 8) % 8;
+                dx = xdir[i_idx]; dy = ydir[i_idx];
+                bx += dx; by += dy;
+                if (!isok(bx, by) || levl[bx][by].typ == STONE)
+                    break;
+                tmp_at(DISP_CHANGE, beam_glyph);
+                tmp_at(bx, by);
+                nh_delay_output();
+                tmp_at(DISP_END, 0);
+                if (m_at(bx, by)) {
+                    tmp_at(DISP_CHANGE, beam_glyph);
+                    tmp_at(bx, by);
+                    nh_delay_output();
+                    tmp_at(DISP_END, 0);
+                    break;
+                }
+                if (!ZAP_POS(levl[bx][by].typ) || closed_door(bx, by)) {
+                    int bg_glyph = back_to_glyph(bx, by);
+                    int bg_ch, bg_color; unsigned bg_spec;
+                    mapglyph(bg_glyph, &bg_ch, &bg_color, &bg_spec, bx, by, 0);
+                    if (bg_ch != ' ')
+                        break;
+                }
+                if (bx == u.ux && by == u.uy) {
+                    tmp_at(DISP_CHANGE, beam_glyph);
+                    tmp_at(bx, by);
+                    nh_delay_output();
+                    tmp_at(DISP_END, 0);
+                    break;
+                }
+                if (ct % 5 != 0)
+                    i_idx += (counterclockwise ? -1 : 1);
+            }
+        }
     }
 
     return 0;

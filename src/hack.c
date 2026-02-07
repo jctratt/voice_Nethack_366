@@ -1351,6 +1351,9 @@ u_rooted()
 /* forward declaration for showlines clearing (implemented in cmd.c) */
 void clear_showlines(void);
 
+/* forward declaration for showboomerang clearing (implemented in cmd.c) */
+void clear_showboomerang(void);
+
 void
 domove()
 {
@@ -1358,6 +1361,8 @@ domove()
 
         /* clear any transient showlines before movement so they don't linger */
         clear_showlines();
+        /* also clear any showboomerang highlights */
+        clear_showboomerang();
 
         domove_succeeded = 0L;
         domove_core();

@@ -8,6 +8,7 @@
 #include "hack.h"
 
 STATIC_DCL int FDECL(throw_obj, (struct obj *, int));
+extern int NDECL(doshowboomerang);
 STATIC_DCL boolean FDECL(ok_to_throw, (int *));
 STATIC_DCL void NDECL(autoquiver);
 STATIC_DCL int FDECL(gem_accept, (struct monst *, struct obj *));
@@ -265,12 +266,17 @@ int *shotlimit_p; /* (see dothrow()) */
     return TRUE;
 }
 
+/* forward declarations for showlines helper (implemented in cmd.c) */
+extern int NDECL(doshowlines);
+extern void clear_showlines(void);
+
 /* t command - throw */
 int
 dothrow()
 {
     register struct obj *obj;
     int shotlimit;
+    int ret = 0;
 
     /*
      * Since some characters shoot multiple missiles at one time,
@@ -286,12 +292,24 @@ dothrow()
     if (!ok_to_throw(&shotlimit))
         return 0;
 
+    /* Show sight lines for the player before selecting an object/target */
+    (void) doshowlines();
+
     obj = getobj(uslinging() ? bullets : toss_objs, "throw");
     /* it is also possible to throw food */
     /* (or jewels, or iron balls... ) */
 
-    return obj ? throw_obj(obj, shotlimit) : 0;
-}
+    if (obj) {
+        /* If selected object is a boomerang, show a short animated preview */
+        if (obj->otyp == BOOMERANG)
+            (void) doshowboomerang();
+        ret = throw_obj(obj, shotlimit);
+    }
+
+    /* Clear showlines on completion or cancellation */
+    clear_showlines();
+    return ret;
+} 
 
 /* KMH -- Automatically fill quiver */
 /* Suggested by Jeffrey Bay <jbay@convex.hp.com> */
@@ -366,6 +384,7 @@ dofire()
 {
     int shotlimit;
     struct obj *obj;
+    int ret = 0;
 
     /*
      * Same as dothrow(), except we use quivered missile instead
@@ -385,6 +404,9 @@ dofire()
      */
     if (!ok_to_throw(&shotlimit))
         return 0;
+
+    /* Show sight lines for the player before selecting an object/target */
+    (void) doshowlines();
 
     if ((obj = uquiver) == 0) {
         if (!flags.autoquiver) {
@@ -414,8 +436,17 @@ dofire()
         }
     }
 
-    return obj ? throw_obj(obj, shotlimit) : 0;
+    if (obj) {
+        if (obj->otyp == BOOMERANG)
+            (void) doshowboomerang();
+        ret = throw_obj(obj, shotlimit);
+    }
+
+    /* Clear showlines on completion or cancellation */
+    clear_showlines();
+    return ret;
 }
+
 
 /* if in midst of multishot shooting/throwing, stop early */
 void

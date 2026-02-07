@@ -25,6 +25,7 @@ A modified version of NetHack 3.6.6 with text-to-speech capabilities using espea
 
 - **Showlines (sight-lines helper)** 🟡
   - Adds an extended command `#showlines` (also bound by default to a Ctrl key) that draws transient sight/ray lines out from the player to help judge line-of-sight and zap direction.
+  - Adds an extended command `#showboomerang` (no default separate key binding) that draws transient boomerang trajectories for the 8 directions, using the same visibility and stopping rules as `#showlines`.
   - Visuals (curses): **red** for tiles the player can see (stops at real obstacles), **yellow** for tiles unknown to the player (projects to window edge). For non-curses ports it uses the `tmp_at` temporary glyph mechanism with similar behavior.
   - Non-destructive and non-cheating: it does not reveal hidden monsters or objects and will not overwrite visible monsters/objects.
   - Persistence & clearing: the rays persist as a no-move visual until the player moves (they are cleared automatically), and they are also cleared if you cancel an action (Esc) or after performing an action that consumes a move.
