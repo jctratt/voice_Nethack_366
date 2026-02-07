@@ -48,4 +48,12 @@ typedef struct fe {
     Bitfield(needs_fixup, 1); /* does arg need to be patched? */
 } timer_element;
 
+/* property name mapping for wizard mode commands */
+struct propname {
+    int prop_num;
+    const char *prop_name;
+};
+
+extern const struct propname propertynames[];
+
 #endif /* TIMEOUT_H */
