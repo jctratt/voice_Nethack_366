@@ -6542,10 +6542,13 @@ doshowboomerang_interactive(VOID_ARGS)
     static const int dxs[8] = { 0, 1, 1, 1, 0, -1, -1, -1 };
     static const int dys[8] = { -1, -1, 0, 1, 1, 1, 0, -1 };
     char ch;
+    boolean show_prompt = TRUE;
 
 restart:
     /* Prompt user for repeated single-direction previews until ESC */
-    pline("Show boomerang direction (press y k u l 5 n j b h or 1-9; ESC to finish)");
+    if (show_prompt)
+        pline("Show boomerang direction (press y k u l 5 n j b h or 1-9; ESC to finish)");
+    show_prompt = FALSE;
 
     for (;;) {
         ch = readchar();
@@ -6556,6 +6559,7 @@ restart:
             ch = '5';
 
         if (ch == '\033') { /* ESC */
+            pline("Never mind.");
             docrt();
             return 0;
         }
@@ -6571,6 +6575,7 @@ restart:
             docrt();
             /* Restart the command loop (equivalent to ESC followed by
                re-invoking #showboomerang) without using recursion. */
+            show_prompt = TRUE;
             goto restart;
         }
         if (ch == '\n' || ch == '\r')
@@ -6629,14 +6634,14 @@ restart:
                     int bg_ch, bg_color; unsigned bg_spec;
                     mapglyph(bg_glyph, &bg_ch, &bg_color, &bg_spec, sx, sy, 0);
                     if (bg_ch != ' ') {
-                        curses_highlight_tile_colored(sx, sy, 'X', color, A_BOLD);
+                        curses_highlight_tile_colored(sx, sy, ch, color, A_BOLD);
                         nh_delay_output();
                         newsym(sx, sy);
                         break;
                     }
                 }
                 if (m_at(sx, sy)) {
-                    curses_highlight_tile_colored(sx, sy, '!', CLR_RED, A_BOLD);
+                    curses_highlight_tile_colored(sx, sy, ch, CLR_RED, A_BOLD);
                     add_showboom_temp(sx, sy);
                     nh_delay_output();
                     clear_showboom_temp();
@@ -6649,7 +6654,7 @@ restart:
                 if (ct % 5 != 0)
                     i_idx += (counterclockwise ? -1 : 1);
                 if (sx == u.ux && sy == u.uy) {
-                    curses_highlight_tile_colored(sx, sy, 'C', CLR_WHITE, A_BOLD);
+                    curses_highlight_tile_colored(sx, sy, ch, CLR_WHITE, A_BOLD);
                     nh_delay_output();
                     newsym(sx, sy);
                     break;
