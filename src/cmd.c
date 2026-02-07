@@ -58,6 +58,9 @@ extern int price_identify(void);
 #define CMD_TRAVEL (char) 0x90
 #define CMD_CLICKLOOK (char) 0x8F
 
+/* Flag to indicate direction was pre-set from showboomerang */
+static boolean showboom_direction_set = FALSE;
+
 #ifdef DEBUG
 extern int NDECL(wiz_debug_cmd_bury);
 #endif
@@ -3405,6 +3408,7 @@ dotogglevoice(void) /* toggle voice_enabled */
 /* ordered by command name */
 int doshowlines(VOID_ARGS);
 int doshowboomerang(VOID_ARGS);
+boolean is_showboom_direction_set(VOID_ARGS);
 
 struct ext_func_tab extcmdlist[] = {
     { '#', "#", "perform an extended command",
@@ -5122,6 +5126,12 @@ const char *s;
     char dirsym;
     int is_mov;
 
+    /* Check if direction was pre-set from showboomerang 'f' key */
+    if (showboom_direction_set) {
+        showboom_direction_set = FALSE; /* clear the flag */
+        return 1; /* direction already set in u.dx, u.dy, u.dz */
+    }
+
  retry:
     if (in_doagain || *readchar_queue)
         dirsym = readchar();
@@ -6054,6 +6064,7 @@ struct trajectory {
     int point_count;
     int point_capacity;
     char key_pressed;
+    int dir_index; /* direction index 0-7 for N, NE, E, SE, S, SW, W, NW */
 };
 
 /* Array to track multiple trajectories */
@@ -6088,10 +6099,14 @@ clear_showboom_temp(void)
 static void
 clear_all_trajectories(void)
 {
-    /* Free all trajectory data and reset to clean state */
+    /* Clear the displayed trajectory highlights before freeing */
     for (int i = 0; i < trajectory_count; ++i) {
-        if (trajectories[i].points)
-            free((genericptr_t) trajectories[i].points);
+        struct trajectory *traj = &trajectories[i];
+        for (int j = 0; j < traj->point_count; ++j) {
+            newsym(traj->points[j].x, traj->points[j].y);
+        }
+        if (traj->points)
+            free((genericptr_t) traj->points);
     }
     if (trajectories)
         free((genericptr_t) trajectories);
@@ -6119,7 +6134,7 @@ redraw_all_trajectories(boolean only_last_bold)
 }
 
 static struct trajectory *
-start_new_trajectory(char key)
+start_new_trajectory(char key, int dir)
 {
     /* Add a new trajectory to the array */
     if (trajectory_count >= trajectory_capacity) {
@@ -6133,6 +6148,7 @@ start_new_trajectory(char key)
     traj->point_count = 0;
     traj->point_capacity = 0;
     traj->key_pressed = key;
+    traj->dir_index = dir;
     return traj;
 }
 
@@ -6440,6 +6456,13 @@ doshowlines(VOID_ARGS)
     return 0;
 }
 
+/* Check if showboomerang has set a direction */
+boolean
+is_showboom_direction_set()
+{
+    return showboom_direction_set;
+}
+
 /* showboomerang command: animate a short preview of boomerang trajectories */
 int
 doshowboomerang(VOID_ARGS)
@@ -6635,7 +6658,7 @@ doshowboomerang_interactive(VOID_ARGS)
 restart:
     /* Prompt user for repeated single-direction previews until ESC */
     if (show_prompt)
-        pline("Show boomerang direction (press y k u l 5 n j b h or 1-9; ESC to finish)");
+        pline("Show boomerang direction (press y k u l 5 n j b h or 1-9; f to fire; ESC to finish)");
     show_prompt = FALSE;
 
     for (;;) {
@@ -6650,6 +6673,7 @@ restart:
             pline("Never mind.");
             clear_all_trajectories();
             docrt();
+            flush_screen(1);
             return 0;
         }
         /* '5' refreshes/clears the preview. Treat it as ESC + restart so
@@ -6663,6 +6687,7 @@ restart:
             clear_all_trajectories();
             tmp_at(DISP_FREEMEM, 0);
             docrt();
+            flush_screen(1);
             /* Restart the command loop (equivalent to ESC followed by
                re-invoking #showboomerang) without using recursion. */
             show_prompt = TRUE;
@@ -6670,6 +6695,42 @@ restart:
         }
         if (ch == '\n' || ch == '\r')
             continue;
+
+        /* Check if 'f' pressed to fire in the last trajectory's direction */
+        if (ch == 'f' || ch == 'F') {
+            if (trajectory_count > 0) {
+                /* Get the last trajectory's direction */
+                struct trajectory *last_traj = &trajectories[trajectory_count - 1];
+                int last_dir = last_traj->dir_index;
+                
+                /* Set u.dx, u.dy, u.dz based on the direction */
+                u.dx = dxs[last_dir];
+                u.dy = dys[last_dir];
+                u.dz = 0;
+                
+                /* Set flag so getdir() knows direction is already set */
+                showboom_direction_set = TRUE;
+                
+                /* Clean up trajectories */
+                clear_all_trajectories();
+                docrt(); /* Refresh the display */
+                flush_screen(1); /* Flush screen buffer and reset terminal state */
+                
+                /* Check if boomerang is quivered */
+                if (uquiver && uquiver->otyp == BOOMERANG) {
+                    /* Boomerang is quivered - return to fire it */
+                    return 1;
+                } else {
+                    /* No boomerang quivered - hand off to throw command */
+                    /* Direction is already set, so throw will use it */
+                    return dothrow();
+                }
+            } else {
+                pline("No trajectory to fire at.");
+                nhbell();
+                continue;
+            }
+        }
 
         int dir = -1;
         switch (ch) {
@@ -6709,9 +6770,11 @@ restart:
                 continue;
 
             /* Start a new trajectory for this direction */
-            struct trajectory *traj = start_new_trajectory(ch);
+            struct trajectory *traj = start_new_trajectory(ch, dir);
 
             boolean counterclockwise = TRUE;
+            int last_valid_x = u.ux, last_valid_y = u.uy; /* track last valid position */
+            
             for (int ct = 0; ct < 10; ++ct) {
                 i_idx = (i_idx + 8) % 8;
                 dx = xdir[i_idx];
@@ -6719,27 +6782,34 @@ restart:
                 pos.x += dx; pos.y += dy;
                 int sx = pos.x, sy = pos.y;
 
-                if (!isok(sx, sy) || levl[sx][sy].typ == STONE)
+                if (!isok(sx, sy) || levl[sx][sy].typ == STONE) {
+                    /* Hit edge or stone - mark last valid position if we moved */
+                    if (last_valid_x != u.ux || last_valid_y != u.uy)
+                        add_trajectory_point(traj, last_valid_x, last_valid_y, ch, color);
                     break;
+                }
 
                 if (cansee(sx, sy) && (!ZAP_POS(levl[sx][sy].typ) || closed_door(sx, sy))) {
                     int bg_glyph = back_to_glyph(sx, sy);
                     int bg_ch, bg_color; unsigned bg_spec;
                     mapglyph(bg_glyph, &bg_ch, &bg_color, &bg_spec, sx, sy, 0);
                     if (bg_ch != ' ') {
-                        /* Hit a wall - store and stop */
-                        add_trajectory_point(traj, sx, sy, ch, color);
+                        /* Hit a wall/door - mark the last valid position before the wall */
+                        if (last_valid_x != u.ux || last_valid_y != u.uy)
+                            add_trajectory_point(traj, last_valid_x, last_valid_y, ch, color);
                         break;
                     }
                 }
                 if (m_at(sx, sy)) {
-                    /* Hit a monster - store and stop */
+                    /* Hit a monster at this position */
                     add_trajectory_point(traj, sx, sy, ch, CLR_RED);
                     break;
                 }
                 
-                /* Normal trajectory point */
+                /* Normal trajectory point - this is a valid position */
                 add_trajectory_point(traj, sx, sy, '.', color);
+                last_valid_x = sx;
+                last_valid_y = sy;
                 
                 if (ct % 5 != 0)
                     i_idx += (counterclockwise ? -1 : 1);

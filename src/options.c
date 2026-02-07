@@ -251,6 +251,7 @@ static struct Bool_Opt {
 #ifdef VOICE_ENABLED
     { "voice_enabled", &flags.voice_enabled, FALSE, SET_IN_GAME },
 #endif /* VOICE_ENABLED */
+    { "show_boomerang_trajectory", &flags.show_boomerang_trajectory, TRUE, SET_IN_GAME },
 #ifdef TTY_TILES_ESCCODES
     { "vt_tiledata", &iflags.vt_tiledata, FALSE, SET_IN_FILE },
 #else

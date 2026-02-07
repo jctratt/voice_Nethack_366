@@ -9,6 +9,7 @@
 
 STATIC_DCL int FDECL(throw_obj, (struct obj *, int));
 extern int NDECL(doshowboomerang);
+extern boolean NDECL(is_showboom_direction_set);
 STATIC_DCL boolean FDECL(ok_to_throw, (int *));
 STATIC_DCL void NDECL(autoquiver);
 STATIC_DCL int FDECL(gem_accept, (struct monst *, struct obj *));
@@ -293,16 +294,15 @@ dothrow()
         return 0;
 
     /* Show sight lines for the player before selecting an object/target */
-    (void) doshowlines();
+    /* Skip if direction already set from showboomerang */
+    if (!is_showboom_direction_set())
+        (void) doshowlines();
 
     obj = getobj(uslinging() ? bullets : toss_objs, "throw");
     /* it is also possible to throw food */
     /* (or jewels, or iron balls... ) */
 
     if (obj) {
-        /* If selected object is a boomerang, show a short animated preview */
-        if (obj->otyp == BOOMERANG)
-            (void) doshowboomerang();
         ret = throw_obj(obj, shotlimit);
     }
 
@@ -405,8 +405,25 @@ dofire()
     if (!ok_to_throw(&shotlimit))
         return 0;
 
-    /* Show sight lines for the player before selecting an object/target */
-    (void) doshowlines();
+    /* If boomerang is quivered and trajectory option is on, show trajectories */
+    if (uquiver && uquiver->otyp == BOOMERANG 
+        && flags.show_boomerang_trajectory) {
+        /* Skip straight rays for boomerang (trajectory cannot be straight) */
+        int showboom_result = doshowboomerang();
+        if (showboom_result == 1) {
+            /* User chose trajectory with 'f' - fire the quivered boomerang */
+            ret = throw_obj(uquiver, shotlimit);
+            clear_showlines();
+            return ret;
+        } else {
+            /* User cancelled (ESC/0) or other result (e.g., from dothrow) */
+            clear_showlines();
+            return showboom_result;
+        }
+    } else if (!(uquiver && uquiver->otyp == BOOMERANG)) {
+        /* Show sight lines only for non-boomerang items */
+        (void) doshowlines();
+    }
 
     if ((obj = uquiver) == 0) {
         if (!flags.autoquiver) {
@@ -437,8 +454,6 @@ dofire()
     }
 
     if (obj) {
-        if (obj->otyp == BOOMERANG)
-            (void) doshowboomerang();
         ret = throw_obj(obj, shotlimit);
     }
 

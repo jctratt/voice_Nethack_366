@@ -102,6 +102,7 @@ struct flag {
     char voice_command[BUFSZ]; // New global buffer for voice command
     char voice_engine[BUFSZ];  /* New engine path/name */
 #endif /* VOICE_ENABLED */
+    boolean show_boomerang_trajectory; /* show trajectory preview for boomerang fire */
     int end_top, end_around; /* describe desired score list */
     unsigned moonphase;
     unsigned long suppress_alert;
