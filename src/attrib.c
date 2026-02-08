@@ -816,6 +816,49 @@ int propidx;
     return FROM_NONE;
 }
 
+/* Return innate level for property (role or race), or 0 if none.
+   This inspects role/race innate tables (regardless of current u.ulevel). */
+int
+innate_prop_level(propidx)
+int propidx;
+{
+    const struct innate *abil;
+
+    /* check role abilities */
+    abil = role_abil(Role_switch);
+    for (; abil && abil->ability; ++abil) {
+        if (abil->ability == &u.uprops[propidx].intrinsic)
+            return (int) abil->ulevel;
+    }
+
+    /* check race abilities */
+    switch (Race_switch) {
+    case PM_DWARF:
+        abil = dwa_abil;
+        break;
+    case PM_ELF:
+        abil = elf_abil;
+        break;
+    case PM_GNOME:
+        abil = gno_abil;
+        break;
+    case PM_ORC:
+        abil = orc_abil;
+        break;
+    case PM_HUMAN:
+        abil = hum_abil;
+        break;
+    default:
+        abil = (const struct innate *) 0;
+        break;
+    }
+    for (; abil && abil->ability; ++abil) {
+        if (abil->ability == &u.uprops[propidx].intrinsic)
+            return (int) abil->ulevel;
+    }
+    return 0;
+}
+
 char *
 from_what(propidx)
 int propidx; /* special cases can have negative values */

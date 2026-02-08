@@ -162,6 +162,7 @@ STATIC_PTR int NDECL(doterrain);
 STATIC_PTR int NDECL(wiz_wish);
 STATIC_PTR int NDECL(wiz_identify);
 STATIC_PTR int NDECL(wiz_intrinsic);
+STATIC_PTR int NDECL(dointrinsicsmenu);
 STATIC_PTR int NDECL(wiz_map);
 STATIC_PTR int NDECL(wiz_makemap);
 STATIC_PTR int NDECL(wiz_genesis);
@@ -1823,8 +1824,34 @@ int final; /* ENL_GAMEINPROGRESS:0, ENL_GAMEOVERALIVE, ENL_GAMEOVERDEAD */
     /* remaining attributes; shown for potion,&c or wizard mode and
        explore mode ^X or end of game disclosure */
     if (mode & MAGICENLIGHTENMENT) {
-        /* intrinsics and other traditional enlightenment feedback */
+/* intrinsics and other traditional enlightenment feedback */
         attributes_enlightenment(mode, final);
+
+        /* show tracked intrinsics (user-selected) */
+        if (u.intrinsics_tracked) {
+            int i, p, any = 0;
+            const char *propname;
+            long t;
+
+            enlght_out("");
+            enlght_out("Tracked intrinsics:");
+            for (i = 0; (propname = propertynames[i].prop_name) != 0; ++i) {
+                p = propertynames[i].prop_num;
+                if (!u.intrinsics_tracked[p])
+                    continue;
+                t = u.uprops[p].intrinsic & TIMEOUT;
+                if (t)
+                    Sprintf(buf, " %s [%ld]", propname, t);
+                else if (u.uprops[p].intrinsic & INTRINSIC)
+                    Sprintf(buf, " %s (on)", propname);
+                else
+                    Sprintf(buf, " %s (off)", propname);
+                enlght_out(buf);
+                any = 1;
+            }
+            if (!any)
+                enlght_out(" (none)");
+        }
     }
 
     if (!en_via_menu) {
@@ -3406,6 +3433,137 @@ int doshowlines(VOID_ARGS);
 int doshowboomerang(VOID_ARGS);
 boolean is_showboom_direction_set(VOID_ARGS);
 
+STATIC_PTR int
+dointrinsicsmenu(VOID_ARGS)
+{
+    winid win;
+    anything any = zeroany;
+    int i, n, count, idx, a;
+    int *order = (int *) 0;
+    menu_item *pick_list = (menu_item *) 0;
+    const char *propname;
+    char buf[BUFSZ];
+
+    if (!u.intrinsics_tracked) {
+        u.intrinsics_tracked = (unsigned char *) alloc((unsigned) (LAST_PROP + 1));
+        (void) memset((genericptr_t) u.intrinsics_tracked, 0, (LAST_PROP + 1));
+        /* Pre-populate tracked intrinsics for properties currently applied
+           (e.g., starting intrinsics). Skip HALLUC_RES since it's not useful to track. */
+        for (i = 0; (propname = propertynames[i].prop_name) != 0; ++i) {
+            int p = propertynames[i].prop_num;
+            if (p == HALLUC_RES)
+                continue;
+            if ((u.uprops[p].intrinsic & TIMEOUT) || (u.uprops[p].intrinsic & INTRINSIC))
+                u.intrinsics_tracked[p] = 1;
+        }
+    }
+
+    /* Build ordered list of property indices sorted alphabetically by name */
+    win = create_nhwindow(NHW_MENU);
+    start_menu(win);
+
+    /* count entries (skip HALLUC_RES) */
+    count = 0;
+    for (i = 0; (propname = propertynames[i].prop_name) != 0; ++i) {
+        int p = propertynames[i].prop_num;
+        if (p == HALLUC_RES)
+            continue;
+        ++count;
+    }
+
+    if (count > 0) {
+        order = (int *) alloc((unsigned) count * sizeof(int));
+        idx = 0;
+        for (i = 0; (propname = propertynames[i].prop_name) != 0; ++i) {
+            int p = propertynames[i].prop_num;
+            if (p == HALLUC_RES)
+                continue;
+            order[idx++] = i; /* store index to propertynames[] */
+        }
+
+        /* Sort indices by property name using insertion sort (small N, simple).
+           Special-case FAST to sort by the canonical word "fast" instead of
+           the stored "very fast", so it appears among the F entries. */
+        for (a = 1; a < count; ++a) {
+            int key = order[a];
+            int b = a - 1;
+            /* precompute key name (use "fast" for FAST to force F sorting) */
+            const char *keyname = (propertynames[key].prop_num == FAST) ? "fast" : propertynames[key].prop_name;
+            while (b >= 0) {
+                const char *bname = (propertynames[order[b]].prop_num == FAST) ? "fast" : propertynames[order[b]].prop_name;
+                if (strcmp(bname, keyname) > 0) {
+                    order[b + 1] = order[b];
+                    --b;
+                } else
+                    break;
+            }
+            order[b + 1] = key;
+        }
+
+        for (idx = 0; idx < count; ++idx) {
+            int iidx = order[idx];
+            int p = propertynames[iidx].prop_num;
+            any.a_int = iidx + 1; /* retain original mapping */
+            /* Determine display and highlighting. Special-case FAST so we show
+               "fast (intrinsic)" vs "very fast" for timeout/extrinsic sources. */
+            {
+                long to = u.uprops[p].intrinsic & TIMEOUT;
+                boolean is_intrinsic = (u.uprops[p].intrinsic & INTRINSIC) != 0;
+                boolean is_extrinsic = u.uprops[p].extrinsic != 0;
+
+                if (p == FAST) {
+                    if (is_intrinsic && !to && !is_extrinsic)
+                        Sprintf(buf, "fast (intrinsic)");
+                    else if (to)
+                        Sprintf(buf, "very fast [%ld]", to);
+                    else if (is_extrinsic)
+                        Sprintf(buf, "very fast");
+                    else
+                        Sprintf(buf, "fast");
+                } else {
+                    if (to)
+                        Sprintf(buf, "%s (on)", propertynames[iidx].prop_name);
+                    else if (is_intrinsic)
+                        Sprintf(buf, "%s (on)", propertynames[iidx].prop_name);
+                    else
+                        Sprintf(buf, "%s", propertynames[iidx].prop_name);
+                }
+
+                /* Append innate level if the property is granted by role/race. */
+                {
+                    int lvl = innate_prop_level(p);
+                    if (lvl > 0) {
+                        Sprintf(eos(buf), " (lvl %d)", lvl);
+                    }
+                }
+
+                /* Highlight (bold) currently active properties (intrinsic, timed, or extrinsic). */
+                add_menu(win, NO_GLYPH, &any, 0, 0,
+                        (to || is_intrinsic || is_extrinsic) ? ATR_BOLD : ATR_NONE,
+                        buf, (u.intrinsics_tracked[p] ? TRUE : FALSE));
+            }
+        }
+        free((genericptr_t) order);
+    }
+
+    end_menu(win, "Toggle which intrinsics to track:");
+    n = select_menu(win, PICK_ANY, &pick_list);
+    if (n > 0) {
+        int j;
+        /* Clear everything first */
+        (void) memset((genericptr_t) u.intrinsics_tracked, 0, LAST_PROP + 1);
+        for (j = 0; j < n; ++j) {
+            int idx = pick_list[j].item.a_int - 1;
+            int p = propertynames[idx].prop_num;
+            u.intrinsics_tracked[p] = 1;
+        }
+        free((genericptr_t) pick_list);
+        pline("Intrinsic tracking updated.");
+    }
+    destroy_nhwindow(win);
+    return 0;
+}
+
 struct ext_func_tab extcmdlist[] = {
     { '#', "#", "perform an extended command",
             doextcmd, IFBURIED | GENERALCMD },
@@ -3455,6 +3613,8 @@ struct ext_func_tab extcmdlist[] = {
             dotypeinv, IFBURIED },
     { M('i'), "invoke", "invoke an object's special powers",
             doinvoke, IFBURIED | AUTOCOMPLETE },
+    { M('I'), "intrinsics", "open intrinsic tracker menu",
+            dointrinsicsmenu, IFBURIED | AUTOCOMPLETE },
     { M('j'), "jump", "jump to another location", dojump, AUTOCOMPLETE },
     { C('d'), "kick", "kick something", dokick },
     { '\\', "known", "show what object types have been discovered",

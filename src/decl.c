@@ -316,6 +316,7 @@ NEARDATA struct savefile_info sfcap = {
 #if defined(RLECOMP)
         | SFI1_RLECOMP
 #endif
+        | (1UL << 3)
     ,
 #ifdef NHSTDC
     0x00000000UL, 0x00000000UL
@@ -339,6 +340,7 @@ NEARDATA struct savefile_info sfrestinfo, sfsaveinfo = {
 #if defined(RLECOMP)
         | SFI1_RLECOMP
 #endif
+        | (1UL << 3)
     ,
 #ifdef NHSTDC
     0x00000000UL, 0x00000000UL

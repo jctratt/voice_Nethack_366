@@ -296,6 +296,15 @@ register int fd, mode;
     urealtime.realtime += (long) (urealtime.finish_time
                                   - urealtime.start_timing);
     bwrite(fd, (genericptr_t) &u, sizeof u);
+
+    /* save intrinsics tracker (length + bytes) -- only when supported */
+    if ((sfsaveinfo.sfi1 & SFI1_INTRINSICS_TRACKED) == SFI1_INTRINSICS_TRACKED) {
+        int intr_len = u.intrinsics_tracked ? (LAST_PROP + 1) : 0;
+        bwrite(fd, (genericptr_t) &intr_len, sizeof intr_len);
+        if (intr_len > 0)
+            bwrite(fd, (genericptr_t) u.intrinsics_tracked, intr_len);
+    }
+
     bwrite(fd, yyyymmddhhmmss(ubirthday), 14);
     bwrite(fd, (genericptr_t) &urealtime.realtime, sizeof urealtime.realtime);
     bwrite(fd, yyyymmddhhmmss(urealtime.start_timing), 14);  /** Why? **/
@@ -1323,6 +1332,11 @@ freedynamicdata()
     free_menu_coloring();
     free_invbuf();           /* let_to_name (invent.c) */
     free_youbuf();           /* You_buf,&c (pline.c) */
+    /* free intrinsics tracker if present */
+    if (u.intrinsics_tracked) {
+        free((genericptr_t) u.intrinsics_tracked);
+        u.intrinsics_tracked = (unsigned char *) 0;
+    }
     msgtype_free();
     tmp_at(DISP_FREEMEM, 0); /* temporary display effects */
 #ifdef FREE_ALL_MEMORY

@@ -300,6 +300,9 @@ struct you {
 
     struct prop uprops[LAST_PROP + 1];
 
+    /* Per-player tracking flags for intrinsics menu (0/1 for each prop) */
+    unsigned char *intrinsics_tracked;
+
     unsigned umconf;
     Bitfield(usick_type, 2);
 #define SICK_VOMITABLE 0x01

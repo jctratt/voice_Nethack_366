@@ -4,6 +4,7 @@
 /* NetHack may be freely redistributed.  See license for details. */
 
 #include "hack.h"
+#include "date.h"
 #include "dgn_file.h"
 #include "dlb.h"
 #include "lev.h"
@@ -751,12 +752,31 @@ init_dungeons()
 
     /* validate the data's version against the program's version */
     Fread((genericptr_t) &vers_info, sizeof vers_info, 1, dgn_file);
+
+    /* DEBUG: print the version info read from dat/dungeon */
+    raw_printf("DBG: dungeon vers: incarnation=0x%lx feature_set=0x%lx entity_count=0x%lx struct_sizes1=0x%lx struct_sizes2=0x%lx\n",
+               vers_info.incarnation, vers_info.feature_set,
+               vers_info.entity_count, vers_info.struct_sizes1,
+               vers_info.struct_sizes2);
+    {
+        unsigned char *bv = (unsigned char *)&vers_info;
+        raw_printf("DBG: vers bytes: ");
+        for (size_t i = 0; i < sizeof vers_info; ++i)
+            raw_printf("%02x ", bv[i]);
+        raw_printf("\n");
+    }
+    raw_printf("DBG: expected: VERSION_NUMBER=0x%lx VERSION_FEATURES=0x%lx VERSION_SANITY1=0x%lx VERSION_SANITY2=0x%lx VERSION_SANITY3=0x%lx\n",
+               (unsigned long)VERSION_NUMBER, (unsigned long)VERSION_FEATURES,
+               (unsigned long)VERSION_SANITY1, (unsigned long)VERSION_SANITY2,
+               (unsigned long)VERSION_SANITY3);
+
     /* we'd better clear the screen now, since when error messages come from
      * check_version() they will be printed using pline(), which doesn't
      * mix with the raw messages that might be already on the screen
      */
     if (iflags.window_inited)
         clear_nhwindow(WIN_MAP);
+
     if (!check_version(&vers_info, DUNGEON_FILE, TRUE))
         panic("Dungeon description not valid.");
 

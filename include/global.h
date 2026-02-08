@@ -315,6 +315,9 @@ struct savefile_info {
 #define SFI1_ZEROCOMP (1L << 2)
 #endif
 
+/* Savefile feature: this binary writes per-player intrinsics-tracker data */
+#define SFI1_INTRINSICS_TRACKED (1UL << 3)
+
 /*
  * Configurable internal parameters.
  *

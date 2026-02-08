@@ -2220,6 +2220,7 @@ E void NDECL(plnamesuffix);
 E void FDECL(role_selection_prolog, (int, winid));
 E void FDECL(role_menu_extra, (int, winid, BOOLEAN_P));
 E void NDECL(role_init);
+E int FDECL(innate_prop_level, (int));
 E const char *FDECL(Hello, (struct monst *));
 E const char *NDECL(Goodbye);
 

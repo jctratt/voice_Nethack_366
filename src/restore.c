@@ -602,6 +602,19 @@ unsigned int *stuckid, *steedid;
 #endif
     mread(fd, (genericptr_t) &u, sizeof(struct you));
 
+    /* restore intrinsics tracker */
+    if ((sfrestinfo.sfi1 & SFI1_INTRINSICS_TRACKED) == SFI1_INTRINSICS_TRACKED) {
+        int intr_len = 0;
+
+        mread(fd, (genericptr_t) &intr_len, sizeof intr_len);
+        if (intr_len > 0) {
+            u.intrinsics_tracked = (unsigned char *) alloc((unsigned) intr_len);
+            mread(fd, (genericptr_t) u.intrinsics_tracked, intr_len);
+        } else
+            u.intrinsics_tracked = (unsigned char *) 0;
+    } else
+        u.intrinsics_tracked = (unsigned char *) 0;
+
 #define ReadTimebuf(foo)                   \
     mread(fd, (genericptr_t) timebuf, 14); \
     timebuf[14] = '\0';                    \
