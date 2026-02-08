@@ -716,6 +716,8 @@ unsigned int *stuckid, *steedid;
     restnames(fd);
     restore_waterlevel(fd);
     restore_msghistory(fd);
+    /* restore personal notes */
+    restore_notes(fd);
     /* must come after all mons & objs are restored */
     relink_timers(FALSE);
     relink_light_sources(FALSE);

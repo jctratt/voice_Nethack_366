@@ -660,8 +660,17 @@ E schar FDECL(lev_by_name, (const char *));
 E schar FDECL(print_dungeon, (BOOLEAN_P, schar *, xchar *));
 E char *FDECL(get_annotation, (d_level *));
 E int NDECL(donamelevel);
+E int NDECL(donotes); /* personal notes (added) */
 E int NDECL(dooverview);
 E void FDECL(show_overview, (int, int));
+
+/* notes persistence and management */
+E void FDECL(save_notes, (int, int));
+E void FDECL(restore_notes, (int));
+E void NDECL(clear_notes);
+E void FDECL(add_note, (const char *));
+E boolean FDECL(remove_note_index, (int));
+E void NDECL(show_notes);
 E void FDECL(forget_mapseen, (int));
 E void FDECL(rm_mapseen, (int));
 E void FDECL(init_mapseen, (d_level *));

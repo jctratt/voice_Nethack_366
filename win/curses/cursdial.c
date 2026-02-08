@@ -178,6 +178,14 @@ curses_name_input_dialog(const char *prompt, char *answer, int buffer)
                 height++;
             }
         }
+        /* Also add lines to accommodate any embedded newlines in the prefilled input */
+        if (answer && answer[0]) {
+            int extra_lines = 0;
+            for (int i = 0; answer[i]; ++i)
+                if (answer[i] == '\n')
+                    extra_lines++;
+            height += extra_lines;
+        }
         free(tmpstr);
     }
 
@@ -225,20 +233,159 @@ curses_name_input_dialog(const char *prompt, char *answer, int buffer)
 
 /* Helper function to calculate cursor position from character position */
 STATIC_OVL void
-calc_cursor_pos(int pos, int start_row, int start_col, int win_width,
+calc_cursor_pos(int pos, const char *input, int start_row, int start_col, int win_width,
                 int *out_row, int *out_col)
 {
     int row = start_row;
-    int col = start_col + pos;
+    int col = start_col;
+    int i;
 
-    /* Handle line wrapping */
-    while (col >= win_width) {
-        col -= win_width;
-        row++;
+    /* Walk the input up to pos and account for explicit newlines and wrapping */
+    for (i = 0; i < pos && input[i] != '\0'; ++i) {
+        if (input[i] == '\n') {
+            row++;
+            col = start_col;
+        } else {
+            col++;
+            /* Handle line wrapping */
+            if (col >= win_width) {
+                col -= win_width;
+                row++;
+            }
+        }
     }
 
     *out_row = row;
     *out_col = col;
+}
+
+/* Redraw the input in the given window so that the cursor is visible.
+   This handles explicit newlines and wrapping and scrolls the visible
+   window so the cursor stays within view. */
+STATIC_OVL void
+redraw_input_window(WINDOW *win, const char *input, int start_row, int start_col,
+                    int win_width, int win_height, int pos, int *out_row, int *out_col)
+{
+    /* Temporary arrays bounded by BUFSZ for line starts and lengths */
+    int line_starts[BUFSZ];
+    int line_lens[BUFSZ];
+    int num_lines = 0;
+    int col = 0;
+    int i = 0, line_start = 0;
+
+    if (!input) {
+        /* nothing to draw */
+        *out_row = start_row;
+        *out_col = start_col;
+        return;
+    }
+
+    /* Build logical lines accounting for explicit newlines and wrapping */
+    line_start = 0;
+    col = start_col;
+    for (i = 0; input[i] != '\0'; ++i) {
+        if (input[i] == '\n') {
+            /* finish current line */
+            if (num_lines < BUFSZ) {
+                line_starts[num_lines] = line_start;
+                line_lens[num_lines] = i - line_start;
+            }
+            num_lines++;
+            line_start = i + 1;
+            col = start_col;
+            continue;
+        }
+        col++;
+        if (col >= win_width) {
+            /* wrap */
+            if (num_lines < BUFSZ) {
+                line_starts[num_lines] = line_start;
+                line_lens[num_lines] = i - line_start + 1;
+            }
+            num_lines++;
+            line_start = i + 1;
+            col = start_col;
+        }
+    }
+    /* trailing line */
+    if (num_lines < BUFSZ) {
+        line_starts[num_lines] = line_start;
+        line_lens[num_lines] = i - line_start;
+    }
+    num_lines++;
+
+    /* Determine cursor line and column */
+    int cursor_line = 0, cursor_col = start_col;
+    int idx = 0;
+    for (idx = 0; idx < num_lines; ++idx) {
+        int ls = line_starts[idx];
+        int ll = line_lens[idx];
+        if (pos >= ls && pos <= ls + ll) {
+            cursor_line = idx;
+            /* compute column by walking from ls to pos */
+            cursor_col = start_col;
+            for (int k = ls; k < pos; ++k) {
+                if (input[k] == '\n') {
+                    cursor_col = start_col;
+                } else {
+                    cursor_col++;
+                    if (cursor_col >= win_width) {
+                        cursor_col -= win_width;
+                    }
+                }
+            }
+            break;
+        }
+    }
+
+    /* If cursor wasn't found (pos at end), set to last line end */
+    if (idx == num_lines) {
+        cursor_line = num_lines - 1;
+        cursor_col = start_col;
+        for (int k = line_starts[cursor_line]; k < line_starts[cursor_line] + line_lens[cursor_line]; ++k) {
+            if (input[k] == '\n')
+                cursor_col = start_col;
+            else {
+                cursor_col++;
+                if (cursor_col >= win_width) cursor_col -= win_width;
+            }
+        }
+    }
+
+    /* Determine which lines to display to keep cursor visible */
+    int visible_rows = win_height - start_row;
+    if (visible_rows <= 0) visible_rows = 1;
+    int first_line = cursor_line - visible_rows + 1;
+    if (first_line < 0) first_line = 0;
+
+    /* Clear and display visible lines */
+    for (int r = 0; r < visible_rows; ++r) {
+        int line_idx = first_line + r;
+        wmove(win, start_row + r, 0);
+        wclrtoeol(win);
+        if (line_idx >= num_lines)
+            continue;
+        int ls = line_starts[line_idx];
+        int ll = line_lens[line_idx];
+        /* Print substring for this line, note it may be longer than win_width
+           but line_lens keeps it within wrapping bounds */
+        int to_print = ll;
+        if (to_print > 0) {
+            /* Ensure we don't print more than win_width characters */
+            char temp[BUFSZ];
+            int copy = (to_print < (win_width - start_col) ? to_print : (win_width - start_col));
+            if (copy > 0) {
+                if (copy >= BUFSZ) copy = BUFSZ - 1;
+                strncpy(temp, &input[ls], copy);
+                temp[copy] = '\0';
+                waddstr(win, temp);
+            }
+        }
+    }
+
+    /* Set cursor position relative to visible area */
+    *out_row = start_row + (cursor_line - first_line);
+    *out_col = cursor_col;
 }
 
 /* Enhanced text input with cursor navigation support */
@@ -264,11 +411,9 @@ curses_enhanced_getline(WINDOW *askwin, char *input, int buffer, int start_row)
         if (len > max_len)
             len = max_len;
         pos = len;
-        /* Display the pre-filled text */
-        waddstr(askwin, input);
+        /* Display the pre-filled text using newline-aware renderer */
+        redraw_input_window(askwin, input, start_row, start_col, win_width, win_height, pos, &cur_row, &cur_col);
         wrefresh(askwin);
-        /* Get the actual cursor position after displaying text (handles wrapping) */
-        getyx(askwin, cur_row, cur_col);
     }
 #endif
 
@@ -312,7 +457,7 @@ curses_enhanced_getline(WINDOW *askwin, char *input, int buffer, int start_row)
                                 pos++;
                             while (pos < len && input[pos] != ' ')
                                 pos++;
-                            calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+                            calc_cursor_pos(pos, input, start_row, start_col, win_width, &cur_row, &cur_col);
                         } else if (final_ch == 'D') {
                             /* Ctrl+Left - jump word backward */
                             if (pos > 0) {
@@ -322,7 +467,7 @@ curses_enhanced_getline(WINDOW *askwin, char *input, int buffer, int start_row)
                                 while (pos > 0 && input[pos - 1] != ' ')
                                     pos--;
                             }
-                            calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+                            calc_cursor_pos(pos, input, start_row, start_col, win_width, &cur_row, &cur_col);
                         }
                     } else if (modifier_ch == 'C') {
                         /* ESC [ 5 C format (Ctrl+Right) */
@@ -330,7 +475,7 @@ curses_enhanced_getline(WINDOW *askwin, char *input, int buffer, int start_row)
                             pos++;
                         while (pos < len && input[pos] != ' ')
                             pos++;
-                        calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+                        calc_cursor_pos(pos, input, start_row, start_col, win_width, &cur_row, &cur_col);
                     } else if (modifier_ch == 'D') {
                         /* ESC [ 5 D format (Ctrl+Left) */
                         if (pos > 0) {
@@ -340,7 +485,7 @@ curses_enhanced_getline(WINDOW *askwin, char *input, int buffer, int start_row)
                             while (pos > 0 && input[pos - 1] != ' ')
                                 pos--;
                         }
-                        calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+                        calc_cursor_pos(pos, input, start_row, start_col, win_width, &cur_row, &cur_col);
                     }
                 } else if (seq_ch == 'A') {
                     /* Up arrow - not used, ignore */
@@ -350,22 +495,22 @@ curses_enhanced_getline(WINDOW *askwin, char *input, int buffer, int start_row)
                     /* Right arrow - move cursor right */
                     if (pos < len) {
                         pos++;
-                        calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+                        calc_cursor_pos(pos, input, start_row, start_col, win_width, &cur_row, &cur_col);
                     }
                 } else if (seq_ch == 'D') {
                     /* Left arrow - move cursor left */
                     if (pos > 0) {
                         pos--;
-                        calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+                        calc_cursor_pos(pos, input, start_row, start_col, win_width, &cur_row, &cur_col);
                     }
                 } else if (seq_ch == 'H') {
                     /* Home key - move to beginning */
                     pos = 0;
-                    calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+                    calc_cursor_pos(pos, input, start_row, start_col, win_width, &cur_row, &cur_col);
                 } else if (seq_ch == 'F') {
                     /* End key - move to end */
                     pos = len;
-                    calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+                    calc_cursor_pos(pos, input, start_row, start_col, win_width, &cur_row, &cur_col);
                 }
             } else if (next_ch == 'O') {
                 /* Alternative escape sequence format: ESC O X */
@@ -378,27 +523,27 @@ curses_enhanced_getline(WINDOW *askwin, char *input, int buffer, int start_row)
                     /* Right arrow */
                     if (pos < len) {
                         pos++;
-                        calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+                        calc_cursor_pos(pos, input, start_row, start_col, win_width, &cur_row, &cur_col);
                     }
                 } else if (seq_ch == 'D') {
                     /* Left arrow */
                     if (pos > 0) {
                         pos--;
-                        calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+                        calc_cursor_pos(pos, input, start_row, start_col, win_width, &cur_row, &cur_col);
                     }
                 } else if (seq_ch == 'H') {
                     /* Home key */
                     pos = 0;
-                    calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+                    calc_cursor_pos(pos, input, start_row, start_col, win_width, &cur_row, &cur_col);
                 } else if (seq_ch == 'F') {
                     /* End key */
                     pos = len;
-                    calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+                    calc_cursor_pos(pos, input, start_row, start_col, win_width, &cur_row, &cur_col);
                 }
             } else {
-                /* Not an escape sequence, treat as cancel */
-                input[0] = '\033';
-                input[1] = '\0';
+                /* Not an escape sequence, treat ESC as save and close */
+                /* Leave current input buffer as-is and finish input */
+                input[len] = '\0';
                 break;
             }
         } else if (ch == erase_char || ch == '\b' || ch == KEY_BACKSPACE) {
@@ -410,11 +555,8 @@ curses_enhanced_getline(WINDOW *askwin, char *input, int buffer, int start_row)
                 for (int i = pos; i < len; i++)
                     input[i] = input[i + 1];
                 input[len] = '\0';
-                /* Redraw from cursor position */
-                calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
-                wmove(askwin, cur_row, cur_col);
-                wclrtoeol(askwin);
-                waddstr(askwin, &input[pos]);
+                /* Redraw using newline-aware renderer to keep cursor visible */
+                redraw_input_window(askwin, input, start_row, start_col, win_width, win_height, pos, &cur_row, &cur_col);
             }
         } else if (ch == KEY_DC || ch == C('d')) {
             /* Delete key or Ctrl+D - delete character at cursor */
@@ -424,11 +566,8 @@ curses_enhanced_getline(WINDOW *askwin, char *input, int buffer, int start_row)
                     input[i] = input[i + 1];
                 len--;
                 input[len] = '\0';
-                /* Redraw from cursor position */
-                calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
-                wmove(askwin, cur_row, cur_col);
-                wclrtoeol(askwin);
-                waddstr(askwin, &input[pos]);
+                /* Redraw using newline-aware renderer to keep cursor visible */
+                redraw_input_window(askwin, input, start_row, start_col, win_width, win_height, pos, &cur_row, &cur_col);
             }
         } else if (ch == KEY_CTRL_LEFT) {
             /* Ctrl+Left - jump word backward */
@@ -439,34 +578,34 @@ curses_enhanced_getline(WINDOW *askwin, char *input, int buffer, int start_row)
                 while (pos > 0 && input[pos - 1] != ' ')
                     pos--;
             }
-            calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+            calc_cursor_pos(pos, input, start_row, start_col, win_width, &cur_row, &cur_col);
         } else if (ch == KEY_CTRL_RIGHT) {
             /* Ctrl+Right - jump word forward */
             while (pos < len && input[pos] == ' ')
                 pos++;
             while (pos < len && input[pos] != ' ')
                 pos++;
-            calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+            calc_cursor_pos(pos, input, start_row, start_col, win_width, &cur_row, &cur_col);
         } else if (ch == KEY_LEFT || ch == C('b')) {
             /* Left arrow or Ctrl+B - move cursor left */
             if (pos > 0) {
                 pos--;
-                calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+                calc_cursor_pos(pos, input, start_row, start_col, win_width, &cur_row, &cur_col);
             }
         } else if (ch == KEY_RIGHT || ch == C('f')) {
             /* Right arrow or Ctrl+F - move cursor right */
             if (pos < len) {
                 pos++;
-                calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+                calc_cursor_pos(pos, input, start_row, start_col, win_width, &cur_row, &cur_col);
             }
         } else if (ch == KEY_HOME || ch == C('a')) {
             /* Home or Ctrl+A - move to beginning */
             pos = 0;
-            calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+            calc_cursor_pos(pos, input, start_row, start_col, win_width, &cur_row, &cur_col);
         } else if (ch == KEY_END || ch == C('e')) {
             /* End or Ctrl+E - move to end */
             pos = len;
-            calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+            calc_cursor_pos(pos, input, start_row, start_col, win_width, &cur_row, &cur_col);
         } else if (ch == C('w')) {
             /* Ctrl+W - delete word before cursor */
             if (pos > 0) {
@@ -483,11 +622,8 @@ curses_enhanced_getline(WINDOW *askwin, char *input, int buffer, int start_row)
                 len -= (pos - new_pos);
                 pos = new_pos;
                 input[len] = '\0';
-                /* Redraw from new position */
-                calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
-                wmove(askwin, cur_row, cur_col);
-                wclrtoeol(askwin);
-                waddstr(askwin, &input[pos]);
+                /* Redraw using newline-aware renderer to keep cursor visible */
+                redraw_input_window(askwin, input, start_row, start_col, win_width, win_height, pos, &cur_row, &cur_col);
             }
         } else if (ch == kill_char || ch == C('u')) {
             /* Ctrl+U - delete from beginning to cursor */
@@ -498,19 +634,27 @@ curses_enhanced_getline(WINDOW *askwin, char *input, int buffer, int start_row)
                 len -= pos;
                 pos = 0;
                 input[len] = '\0';
-                /* Redraw entire line */
-                calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
-                cur_col = 0;
-                cur_row = start_row;
-                wmove(askwin, cur_row, cur_col);
-                wclrtoeol(askwin);
-                waddstr(askwin, input);
+                /* Redraw entire input using newline-aware renderer */
+                redraw_input_window(askwin, input, start_row, start_col, win_width, win_height, pos, &cur_row, &cur_col);
+            }
+        } else if (ch == C('o')) {
+            /* Ctrl+O - insert actual newline character into the input */
+            if (len + 1 < max_len) {
+                /* shift right by 1 */
+                for (int i = len; i > pos; i--)
+                    input[i + 1] = input[i];
+                input[pos] = '\n';
+                pos += 1;
+                len += 1;
+                input[len] = '\0';
+                /* Redraw entire input (newline will move cursor to next line) */
+                redraw_input_window(askwin, input, start_row, start_col, win_width, win_height, pos, &cur_row, &cur_col);
             }
         } else if (ch == C('?')) {
             /* Ctrl+? - show help */
             wmove(askwin, cur_row + 2, 0);
             wclrtoeol(askwin);
-            waddstr(askwin, "Editing keys: Arrows/Ctrl+B/F=move, Home/Ctrl+A=start, End/Ctrl+E=end, Del/Ctrl+D=delete, Ctrl+W=word, Ctrl+U=line");
+            waddstr(askwin, "Editing keys: Arrows/Ctrl+B/F=move, Home/Ctrl+A, End/Ctrl+E, Del/Ctrl+D, Ctrl+W=word, Ctrl+U=line, Ctrl+O=\n (insert newline)");
             wmove(askwin, cur_row, cur_col);
             wrefresh(askwin);
             /* Wait for a key to dismiss help */
@@ -518,6 +662,8 @@ curses_enhanced_getline(WINDOW *askwin, char *input, int buffer, int start_row)
             /* Clear help line and redraw input */
             wmove(askwin, cur_row + 2, 0);
             wclrtoeol(askwin);
+            /* Redraw the input in case it was scrolled */
+            redraw_input_window(askwin, input, start_row, start_col, win_width, win_height, pos, &cur_row, &cur_col);
             wmove(askwin, cur_row, cur_col);
             continue;
         } else if ((unsigned char) ch >= 32 && ch != 127 && len < max_len) {
@@ -529,13 +675,8 @@ curses_enhanced_getline(WINDOW *askwin, char *input, int buffer, int start_row)
             len++;
             pos++;
             input[len] = '\0';
-            /* Redraw from beginning of input */
-            calc_cursor_pos(0, start_row, start_col, win_width, &cur_row, &cur_col);
-            wmove(askwin, cur_row, cur_col);
-            wclrtoeol(askwin);
-            waddstr(askwin, input);
-            /* Move cursor to new position */
-            calc_cursor_pos(pos, start_row, start_col, win_width, &cur_row, &cur_col);
+            /* Redraw input using newline-aware renderer */
+            redraw_input_window(askwin, input, start_row, start_col, win_width, win_height, pos, &cur_row, &cur_col);
         }
     }
 

@@ -100,7 +100,7 @@ src:
 (files for all versions)
 allmain.c   alloc.c     apply.c     artifact.c  attrib.c    ball.c
 bones.c     botl.c      cmd.c       dbridge.c   decl.c      detect.c
-dig.c       display.c   dlb.c       do.c        do_name.c   do_wear.c
+dig.c       display.c   dlb.c       do.c        do_name.c   notes.c     do_wear.c
 dog.c       dogmove.c   dokick.c    dothrow.c   drawing.c   dungeon.c
 eat.c       end.c       engrave.c   exper.c     explode.c   extralev.c
 files.c     fountain.c  hack.c      hacklib.c   invent.c    isaac64.c

@@ -3573,6 +3573,8 @@ struct ext_func_tab extcmdlist[] = {
             doorganize, IFBURIED | AUTOCOMPLETE },
     { M('A'), "annotate", "name current level",
             donamelevel, IFBURIED | AUTOCOMPLETE },
+    { '\0', "notes", "manage personal notes",
+            donotes, IFBURIED | AUTOCOMPLETE },
     { 'a', "apply", "apply (use) a tool (pick-axe, key, lamp...)",
             doapply },
     { C('x'), "attributes", "show your attributes",

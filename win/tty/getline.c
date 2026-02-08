@@ -285,7 +285,7 @@ getlin_hook_proc hook;
             bufp = curpos;
         } else if (c == C('?')) {
             /* Ctrl+? - show help */
-            pline("Editing keys: Arrows/Ctrl+B/F=move, Home/Ctrl+A=start, End/Ctrl+E=end, Del/Ctrl+D=delete, Ctrl+W=word, Ctrl+U=line");
+            pline("Editing keys: Arrows/Ctrl+B/F=move, Home/Ctrl+A, End/Ctrl+E, Del/Ctrl+D, Ctrl+W=word, Ctrl+U=line");
             tty_clear_nhwindow(WIN_MESSAGE);
             cw->maxcol = cw->maxrow;
             addtopl(query);
