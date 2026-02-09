@@ -4,6 +4,8 @@ Commits since `README.md` was last updated (commit c012979 — 2025-03-05):
 
 - UNCOMMITTED 2026-02-07 Jeff Tratt — Add `show_boomerang_trajectory` option; make `f` open #showboomerang when boomerang is quivered; pressing `f` inside #showboomerang fires the quivered boomerang or hands off to `t` when no boomerang is quivered; remove auto-opening from `t`; fix display cleanup, terminal state, and direction handoff behavior.
 
+- d4f0d43 2026-02-09 Jeff Tratt — Fix: pressing `f` in #showboomerang now fires a quivered boomerang even when the preview was started directly; add `showboom_called_from_dofire` guard and extern; tested via manual smoke tests.
+
 - 8db68ef 2026-02-07 Jeff Tratt — Add #showboomerang interactive preview for boomerang trajectories; integrate #showlines into 't' (throw) and 'f' (fire/quiver) flows; map keypad-center to '5' to clear preview; pressing '5' now clears preview and restarts the command.
 
 - 6c2e5be 2026-02-06 Jeff Tratt — Add #showlines: transient sight-lines aid (curses highlights + tmp_at fallback), persistent until move, auto-clear on cancel/move, integrate with 'z' and 'Z'
