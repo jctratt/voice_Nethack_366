@@ -309,6 +309,11 @@ register int fd, mode;
     bwrite(fd, (genericptr_t) &u, sizeof u);
     { char dbg[256]; Sprintf(dbg, "SAVE: wrote u struct, note_count=%d, note_list=%p", u.note_count, (void*)u.note_list); curses_debug_log(dbg); }
 
+    /* Save the persistent intrinsic_sources option if this build supports it */
+    if ((sfsaveinfo.sfi1 & SFI1_INTRINSIC_SOURCES) == SFI1_INTRINSIC_SOURCES) {
+        bwrite(fd, (genericptr_t) &iflags.intrinsic_sources, sizeof iflags.intrinsic_sources);
+    }
+
     /* save intrinsics tracker (length + bytes) -- only when supported */
     if ((sfsaveinfo.sfi1 & SFI1_INTRINSICS_TRACKED) == SFI1_INTRINSICS_TRACKED) {
         int intr_len = u.intrinsics_tracked ? (LAST_PROP + 1) : 0;

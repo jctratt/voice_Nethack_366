@@ -615,6 +615,16 @@ unsigned int *stuckid, *steedid;
     
     { char dbg[256]; Sprintf(dbg, "RESTORE: read u struct, note_count=%d, note_list=%p", u.note_count, (void*)u.note_list); curses_debug_log(dbg); }
 
+    /* Restore persistent intrinsic_sources option if present in savefile
+       and propagate into per-character u struct so runtime checks work */
+    if ((sfrestinfo.sfi1 & SFI1_INTRINSIC_SOURCES) == SFI1_INTRINSIC_SOURCES) {
+        mread(fd, (genericptr_t) &iflags.intrinsic_sources, sizeof iflags.intrinsic_sources);
+    } else {
+        iflags.intrinsic_sources = FALSE; /* default if not present */
+    }
+    /* Keep per-character copy in sync */
+    u.show_intrinsic_sources = iflags.intrinsic_sources;
+
     /* restore intrinsics tracker - check SFI1 flag FIRST to match save order */
     if ((sfrestinfo.sfi1 & SFI1_INTRINSICS_TRACKED) == SFI1_INTRINSICS_TRACKED) {
         int intr_len = 0;
