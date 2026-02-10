@@ -298,6 +298,7 @@ register int fd, mode;
     bwrite(fd, (genericptr_t) &u, sizeof u);
     { char dbg[256]; Sprintf(dbg, "SAVE: wrote u struct, note_count=%d, note_list=%p", u.note_count, (void*)u.note_list); curses_debug_log(dbg); }
 
+#if 0  /* TEMPORARILY DISABLED FOR DEBUGGING - intrinsics save */
     /* save intrinsics tracker (length + bytes) -- only when supported */
     if ((sfsaveinfo.sfi1 & SFI1_INTRINSICS_TRACKED) == SFI1_INTRINSICS_TRACKED) {
         int intr_len = u.intrinsics_tracked ? (LAST_PROP + 1) : 0;
@@ -306,6 +307,7 @@ register int fd, mode;
         if (intr_len > 0)
             bwrite(fd, (genericptr_t) u.intrinsics_tracked, intr_len);
     }
+#endif
 
     /* save notes data (variable-length) */
     curses_debug_log("SAVE: calling save_notes");

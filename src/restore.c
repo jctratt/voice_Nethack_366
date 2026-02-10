@@ -608,6 +608,8 @@ unsigned int *stuckid, *steedid;
      * Use the garbage value as a boolean, then replace with fresh allocation. */
     
     { char dbg[256]; Sprintf(dbg, "RESTORE: read u struct, note_count=%d, note_list=%p", u.note_count, (void*)u.note_list); curses_debug_log(dbg); }
+
+#if 0  /* TEMPORARILY DISABLED FOR DEBUGGING - intrinsics restore */
     /* restore intrinsics tracker - check SFI1 flag FIRST to match save order */
     if ((sfrestinfo.sfi1 & SFI1_INTRINSICS_TRACKED) == SFI1_INTRINSICS_TRACKED) {
         int intr_len = 0;
@@ -627,6 +629,9 @@ unsigned int *stuckid, *steedid;
         u.intrinsics_tracked = (unsigned char *) 0;
         curses_debug_log("RESTORE: SFI1_INTRINSICS_TRACKED not set, skipping");
     }
+#else
+    u.intrinsics_tracked = (unsigned char *) 0;  /* Disabled for debugging */
+#endif
 
     /* restore notes saved after the u struct */
     curses_debug_log("RESTORE: calling restore_notes");
