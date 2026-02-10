@@ -309,10 +309,12 @@ register int fd, mode;
     }
 #endif
 
+#if 0  /* TEMPORARILY DISABLED FOR DEBUGGING - notes save */
     /* save notes data (variable-length) */
     curses_debug_log("SAVE: calling save_notes");
     save_notes(fd);
     curses_debug_log("SAVE: save_notes done");
+#endif
 
     bwrite(fd, yyyymmddhhmmss(ubirthday), 14);
     bwrite(fd, (genericptr_t) &urealtime.realtime, sizeof urealtime.realtime);

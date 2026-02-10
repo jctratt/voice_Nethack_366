@@ -633,10 +633,15 @@ unsigned int *stuckid, *steedid;
     u.intrinsics_tracked = (unsigned char *) 0;  /* Disabled for debugging */
 #endif
 
+#if 0  /* TEMPORARILY DISABLED FOR DEBUGGING - notes restore */
     /* restore notes saved after the u struct */
     curses_debug_log("RESTORE: calling restore_notes");
     restore_notes(fd);
     curses_debug_log("RESTORE: restore_notes done");
+#else
+    u.note_list = (char **) 0;  /* Disabled for debugging */
+    u.note_count = 0;
+#endif
 
     curses_debug_log("RESTORE: about to read ubirthday");
 #define ReadTimebuf(foo)                   \
