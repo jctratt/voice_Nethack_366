@@ -303,6 +303,10 @@ struct you {
     /* Per-player tracking flags for intrinsics menu (0/1 for each prop) */
     unsigned char *intrinsics_tracked;
 
+    /* Toggle to allow showing which item grants an intrinsic.  Default: off.
+       Can be enabled by enlightenment or player toggle. */
+    boolean show_intrinsic_sources;
+
     unsigned umconf;
     Bitfield(usick_type, 2);
 #define SICK_VOMITABLE 0x01

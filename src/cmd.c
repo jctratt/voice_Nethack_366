@@ -2654,10 +2654,13 @@ int final;
 
 /* attributes: intrinsics and the like, other non-obvious capabilities */
 STATIC_OVL void
-attributes_enlightenment(unused_mode, final)
-int unused_mode UNUSED;
+attributes_enlightenment(mode, final)
+int mode;
 int final;
 {
+    /* allow showing of intrinsic sources when magic enlightenment is requested */
+    set_intrinsic_sources_allowed((mode & MAGICENLIGHTENMENT) ? TRUE : FALSE);
+
     static NEARDATA const char if_surroundings_permitted[] =
         " if surroundings permitted";
     int ltmp, armpro;
@@ -3431,6 +3434,14 @@ dotogglevoice(void) /* toggle voice_enabled */
 }
 #endif /* VOICE_ENABLED */
 
+int
+dotoggleintrinsicsources(void) /* toggle showing of intrinsic sources */
+{
+    u.show_intrinsic_sources = !u.show_intrinsic_sources;
+    pline("Show intrinsic sources is now %s.", u.show_intrinsic_sources ? "ON" : "OFF");
+    return 0;
+}
+
 /* ordered by command name */
 int doshowlines(VOID_ARGS);
 int doshowboomerang(VOID_ARGS);
@@ -3731,6 +3742,7 @@ struct ext_func_tab extcmdlist[] = {
 #ifdef VOICE_ENABLED
     { C('s'), "voice", "toggle voice output", dotogglevoice, IFBURIED | AUTOCOMPLETE, 0 },
 #endif /* VOICE_ENABLED */
+    { C('S'), "intrinsic-sources", "toggle showing intrinsic sources", dotoggleintrinsicsources, IFBURIED | AUTOCOMPLETE, 0 },
     { M('v'), "vc-versioncompile",
             "list compile time options for this version of NetHack",
             doextversion, IFBURIED | AUTOCOMPLETE | GENERALCMD },
