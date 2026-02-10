@@ -305,6 +305,9 @@ register int fd, mode;
             bwrite(fd, (genericptr_t) u.intrinsics_tracked, intr_len);
     }
 
+    /* save notes data (variable-length) */
+    save_notes(fd);
+
     bwrite(fd, yyyymmddhhmmss(ubirthday), 14);
     bwrite(fd, (genericptr_t) &urealtime.realtime, sizeof urealtime.realtime);
     bwrite(fd, yyyymmddhhmmss(urealtime.start_timing), 14);  /** Why? **/
@@ -1373,6 +1376,7 @@ freedynamicdata()
     free_oracles();
     freefruitchn();
     freenames();
+    free_notes();
     free_waterlevel();
     free_dungeons();
 

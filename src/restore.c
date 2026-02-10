@@ -615,6 +615,9 @@ unsigned int *stuckid, *steedid;
     } else
         u.intrinsics_tracked = (unsigned char *) 0;
 
+    /* restore notes saved after the u struct */
+    restore_notes(fd);
+
 #define ReadTimebuf(foo)                   \
     mread(fd, (genericptr_t) timebuf, 14); \
     timebuf[14] = '\0';                    \

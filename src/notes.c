@@ -1,567 +1,451 @@
-/* NetHack 3.6    notes.c
- * Simple in-game personal notes feature.
- * Stores multiple short notes, editable via name/call-style input.
- */
+/* notes.c - Player note management */
 
 #include "hack.h"
-#include "lev.h" /* for FREE_SAVE macro */
-#ifdef CURSES_GRAPHICS
-#include "../win/curses/cursdial.h"
-#endif
+#include <ctype.h>
 
-typedef struct player_note {
-    struct player_note *next;
-    char *text;
-    unsigned lth;
-} player_note;
-
-static player_note *notes_head = (player_note *) 0;
-
-/* Helper: escape newlines for single-line editor ("\n" sequences). */
-STATIC_OVL void
-escape_newlines_for_edit(src, dst, dstsize)
-const char *src;
-char *dst;
-int dstsize;
+/* Sanitize text by removing non-printable control characters (except newline/tab).
+   Returns an allocated string (caller must free). */
+static char *
+sanitize_text(const char *src)
 {
-    int si = 0, di = 0;
-    if (!src || !dst || dstsize <= 0)
-        return;
-    while (src[si] != '\0' && di < dstsize - 1) {
-        if (src[si] == '\n') {
-            /* need two chars: '\\' 'n' */
-            if (di + 2 >= dstsize - 1)
-                break;
-            dst[di++] = '\\';
-            dst[di++] = 'n';
-            ++si;
-        } else {
-            dst[di++] = src[si++];
+    size_t len = strlen(src);
+    char *temp = (char *) alloc(len + 1);
+    size_t i, j = 0;
+    unsigned char c;
+
+    for (i = 0; i < len; i++) {
+        c = (unsigned char) src[i];
+        if (isprint(c) || c == '\n' || c == '\t') {
+            temp[j++] = src[i];
         }
     }
-    dst[di] = '\0';
-}
+    temp[j] = '\0';
 
-/* Helper: unescape "\\n" sequences in-place to actual newline chars */
-STATIC_OVL void
-unescape_newlines_inplace(buf)
-char *buf;
-{
-    int i = 0, j = 0;
-    if (!buf)
-        return;
-    while (buf[i] != '\0') {
-        if (buf[i] == '\\' && buf[i + 1] == 'n') {
-            buf[j++] = '\n';
-            i += 2;
-        } else {
-            buf[j++] = buf[i++];
-        }
-    }
-    buf[j] = '\0';
-}
-
-/* Mungspaces variant that preserves newlines while collapsing spaces per-line */
-STATIC_OVL void
-mungspaces_preserve_newlines(bp)
-char *bp;
-{
-    char c, *p, *p2;
-    boolean was_space = TRUE;
-
-    if (!bp)
-        return;
-
-    for (p = p2 = bp; (c = *p) != '\0'; p++) {
-        if (c == '\t')
-            c = ' ';
-        if (c == '\n') {
-            /* newline: copy it and reset space-state */
-            *p2++ = '\n';
-            was_space = TRUE;
-            continue;
-        }
-        if (c != ' ' || !was_space)
-            *p2++ = c;
-        was_space = (c == ' ');
-    }
-    if (was_space && p2 > bp)
-        p2--;
-    *p2 = '\0';
-}
-
-/* Add a new note (dupstr'd) */
-void
-add_note(const char *s)
-{
-    player_note *n;
-    if (!s || !*s)
-        return;
-    n = (player_note *) alloc((unsigned) sizeof *n);
-    n->lth = strlen(s);
-    n->text = dupstr(s);
-    n->next = (player_note *) 0;
-
-    /* Append to tail to preserve entered order */
-    if (!notes_head) {
-        notes_head = n;
+    if (j == len) {
+        char *res = dupstr(src);
+        free((genericptr_t) temp);
+        return res;
     } else {
-        player_note *t;
-        for (t = notes_head; t->next; t = t->next)
-            ;
-        t->next = n;
+        char *res = (char *) alloc(j + 1);
+        memcpy(res, temp, j + 1);
+        free((genericptr_t) temp);
+        return res;
     }
 }
 
-/* Remove and free a single note by index (0-based). Returns TRUE if removed */
-boolean
-remove_note_index(int idx)
-{
-    player_note *curr = notes_head, *prev = (player_note *) 0;
-    int i = 0;
-
-    for (; curr; prev = curr, curr = curr->next, ++i) {
-        if (i == idx) {
-            if (prev)
-                prev->next = curr->next;
-            else
-                notes_head = curr->next;
-            if (curr->text)
-                free((genericptr_t) curr->text);
-            free((genericptr_t) curr);
-            return TRUE;
-        }
-    }
-    return FALSE;
-}
-
-/* Free all notes */
+/* Add a new note (sanitize control characters) */
 void
-clear_notes(void)
+add_note(const char *text)
 {
-    player_note *curr = notes_head, *next;
-    while (curr) {
-        next = curr->next;
-        if (curr->text)
-            free((genericptr_t) curr->text);
-        free((genericptr_t) curr);
-        curr = next;
-    }
-    notes_head = (player_note *) 0;
-}
+    char **new_list;
+    int i;
+    char *clean;
 
-/* Display notes in a simple numbered list */
-void
-show_notes(void)
-{
-    player_note *curr = notes_head;
-    int i = 0;
-    winid win;
-    menu_item *pick_list = 0;
-    anything any;
+    if (!text || !*text)
+        return;
 
-    if (!curr) {
-        pline("No notes.");
+    clean = sanitize_text(text);
+    if (!clean || !*clean) {
+        if (clean)
+            free((genericptr_t) clean);
         return;
     }
 
-    win = create_nhwindow(NHW_MENU);
-    start_menu(win);
-    for (; curr; curr = curr->next, ++i) {
-        char bufdisp[BUFSZ];
-        Sprintf(bufdisp, "%d: %.60s", i + 1, curr->text);
-        any = zeroany;
-        any.a_int = i + 1; /* 1-based index so first item is selectable */
-        add_menu(win, NO_GLYPH, &any, 0, 0, ATR_NONE, bufdisp, 0);
+    new_list = (char **) alloc((u.note_count + 1) * sizeof(char *));
+
+    for (i = 0; i < u.note_count; i++) {
+        new_list[i] = u.note_list[i];
     }
-    end_menu(win, "Select a note to edit (or Esc/Enter without choosing to cancel)");
 
-    if (select_menu(win, PICK_ONE, &pick_list) > 0) {
-        int idx = pick_list[0].item.a_int - 1; /* convert from 1-based to 0-based */
-        char buf[BUFSZ];
-        player_note *p = notes_head;
-        int j;
+    /* ownership of clean is transferred to the list */
+    new_list[u.note_count] = clean;
 
-        free((genericptr_t) pick_list);
-        destroy_nhwindow(win);
+    if (u.note_list) {
+        free((genericptr_t) u.note_list);
+    }
 
-        /* locate the note */
-        for (j = 0; p && j < idx; p = p->next, ++j)
-            ;
-        if (!p)
-            return;
+    u.note_list = new_list;
+    u.note_count++;
+}
 
-        /* Prefill buffer. For curses we allow real newlines; otherwise escape them */
-        buf[0] = '\0';
-#ifdef CURSES_GRAPHICS
-        if (WINDOWPORT("curses")) {
-            if (p->text)
-                Strcpy(buf, p->text);
-        } else
-#endif
-        {
-            if (p->text)
-                escape_newlines_for_edit(p->text, buf, BUFSZ);
+/* Delete a note by index */
+void
+delete_note(int index)
+{
+    char **new_list;
+    int i, j;
+
+    if (index < 0 || index >= u.note_count)
+        return;
+
+    if (u.note_list[index])
+        free((genericptr_t) u.note_list[index]);
+
+    if (u.note_count == 1) {
+        if (u.note_list)
+            free((genericptr_t) u.note_list);
+        u.note_list = (char **) 0;
+        u.note_count = 0;
+        return;
+    }
+
+    new_list = (char **) alloc((u.note_count - 1) * sizeof(char *));
+
+    for (i = 0, j = 0; i < u.note_count; i++) {
+        if (i != index)
+            new_list[j++] = u.note_list[i];
+    }
+
+    free((genericptr_t) u.note_list);
+    u.note_list = new_list;
+    u.note_count--;
+}
+
+/* Get a note by index (for display) */
+const char *
+get_note(int index)
+{
+    if (index < 0 || index >= u.note_count)
+        return "";
+    return u.note_list[index];
+}
+
+/* Set/update a note at index (replace existing text). */
+void
+set_note(int index, const char *text)
+{
+    char *clean;
+
+    if (index < 0 || index >= u.note_count || !text)
+        return;
+
+    clean = sanitize_text(text);
+    if (!clean) return;
+
+    if (u.note_list[index])
+        free((genericptr_t) u.note_list[index]);
+    u.note_list[index] = clean;
+}
+
+/* Free all notes (for game cleanup) */
+void
+free_notes(void)
+{
+    int i;
+
+    if (u.note_list) {
+        for (i = 0; i < u.note_count; i++) {
+            if (u.note_list[i])
+                free((genericptr_t) u.note_list[i]);
         }
+        free((genericptr_t) u.note_list);
+        u.note_list = (char **) 0;
+    }
+    u.note_count = 0;
+}
 
-        pline("(Arrows/Ctrl+B/F=move, Home/Ctrl+A, End/Ctrl+E, Del/Ctrl+D, Ctrl+W=word, Ctrl+U=line, Ctrl+O=insert \\n)");
-#ifdef CURSES_GRAPHICS
-        if (WINDOWPORT("curses")) {
-            char prompt[BUFSZ];
-            Sprintf(prompt, "Edit note %d (Ctrl+O inserts '\\n'):", idx + 1);
-            curses_name_input_dialog(prompt, buf, BUFSZ);
-        } else
-#endif
-        {
-            /* Non-curses: instruct about \n sequence */
-            getlin("Edit note (use '\\n' for newline):", buf);
-        }
+/* Save player notes */
+void
+save_notes(int fd)
+{
+    int i;
+    int len;
 
-        /* If user pressed a literal ESC (non-curses), treat as cancel */
-        if (buf[0] == '\033' && buf[1] == '\0') {
-            pline("Edit cancelled.");
-            return;
-        }
-
-        /* If non-curses, convert escaped '\\n' sequences into actual newlines */
-#ifndef CURSES_GRAPHICS
-        /* Unescape '\\n' sequences into actual newlines */
-        unescape_newlines_inplace(buf);
-#endif
-
-        /* Collapse consecutive spaces per-line but preserve newlines */
-        mungspaces_preserve_newlines(buf);
-
-        /* Empty input means delete the note */
-        if (!*buf) {
-            if (remove_note_index(idx))
-                pline("Note deleted.");
-            else
-                pline("Failed to delete note.");
-            return;
-        }
-
-        /* If changed, update the note */
-        if (!p->text || strcmp(p->text, buf) != 0) {
-            if (p->text)
-                free((genericptr_t) p->text);
-            p->text = dupstr(buf);
-            p->lth = strlen(p->text);
-            pline("Note updated.");
+    bwrite(fd, (genericptr_t) &u.note_count, sizeof(u.note_count));
+    for (i = 0; i < u.note_count; i++) {
+        if (u.note_list[i]) {
+            len = strlen(u.note_list[i]);
+            bwrite(fd, (genericptr_t) &len, sizeof(len));
+            bwrite(fd, (genericptr_t) u.note_list[i], len + 1);
         } else {
-            pline("No change.");
+            len = 0;
+            bwrite(fd, (genericptr_t) &len, sizeof(len));
+            bwrite(fd, (genericptr_t) "", 1);
+        }
+    }
+}
+
+/* Restore player notes */
+void
+restore_notes(int fd)
+{
+    int i;
+    int len;
+
+    mread(fd, (genericptr_t) &u.note_count, sizeof(u.note_count));
+
+    if (u.note_count > 0) {
+        u.note_list = (char **) alloc(u.note_count * sizeof(char *));
+        for (i = 0; i < u.note_count; i++) {
+            mread(fd, (genericptr_t) &len, sizeof(len));
+            if (len > 0) {
+                char *buf = (char *) alloc(len + 1);
+                mread(fd, (genericptr_t) buf, len + 1);
+                u.note_list[i] = sanitize_text(buf);
+                free((genericptr_t) buf);
+            } else {
+                char tmp[1];
+                mread(fd, (genericptr_t) tmp, 1);
+                u.note_list[i] = sanitize_text(tmp);
+            }
         }
     } else {
-        destroy_nhwindow(win);
-        pline("No note selected.");
+        u.note_list = (char **) 0;
     }
 }
 
-/* Extended command driver */
+/* Simple notes UI: list, add, delete */
+
+#ifdef CURSES_GRAPHICS
+/* Curses-based multiline input dialog prototype (implemented in cursdial.c) */
+extern void curses_multiline_input_dialog(const char *prompt, char *buf, int bufsize);
+#endif
+
+/* Collect multi-line input using repeated getlin() calls.
+   End input by entering a single '.' on its own line, or cancel with ESC.
+   Returns 1 if text was collected and placed into `out` (NUL-terminated),
+   or 0 if cancelled or nothing entered. */
+static int
+get_multiline_input(char *out, int outsize)
+{
+    char line[BUFSZ];
+    size_t used = 0;
+
+    if (!out || outsize <= 0)
+        return 0;
+
+    out[0] = '\0';
+
+    for (;;) {
+        line[0] = '\0';
+        getlin("(Enter '.' on its own line to finish, ESC to cancel)", line);
+
+        if (line[0] == '\033') /* ESC */
+            return 0;
+
+        if (line[0] == '.' && line[1] == '\0')
+            break; /* finished */
+
+        /* ensure we have room for the line plus possible newline */
+        if ((int)(used + strlen(line) + 2) > outsize - 1) {
+            pline("Note too long; truncating.");
+            /* append as much as fits and finish */
+            int can = outsize - 1 - used;
+            if (can > 0) {
+                if (used > 0) {
+                    out[used++] = '\n';
+                    can--;
+                }
+                strncpy(out + used, line, can);
+                used += can;
+            }
+            out[used] = '\0';
+            break;
+        }
+
+        if (used > 0) {
+            out[used++] = '\n';
+            out[used] = '\0';
+        }
+        Strcpy(out + used, line);
+        used += strlen(line);
+    }
+
+    return out[0] != '\0';
+}
+
 int
 donotes(void)
 {
-    menu_item *pick_list = 0;
+#ifdef CURSES_GRAPHICS
+    /* Use a menu-style dialog similar to #enhance when curses is available */
+    winid win;
     anything any;
-    int done = 0;
+    menu_item *selected = NULL;
+    int n;
+    int i;
+    char acc;
 
-    /* loop so user can add/edit multiple notes without reopening the menu */
-    while (!done) {
-        winid win = create_nhwindow(NHW_MENU);
+    do {
+        acc = 'b'; /* 'a' reserved for Add, '-' reserved for Delete */
+        win = create_nhwindow(NHW_MENU);
         start_menu(win);
 
-        /* Add actions: Add new note, Delete a note (appear at top) */
+        /* Add option */
         any = zeroany;
         any.a_int = -1;
-        add_menu(win, NO_GLYPH, &any, 'a', 0, ATR_NONE, "Add a new note", 0);
+        add_menu(win, NO_GLYPH, &any, 'a', 0, ATR_NONE,
+                 "Add note", MENU_UNSELECTED);
+
+        /* Delete option (use '-' as accelerator) */
         any = zeroany;
-        any.a_int = -3;
-        add_menu(win, NO_GLYPH, &any, '-', 0, ATR_NONE, "Delete a note", 0);
+        any.a_int = -2;
+        add_menu(win, NO_GLYPH, &any, '-', 0, ATR_NONE,
+                 "Delete a note", MENU_UNSELECTED);
 
-        /* Add each note as a selectable item with an explicit selector */
-        player_note *p = notes_head;
-        int i = 0;
-        for (p = notes_head; p; p = p->next, ++i) {
-            char buf[BUFSZ];
-            char disp[BUFSZ];
-            int sel = 0;
+        /* Blank separator */
+        add_menu(win, NO_GLYPH, &zeroany, 0, 0, ATR_NONE, "", MENU_UNSELECTED);
 
-            /* Build a one-line display by taking text up to first newline */
-            if (p->text) {
-                int k;
-                for (k = 0; k < (int)sizeof disp - 1 && p->text[k] && p->text[k] != '\n'; ++k)
-                    disp[k] = p->text[k];
-                disp[k] = '\0';
-            } else
-                Strcpy(disp, "");
-
-            Sprintf(buf, "%d: %.60s", i + 1, disp);
+        /* List existing notes with accelerators b,c,d... */
+        for (i = 0; i < u.note_count; i++) {
             any = zeroany;
-            any.a_int = i + 1; /* 1-based index so zero-any checks don't suppress first item */
-            /* Prefer to reserve 'a' for Add; use lowercase b-z, then uppercase A-Z, then digits 0-9 */
-            if (i < 25)
-                sel = 'b' + i;        /* 'b'..'z' for first 25 notes */
-            else if (i < 51)
-                sel = 'A' + (i - 25); /* 'A'..'Z' next */
-            else if (i < 61)
-                sel = '0' + (i - 51); /* '0'..'9' after that */
-            else
-                sel = 0; /* no selector available beyond that */
+            any.a_int = i + 1; /* index + 1 (so 0 index doesn't make identifier NULL) */
+            char accch = acc;
+            /* cycle accelerators: b..z, A..Z */
+            if (accch > 'z')
+                accch = 'A' + (accch - 'z' - 1);
 
-            add_menu(win, NO_GLYPH, &any, sel, 0, ATR_NONE, buf, 0);
-        }
-
-        end_menu(win, "Notes: select a letter to edit a note; 'a' to add; '-' to delete; Esc to exit");
-
-        if (select_menu(win, PICK_ONE, &pick_list) > 0) {
-            int code = pick_list[0].item.a_int;
-            /* convert from 1-based index to 0-based for notes; keep -1/-2 for actions */
-            if (code > 0)
-                code -= 1;
-            free((genericptr_t) pick_list);
-            destroy_nhwindow(win);
-
-            /* Note selected for editing */
-            if (code >= 0) {
-                char buf[BUFSZ];
-                player_note *selp = notes_head;
-                int j;
-
-                for (j = 0; selp && j < code; selp = selp->next, ++j)
-                    ;
-                if (!selp)
-                    continue;
-
-                /* Prefill buffer. For curses we allow real newlines; otherwise escape them */
-                buf[0] = '\0';
-#ifdef CURSES_GRAPHICS
-                if (WINDOWPORT("curses")) {
-                    if (selp->text)
-                        Strcpy(buf, selp->text);
-                } else
-#endif
-                {
-                    if (selp->text)
-                        escape_newlines_for_edit(selp->text, buf, BUFSZ);
-                }
-
-                pline("(Arrows/Ctrl+B/F=move, Home/Ctrl+A, End/Ctrl+E, Del/Ctrl+D, Ctrl+W=word, Ctrl+U=line, Ctrl+O=insert \\n)");
-#ifdef CURSES_GRAPHICS
-                if (WINDOWPORT("curses")) {
-                    char prompt[BUFSZ];
-                    Sprintf(prompt, "Edit note %d (Ctrl+O inserts '\\n'):", code + 1);
-                    curses_name_input_dialog(prompt, buf, BUFSZ);
-                } else
-#endif
-                {
-                    /* Non-curses: instruct about \n sequence */
-                    getlin("Edit note (use '\\n' for newline):", buf);
-                }
-
-                /* Cancelled in non-curses if literal ESC */
-                if (buf[0] == '\033' && buf[1] == '\0') {
-                    pline("Edit cancelled.");
-                    continue;
-                }
-
-#ifndef CURSES_GRAPHICS
-                /* Unescape '\\n' sequences into actual newlines */
-                unescape_newlines_inplace(buf);
-#endif
-
-                /* Collapse consecutive spaces per-line but preserve newlines */
-                mungspaces_preserve_newlines(buf);
-
-                /* Empty input deletes the note */
-                if (!*buf) {
-                    if (remove_note_index(code))
-                        pline("Note deleted.");
-                    else
-                        pline("Failed to delete note.");
-                    continue;
-                }
-
-                /* Update if changed */
-                if (!selp->text || strcmp(selp->text, buf) != 0) {
-                    if (selp->text)
-                        free((genericptr_t) selp->text);
-                    selp->text = dupstr(buf);
-                    selp->lth = strlen(selp->text);
-                    pline("Note updated.");
-                } else {
-                    pline("No change.");
-                }
-            } else if (code == -1) {
-                /* Add a new note */
-                char nbuf[BUFSZ];
-                /* Prefill with empty buffer (curses supports real newlines via Ctrl+O) */
-                Sprintf(nbuf, "");
-                pline("(Arrows/Ctrl+B/F=move, Home/Ctrl+A, End/Ctrl+E, Del/Ctrl+D, Ctrl+W=word, Ctrl+U=line, Ctrl+O=insert \\n)");
-#ifdef CURSES_GRAPHICS
-                if (WINDOWPORT("curses")) {
-                    curses_name_input_dialog("Add note (Ctrl+O inserts '\\n'):", nbuf, BUFSZ);
-                } else
-#endif
-                {
-                    getlin("Add note (use '\\n' for newline):", nbuf);
-                }
-#ifndef CURSES_GRAPHICS
-                /* Convert '\\n' sequences to actual newlines */
-                unescape_newlines_inplace(nbuf);
-#endif
-                /* Collapse spaces per-line but preserve newlines so multi-line notes survive */
-                mungspaces_preserve_newlines(nbuf);
-                if (!*nbuf || (*nbuf == '\033' && nbuf[1] == '\0')) {
-                    pline("No note added.");
-                } else {
-                    if (*nbuf) {
-                        add_note(nbuf);
-                        pline("Note added.");
-                    }
-                }
-            } else if (code == -3) {
-                /* Delete a note: choose note to delete */
-                if (!notes_head) {
-                    pline("No notes.");
-                    continue;
-                }
-                {
-                    winid dwin = create_nhwindow(NHW_MENU);
-                    menu_item *dlist = 0;
-                    int j = 0;
-                    player_note *q;
-
-                    start_menu(dwin);
-                    for (q = notes_head; q; q = q->next, ++j) {
-                        char dbuf[BUFSZ];
-                        any = zeroany;
-                        any.a_int = j + 1;
-                        Sprintf(dbuf, "%d: %.60s", j + 1, q->text ? q->text : "");
-                        /* reuse same selector mapping for quick selection */
-                        int sel = 0;
-                        if (j < 25)
-                            sel = 'b' + j;
-                        else if (j < 51)
-                            sel = 'A' + (j - 25);
-                        else if (j < 61)
-                            sel = '0' + (j - 51);
-                        add_menu(dwin, NO_GLYPH, &any, sel, 0, ATR_NONE, dbuf, 0);
-                    }
-                    end_menu(dwin, "Select a note to DELETE (Esc to cancel)");
-                    if (select_menu(dwin, PICK_ONE, &dlist) > 0) {
-                        int idx = dlist[0].item.a_int - 1;
-                        free((genericptr_t) dlist);
-                        destroy_nhwindow(dwin);
-                        char prompt[QBUFSZ];
-                        Sprintf(prompt, "Delete note %d? (y/n)", idx + 1);
-                        if (yn(prompt) == 'y') {
-                            if (remove_note_index(idx)) {
-                                pline("Note deleted.");
-                                done = 1; /* close menu on confirm */
-                            } else {
-                                pline("Failed to delete note.");
-                            }
-                        } else {
-                            pline("Delete cancelled.");
-                        }
-                    } else {
-                        destroy_nhwindow(dwin);
-                    }
-                }
+            /* Display a one-line summary (first line) so accelerator is visible */
+            char summary[BUFSZ];
+            const char *full = get_note(i);
+            int j = 0;
+            /* Copy first line character by character */
+            while (full[j] && full[j] != '\n' && j < (int)sizeof(summary) - 5) {
+                summary[j] = full[j];
+                j++;
+            }
+            summary[j] = '\0';
+            if (full[j] == '\n') {
+                Strcat(summary, " ...");
             }
 
-            /* continue to redraw the menu */
+            add_menu(win, NO_GLYPH, &any, accch, 0, ATR_NONE,
+                     summary, MENU_UNSELECTED);
+            acc++;
+            if (acc == 'z' + 1)
+                acc = 'A';
+            else if (acc == 'Z' + 1)
+                acc = 'a'; /* wrap around */
+        }
+
+        end_menu(win, "Notes");
+
+        n = select_menu(win, PICK_ONE, &selected);
+        destroy_nhwindow(win);
+
+        if (n > 0) {
+            int choice = selected[0].item.a_int;
+            free((genericptr_t) selected);
+
+            if (choice == -1) {
+                /* Add note: open curses multiline editor */
+                char buf[4096];
+                buf[0] = '\0';
+#ifdef CURSES_GRAPHICS
+                curses_multiline_input_dialog("New note (F1=Help, F2=Save)", buf, sizeof buf);
+                if (buf[0]) {
+                    add_note(buf);
+                    pline("Note added.");
+                }
+#else
+                if (get_multiline_input(buf, sizeof buf)) {
+                    add_note(buf);
+                    pline("Note added.");
+                }
+#endif
+            } else if (choice == -2) {
+                /* Delete which note - show submenu */
+                winid dwin = create_nhwindow(NHW_MENU);
+                start_menu(dwin);
+                for (i = 0; i < u.note_count; i++) {
+                    any = zeroany;
+                    any.a_int = i + 1; /* index + 1 to avoid NULL identifier */
+                    add_menu(dwin, NO_GLYPH, &any, 'a' + (i % 52), 0, ATR_NONE,
+                             get_note(i), MENU_UNSELECTED);
+                }
+                end_menu(dwin, "Delete which note?");
+                n = select_menu(dwin, PICK_ONE, &selected);
+                destroy_nhwindow(dwin);
+                if (n > 0) {
+                    delete_note(selected[0].item.a_int - 1); /* convert back to real index */
+                    pline("Note deleted.");
+                    free((genericptr_t) selected);
+                }
+            } else {
+                /* Edit selected note (multiline) - choice is index+1, convert back */
+                int note_idx = choice - 1;
+                char buf[4096];
+                Strcpy(buf, get_note(note_idx));
+#ifdef CURSES_GRAPHICS
+                curses_multiline_input_dialog("Edit note (F1=Help, F2=Save)", buf, sizeof buf);
+                if (buf[0]) {
+                    set_note(note_idx, buf);
+                    pline("Note updated.");
+                }
+#else
+                if (get_multiline_input(buf, sizeof buf)) {
+                    set_note(note_idx, buf);
+                    pline("Note updated.");
+                }
+#endif
+            }
         } else {
-            destroy_nhwindow(win);
-            /* Refresh display to match boomerang cleanup and avoid stuck modifier state */
-            docrt();
-            flush_screen(1);
-            done = 1;
+            break; /* user quit */
+        }
+    } while (1);
+
+    return 0;
+#else
+    /* Non-curses fallback: use previous text-based menu */
+    char inbuf[BUFSZ];
+    char notebuf[BUFSZ];
+    char bigbuf[4096];
+    int i;
+
+    for (;;) {
+        if (u.note_count == 0) {
+            pline("No notes.");
+        } else {
+            for (i = 0; i < u.note_count; i++)
+                pline("%d) %s", i + 1, u.note_list[i] ? u.note_list[i] : "");
+        }
+
+        getlin("Notes: (a)dd, (d)elete <#>, (q)uit", inbuf);
+        if (!*inbuf || inbuf[0] == 'q' || inbuf[0] == 'Q')
+            break;
+
+        if (inbuf[0] == 'a' || inbuf[0] == 'A') {
+            pline("Add: (s)ingle-line, (m)ulti-line (ESC to cancel)");
+            int ch = readchar();
+            if (ch == 'm' || ch == 'M') {
+                /* collect multi-line input */
+                bigbuf[0] = '\0';
+                if (get_multiline_input(bigbuf, sizeof bigbuf)) {
+                    add_note(bigbuf);
+                    pline("Note added.");
+                } else {
+                    pline("Add cancelled.");
+                }
+            } else if (ch == 's' || ch == 'S' || ch == '\n' || ch == '\r') {
+                notebuf[0] = '\0';
+                getlin("New note: ", notebuf);
+                if (*notebuf && *notebuf != '\033') {
+                    add_note(notebuf);
+                    pline("Note added.");
+                }
+            } else if (ch == '\033') {
+                pline("Add cancelled.");
+            } else {
+                pline("Unknown add option.");
+            }
+        } else if (inbuf[0] == 'd' || inbuf[0] == 'D') {
+            int idx = 0;
+            /* allow e.g. "d 2" or just "d" and then prompt */
+            if (sscanf(inbuf + 1, "%d", &idx) != 1) {
+                getlin("Delete which note #? ", notebuf);
+                idx = atoi(notebuf);
+            }
+            if (idx >= 1 && idx <= u.note_count) {
+                delete_note(idx - 1);
+                pline("Note deleted.");
+            } else {
+                pline("Invalid note number.");
+            }
+        } else {
+            pline("Unknown notes command.");
         }
     }
 
     return 0;
-}
-
-/* Save notes: write sequence of note lengths followed by note bytes, terminated by -1 */
-void
-save_notes(int fd, int mode)
-{
-    player_note *curr;
-    int len;
-
-#ifdef MFLOPPY
-    if (mode & COUNT_SAVE) {
-        /* counted by bytes scheme elsewhere; we don't strip separately here */
-    }
 #endif
-    for (curr = notes_head; curr; curr = curr->next) {
-        /* Convert internal LF to CRLF for portability when writing savefile */
-        int i, j;
-        /* worst-case CRLF expansion size: up to twice original length */
-        int orig = (int) curr->lth;
-        char *tmp = (char *) alloc((unsigned) (orig * 2 + 1));
-
-        for (i = 0, j = 0; i < orig; ++i) {
-            if (curr->text[i] == '\n') {
-                tmp[j++] = '\r';
-                tmp[j++] = '\n';
-            } else {
-                tmp[j++] = curr->text[i];
-            }
-        }
-        len = j; /* length of converted data */
-        bwrite(fd, (genericptr_t) &len, sizeof len);
-        if (len)
-            bwrite(fd, (genericptr_t) tmp, len);
-        free((genericptr_t) tmp);
-    }
-    len = -1;
-    bwrite(fd, (genericptr_t) &len, sizeof len);
-
-    /* Free on release_data so save caller can pass mode */
-    if (release_data(mode))
-        clear_notes();
-}
-
-/* Restore notes */
-void
-restore_notes(int fd)
-{
-    int len;
-    char *buf;
-
-    while (1) {
-        mread(fd, (genericptr_t) &len, sizeof len);
-        if (len == -1)
-            break;
-        if (len <= 0) {
-            /* zero-length note -- skip */
-            continue;
-        }
-        /* read raw bytes (may contain CRLF), convert CRLF -> LF in place */
-        buf = (char *) alloc((unsigned) len + 1);
-        mread(fd, (genericptr_t) buf, len);
-        buf[len] = '\0';
-
-        /* Convert CRLF sequences to LF (in-place) */
-        {
-            int i = 0, j = 0;
-            while (buf[i]) {
-                if (buf[i] == '\r' && buf[i + 1] == '\n') {
-                    buf[j++] = '\n';
-                    i += 2;
-                } else {
-                    buf[j++] = buf[i++];
-                }
-            }
-            buf[j] = '\0';
-        }
-
-        /* Sanity: collapse spaces per-line while preserving newlines */
-        mungspaces_preserve_newlines(buf);
-
-        add_note(buf);
-        free((genericptr_t) buf);
-    }
 }

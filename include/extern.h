@@ -263,6 +263,16 @@ E boolean FDECL(paranoid_query, (BOOLEAN_P, const char *));
 E int dotogglevoice(void);
 #endif /* VOICE_ENABLED */
 
+/* ### notes.c ### */
+E int NDECL(donotes);
+E void FDECL(add_note, (const char *));
+E void FDECL(delete_note, (int));
+E const char *FDECL(get_note, (int));
+E void FDECL(set_note, (int, const char *));
+E void NDECL(free_notes);
+E void FDECL(save_notes, (int));
+E void FDECL(restore_notes, (int));
+
 /* ### dbridge.c ### */
 
 E boolean FDECL(is_pool, (int, int));
@@ -664,13 +674,6 @@ E int NDECL(donotes); /* personal notes (added) */
 E int NDECL(dooverview);
 E void FDECL(show_overview, (int, int));
 
-/* notes persistence and management */
-E void FDECL(save_notes, (int, int));
-E void FDECL(restore_notes, (int));
-E void NDECL(clear_notes);
-E void FDECL(add_note, (const char *));
-E boolean FDECL(remove_note_index, (int));
-E void NDECL(show_notes);
 E void FDECL(forget_mapseen, (int));
 E void FDECL(rm_mapseen, (int));
 E void FDECL(init_mapseen, (d_level *));

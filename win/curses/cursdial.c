@@ -231,6 +231,477 @@ curses_name_input_dialog(const char *prompt, char *answer, int buffer)
     }
 }
 
+/* Multiline input dialog: full-featured text editor with cursor navigation.
+   Supported keys:
+   - F1: Show help (this dialog)
+   - F2: Save and exit
+   - ESC: Ignored (does not cancel; use F2 to save)
+   - Enter: Insert newline
+   - Backspace/Delete: Delete character
+   - Arrow keys: Move cursor (up/down/left/right)
+   - Home/End: Move to start/end of current line
+   - Ctrl+A / Ctrl+E: Move to start/end of buffer
+   - Ctrl+B / Ctrl+F: Move left/right (alternate to arrows)
+   - Ctrl+Left / Ctrl+Right: Jump by word
+   - Ctrl+D: Delete at cursor (alternate to Del)
+   - Ctrl+W: Delete word backward
+   - Ctrl+Delete: Delete word forward
+   - Ctrl+K: Delete from cursor to end of line
+   - Ctrl+U: Delete current line
+*/
+void
+curses_multiline_input_dialog(const char *prompt, char *buf, int bufsize)
+{
+    int map_height, map_width, maxwidth, winx, winy;
+    WINDOW *bwin, *twin;
+    int height = 18; /* editor height - increased from 12 */
+    int width = 70;  /* editor width - increased from 60 */
+    int i;
+    int ch;
+    int len = 0;
+
+    if (!prompt || !buf || bufsize <= 0)
+        return;
+
+    curses_got_input();
+
+    if (bufsize > BUFSZ * 4)
+        bufsize = BUFSZ * 4;
+
+    /* Basic sizing relative to terminal */
+    width = min(width, term_cols - 6);
+    height = min(height, term_rows - 6);
+
+    if (iflags.window_inited) {
+        curses_get_window_size(MAP_WIN, &map_height, &map_width);
+        width = min(width, map_width - 4);
+    }
+
+    /* create boxed window */
+    bwin = curses_create_window(width + 2, height + 4,
+                                iflags.window_inited ? UP : CENTER);
+    getbegyx(bwin, winy, winx);
+    twin = newwin(height, width, winy + 2, winx + 1);
+    keypad(twin, TRUE);
+
+    /* draw prompt and help - show available editing keys (2 lines, compact) */
+    mvwaddstr(bwin, 0, 1, prompt);
+    mvwaddstr(bwin, height + 2, 1, "F1=Help  Arrows ^B/^F  Home/End ^A/^E  Del/^D  ^K=EOL ^W=word ^U=line");
+    mvwaddstr(bwin, height + 3, 1, "                                                                     ");
+    wrefresh(bwin);
+
+    /* initialize buffer with existing content */
+    if (buf[0] != '\0') {
+        /* buf already contains initial content */
+        len = (int) strlen(buf);
+        if (len > bufsize - 1)
+            len = bufsize - 1;
+    } else {
+        buf[0] = '\0';
+        len = 0;
+    }
+
+    /* editor state: cursor position within buffer */
+    int pos = len;
+
+    /* Enable keypad, show cursor, disable character echo to prevent duplication */
+    keypad(twin, TRUE);
+    noecho();
+    curs_set(1);
+    /* Set timeout - use longer timeout to allow ncurses to assemble full escape sequences */
+    wtimeout(twin, 500);
+
+    /* editor loop with cursor movement and simple editing */
+    while (1) {
+        /* render buffer into twin window with wrapping and explicit newlines */
+        werase(twin);
+        int row = 0, col = 0;
+        for (i = 0; i < len && row < height; i++) {
+            char c = buf[i];
+            if (c == '\n' || col >= width) {
+                row++;
+                col = 0;
+                if (row >= height) break;
+                if (c == '\n') continue; /* don't print newline */
+            }
+            mvwaddch(twin, row, col, c);
+            col++;
+        }
+
+        /* compute cursor row/col from pos (honoring explicit newlines and wrapping) */
+        int crow = 0, ccol = 0, k;
+        for (k = 0; k < pos; k++) {
+            char c = buf[k];
+            if (c == '\n') {
+                crow++;
+                ccol = 0;
+            } else {
+                ccol++;
+                if (ccol >= width) { ccol = 0; crow++; }
+            }
+            if (crow >= height) { crow = height - 1; ccol = width - 1; break; }
+        }
+
+        /* place cursor visually */
+        wmove(twin, crow, ccol);
+        wrefresh(twin);
+
+        ch = wgetch(twin);
+        
+        /* Debug ALL keys received */
+        FILE *dbg = fopen("/tmp/nethack_keys.txt", "a");
+        if (dbg) {
+            fprintf(dbg, "RAW KEY: ch=%d (0x%x) '%c'\n", ch, ch, (ch >= 32 && ch < 127) ? (char)ch : '?');
+            fclose(dbg);
+        }
+
+        /* Handle special Ctrl+arrow KEY codes that ncurses returns with keypad(TRUE) */
+        if (ch == 569) {
+            /* Ctrl+Right (terminal-specific KEY code) - jump word forward */
+            while (pos < len && buf[pos] == ' ') pos++;
+            while (pos < len && buf[pos] != ' ' && buf[pos] != '\n') pos++;
+            continue;
+        } else if (ch == 568 || ch == 553 || ch == 554) {
+            /* Ctrl+Left or similar codes - jump word backward */
+            if (pos > 0) {
+                pos--;
+                while (pos > 0 && buf[pos] == ' ') pos--;
+                while (pos > 0 && buf[pos - 1] != ' ' && buf[pos - 1] != '\n') pos--;
+            }
+            continue;
+        }
+
+        if (ch == KEY_F(1)) {
+            /* Show help popup */
+            const char *help_lines[] = {
+                "Help (this window)                                    F1",
+                "Save and exit                                         F2",
+                "Move cursor                                       Arrows",
+                "Move left/right                              Ctrl+B / ^F",
+                "Line start/end                                  Home/End",
+                "Buffer start/end                             Ctrl+A / ^E",
+                "Jump by word                             Ctrl+Left/Right",
+                "Delete at cursor                               Del / ^D",
+                "Delete word backward                                 ^W",
+                "Delete word forward                            ^Delete",
+                "Delete from cursor to end of line                    ^K",
+                "Delete current line                                   ^U"
+            };
+            int hl = sizeof(help_lines) / sizeof(help_lines[0]);
+            int maxw = 0;
+            int ii;
+            for (ii = 0; ii < hl; ii++) {
+                int l = (int) strlen(help_lines[ii]);
+                if (l > maxw) maxw = l;
+            }
+            int h = min(hl + 4, term_rows - 4);
+            int w = min(maxw + 6, term_cols - 4); /* increased padding */
+            int wy = (term_rows - h) / 2;
+            int wx = (term_cols - w) / 2;
+            WINDOW *hwin = newwin(h, w, wy, wx);
+            box(hwin, 0, 0);
+            for (ii = 0; ii < hl && ii < h - 3; ii++) {
+                mvwprintw(hwin, ii + 1, 3, "%s", help_lines[ii]);
+            }
+            mvwprintw(hwin, h - 2, 3, "Press any key to continue");
+            wrefresh(hwin);
+            wgetch(hwin);
+            delwin(hwin);
+            /* Refresh underlying game windows first, then restore the dialog windows
+               so the editor (box and inner text) is visible again with the cursor. */
+            if (iflags.window_inited)
+                curses_refresh_nethack_windows();
+            touchwin(bwin);
+            wrefresh(bwin);
+            touchwin(twin);
+            wrefresh(twin);
+            continue;
+        } else if (ch == KEY_F(2)) {
+            /* Save and exit */
+            break;
+        } else if (ch == 27) {
+            /* ESC - could be standalone or start of escape sequence */
+            wtimeout(twin, 50); /* short timeout to detect escape sequences */
+            int next_ch = wgetch(twin);
+            wtimeout(twin, 200); /* restore normal timeout */
+            
+            if (next_ch == '[') {
+                /* Escape sequence ESC [ ... */
+                int seq_ch = wgetch(twin);
+                
+                /* Check for modifier sequences like ESC[1;5C (Ctrl+Right) - EXACT COPY from working #name code */
+                if (seq_ch == '1' || seq_ch == '5') {
+                    int modifier_ch = wgetch(twin);
+                    if (modifier_ch == ';') {
+                        /* Format: ESC[1;5C or ESC[5;5C */
+                        int mod_val = wgetch(twin);
+                        int final_ch = wgetch(twin);
+                        
+                        /* Debug to file */
+                        FILE *dbg = fopen("/tmp/nethack_keys.txt", "a");
+                        if (dbg) {
+                            fprintf(dbg, "Ctrl seq: seq_ch=%d modifier_ch=%c mod_val=%c final_ch=%c pos=%d len=%d\n", 
+                                    seq_ch, modifier_ch, mod_val, final_ch, pos, len);
+                            fclose(dbg);
+                        }
+                        
+                        if (final_ch == 'C') {
+                            /* Ctrl+Right - jump word forward */
+                            while (pos < len && buf[pos] == ' ') pos++;
+                            while (pos < len && buf[pos] != ' ' && buf[pos] != '\n') pos++;
+                        } else if (final_ch == 'D') {
+                            /* Ctrl+Left - jump word backward */
+                            if (pos > 0) {
+                                pos--;
+                                while (pos > 0 && buf[pos] == ' ') pos--;
+                                while (pos > 0 && buf[pos - 1] != ' ' && buf[pos - 1] != '\n') pos--;
+                            }
+                        } else if (final_ch == 'H') {
+                            /* Ctrl+Home */
+                            pos = 0;
+                        } else if (final_ch == 'F') {
+                            /* Ctrl+End */
+                            pos = len;
+                        }
+                    } else if (modifier_ch == 'C') {
+                        /* ESC[5C format (Ctrl+Right) */
+                        while (pos < len && buf[pos] == ' ') pos++;
+                        while (pos < len && buf[pos] != ' ' && buf[pos] != '\n') pos++;
+                    } else if (modifier_ch == 'D') {
+                        /* ESC[5D format (Ctrl+Left) */
+                        if (pos > 0) {
+                            pos--;
+                            while (pos > 0 && buf[pos] == ' ') pos--;
+                            while (pos > 0 && buf[pos - 1] != ' ' && buf[pos - 1] != '\n') pos--;
+                        }
+                    } else if (modifier_ch == '~') {
+                        /* ESC[1~ (Home) or ESC[4~ (End) */
+                        if (seq_ch == '1') {
+                            while (pos > 0 && buf[pos - 1] != '\n') pos--;
+                        } else if (seq_ch == '4') {
+                            while (pos < len && buf[pos] != '\n') pos++;
+                        }
+                    }
+                } else if (seq_ch == '3') {
+                    /* ESC[3~ (Delete) or ESC[3;5~ (Ctrl+Delete) */
+                    int modifier_ch = wgetch(twin);
+                    if (modifier_ch == ';') {
+                        int mod_val = wgetch(twin);
+                        int final_ch = wgetch(twin);
+                        if (mod_val == '5' && final_ch == '~') {
+                            /* Ctrl+Delete - delete word forward */
+                            int start_pos = pos;
+                            while (pos < len && buf[pos] != ' ' && buf[pos] != '\n') pos++;
+                            while (pos < len && (buf[pos] == ' ' || buf[pos] == '\n')) pos++;
+                            int deleted = pos - start_pos;
+                            if (deleted > 0) {
+                                int i;
+                                for (i = start_pos; i < len - deleted; i++) buf[i] = buf[i + deleted];
+                                len -= deleted;
+                                buf[len] = '\0';
+                                pos = start_pos;
+                            }
+                        }
+                    } else if (modifier_ch == '~') {
+                        /* Regular Delete */
+                        int i;
+                        if (pos < len) {
+                            for (i = pos; i < len; i++) buf[i] = buf[i + 1];
+                            len--; buf[len] = '\0';
+                        }
+                    }
+                } else if (seq_ch == 'H') {
+                    /* ESC[H - Home */
+                    while (pos > 0 && buf[pos - 1] != '\n') pos--;
+                } else if (seq_ch == 'F') {
+                    /* ESC[F - End */
+                    while (pos < len && buf[pos] != '\n') pos++;
+                } else if (seq_ch == 'C') {
+                    /* ESC[C - Right arrow (already handled by KEY_RIGHT) */
+                    if (pos < len) pos++;
+                } else if (seq_ch == 'D') {
+                    /* ESC[D - Left arrow (already handled by KEY_LEFT) */
+                    if (pos > 0) pos--;
+                }
+            } else {
+                /* Standalone ESC or ESC+other -> ignore */
+                if (next_ch != ERR) {
+                    ungetch(next_ch);
+                }
+            }
+            continue;
+        } else if (ch == KEY_LEFT) {
+            if (pos > 0) pos--;
+        } else if (ch == KEY_RIGHT) {
+            if (pos < len) pos++;
+        } else if (ch == 2) {
+            /* Ctrl+B: move left */
+            if (pos > 0) pos--;
+        } else if (ch == 6) {
+            /* Ctrl+F: move right */
+            if (pos < len) pos++;
+        } else if (ch == 4) {
+            /* Ctrl+D: delete at cursor */
+            if (pos < len) {
+                int i;
+                for (i = pos; i < len; i++) buf[i] = buf[i + 1];
+                len--; buf[len] = '\0';
+            }
+        } else if (ch == 21) {
+            /* Ctrl+U: delete current line */
+            if (len > 0) {
+                int start = pos;
+                while (start > 0 && buf[start - 1] != '\n') start--;
+                int end = start;
+                while (end < len && buf[end] != '\n') end++;
+                if (end < len && buf[end] == '\n') end++; /* remove trailing newline */
+                int deleted = end - start;
+                if (deleted > 0) {
+                    int i;
+                    for (i = start; i < len - deleted; i++) buf[i] = buf[i + deleted];
+                    len -= deleted;
+                    buf[len] = '\0';
+                    pos = start;
+                }
+            }
+        } else if (ch == KEY_UP) {
+            /* move up one visual line preserving column when possible */
+            if (crow > 0) {
+                int target_row = crow - 1;
+                int p, r = 0, c = 0;
+                int best_pos = -1;
+                int best_col_diff = width + 1;
+
+                for (p = 0; p <= len; p++) {
+                    if (r == target_row) {
+                        /* found a position on the previous row; prefer first pos >= ccol */
+                        if (c >= ccol) { best_pos = p; break; }
+                        int diff = ccol - c;
+                        if (diff < best_col_diff) { best_col_diff = diff; best_pos = p; }
+                    }
+                    if (p == len) break;
+                    char cc = buf[p];
+                    if (cc == '\n' || c >= width) { r++; c = 0; }
+                    else { c++; }
+                }
+
+                if (best_pos >= 0) pos = best_pos;
+            }
+        } else if (ch == KEY_DOWN) {
+            /* move down one visual line preserving column when possible */
+            {
+                int target_row = crow + 1;
+                int p, r = 0, c = 0;
+                int best_pos = -1;
+                int best_col_diff = width + 1;
+
+                for (p = 0; p <= len; p++) {
+                    if (r == target_row) {
+                        if (c >= ccol) { best_pos = p; break; }
+                        int diff = ccol - c;
+                        if (diff < best_col_diff) { best_col_diff = diff; best_pos = p; }
+                    }
+                    if (p == len) break;
+                    char cc = buf[p];
+                    if (cc == '\n' || c >= width) { r++; c = 0; }
+                    else { c++; }
+                }
+
+                if (best_pos >= 0) pos = best_pos;
+            }
+        } else if (ch == KEY_BACKSPACE || ch == 127 || ch == '\b') {
+            if (pos > 0) {
+                int i;
+                for (i = pos - 1; i < len; i++) buf[i] = buf[i + 1];
+                len--; pos--;
+                buf[len] = '\0';
+            }
+        } else if (ch == KEY_HOME) {
+            /* Home: move to start of current line */
+            while (pos > 0 && buf[pos - 1] != '\n') pos--;
+        } else if (ch == KEY_END) {
+            /* End: move to end of current line */
+            while (pos < len && buf[pos] != '\n') pos++;
+        } else if (ch == KEY_DC) {
+            /* delete at cursor */
+            int i;
+            if (pos < len) {
+                for (i = pos; i < len; i++) buf[i] = buf[i + 1];
+                len--; buf[len] = '\0';
+            }
+        } else if (ch == 23) {
+            /* Ctrl+W: delete word backward */
+            if (pos > 0) {
+                int start_pos = pos;
+                while (pos > 0 && buf[pos - 1] == ' ') pos--;
+                while (pos > 0 && buf[pos - 1] != ' ' && buf[pos - 1] != '\n') pos--;
+                int deleted = start_pos - pos;
+                if (deleted > 0) {
+                    int i;
+                    for (i = pos; i < len - deleted; i++) buf[i] = buf[i + deleted];
+                    len -= deleted;
+                    buf[len] = '\0';
+                }
+            }
+        } else if (ch == 1) {
+            /* Ctrl+A: move to start of buffer */
+            pos = 0;
+        } else if (ch == 5) {
+            /* Ctrl+E: move to end of buffer */
+            pos = len;
+        } else if (ch == 11) {
+            /* Ctrl+K: delete from cursor to end of line */
+            if (pos < len) {
+                int end_pos = pos;
+                while (end_pos < len && buf[end_pos] != '\n') end_pos++;
+                if (end_pos > pos) {
+                    int deleted = end_pos - pos;
+                    int i;
+                    for (i = pos; i < len - deleted; i++) buf[i] = buf[i + deleted];
+                    len -= deleted;
+                    buf[len] = '\0';
+                }
+            }
+        } else if (ch == '\n' || ch == '\r') {
+            if (len + 1 < bufsize) {
+                int i;
+                for (i = len; i >= pos; i--) buf[i + 1] = buf[i];
+                buf[pos++] = '\n';
+                len++;
+                buf[len] = '\0';
+            }
+        } else if (ch >= 32 && ch < 127) {
+            /* Debug character insertion */
+            FILE *dbg = fopen("/tmp/nethack_keys.txt", "a");
+            if (dbg) {
+                fprintf(dbg, "Inserting char: ch=%d '%c' at pos=%d len=%d\\n", ch, (char)ch, pos, len);
+                fclose(dbg);
+            }
+            
+            if (len + 1 < bufsize) {
+                int i;
+                for (i = len; i >= pos; i--) buf[i + 1] = buf[i];
+                buf[pos++] = (char) ch;
+                len++;
+                buf[len] = '\0';
+            }
+        }
+    }
+
+    /* restore state - keep noecho like the working curses_enhanced_getline */
+    curs_set(0);
+    noecho();
+    /* disable special keypad? keep it enabled */
+    (void) keypad(twin, FALSE);
+
+    delwin(twin);
+    delwin(bwin);
+
+    /* refresh main windows */
+    if (iflags.window_inited)
+        curses_refresh_nethack_windows();
+}
+
 /* Helper function to calculate cursor position from character position */
 STATIC_OVL void
 calc_cursor_pos(int pos, const char *input, int start_row, int start_col, int win_width,
@@ -1990,10 +2461,13 @@ menu_display_page(nhmenu *menu, WINDOW * win, int page_num, char *selectors)
 
             if (menu_item_ptr->selected) {
                 curses_toggle_color_attr(win, HIGHLIGHT_COLOR, A_REVERSE, ON);
+                /* Keep formatting consistent with the non-selected case so
+                   columns are stable and the summary text doesn't overwrite
+                   the accelerator glyph. */
                 if (curletter >= 'A' && curletter <= 'Z' )
                     mvwprintw(win, menu_item_ptr->line_num + 1, 1, "+");
                 else
-                    mvwprintw(win, menu_item_ptr->line_num + 1, 3, "-");
+                    mvwprintw(win, menu_item_ptr->line_num + 1, 1, "-");
                 mvwaddch(win, menu_item_ptr->line_num + 1, 2, curletter);
                 mvwaddch(win, menu_item_ptr->line_num + 1, 3, '<');
                 curses_toggle_color_attr(win, HIGHLIGHT_COLOR, A_REVERSE, OFF);

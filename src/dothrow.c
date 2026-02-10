@@ -10,6 +10,7 @@
 STATIC_DCL int FDECL(throw_obj, (struct obj *, int));
 extern int NDECL(doshowboomerang);
 extern boolean NDECL(is_showboom_direction_set);
+extern boolean showboom_called_from_dofire;
 STATIC_DCL boolean FDECL(ok_to_throw, (int *));
 STATIC_DCL void NDECL(autoquiver);
 STATIC_DCL int FDECL(gem_accept, (struct monst *, struct obj *));
@@ -409,7 +410,9 @@ dofire()
     if (uquiver && uquiver->otyp == BOOMERANG 
         && flags.show_boomerang_trajectory) {
         /* Skip straight rays for boomerang (trajectory cannot be straight) */
+        showboom_called_from_dofire = TRUE;
         int showboom_result = doshowboomerang();
+        showboom_called_from_dofire = FALSE;
         if (showboom_result == 1) {
             /* User chose trajectory with 'f' - fire the quivered boomerang */
             ret = throw_obj(uquiver, shotlimit);

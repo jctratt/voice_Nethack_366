@@ -60,6 +60,8 @@ extern int price_identify(void);
 
 /* Flag to indicate direction was pre-set from showboomerang */
 static boolean showboom_direction_set = FALSE;
+/* Flag set when doshowboomerang() is invoked from dofire() to avoid recursion */
+boolean showboom_called_from_dofire = FALSE;
 
 #ifdef DEBUG
 extern int NDECL(wiz_debug_cmd_bury);
@@ -116,6 +118,7 @@ extern int NDECL(dohelp);             /**/
 extern int NDECL(dohistory);          /**/
 extern int NDECL(doloot);             /**/
 extern int price_identify(void);
+extern int NDECL(dofire);             /**/
 extern int NDECL(dodrink);            /**/
 extern int NDECL(dodip);              /**/
 extern int NDECL(dosacrifice);        /**/
@@ -3637,6 +3640,8 @@ struct ext_func_tab extcmdlist[] = {
             domonability, IFBURIED | AUTOCOMPLETE },
     { 'N', "name", "name a monster or an object",
             docallcmd, IFBURIED | AUTOCOMPLETE },
+    { '\0', "notes", "manage your notes",
+            donotes, IFBURIED | AUTOCOMPLETE },
         { '\0', "priceid", "price identification (search shop prices)",
             price_identify, IFBURIED | AUTOCOMPLETE },
     { M('o'), "offer", "offer a sacrifice to the gods",
@@ -6876,8 +6881,18 @@ restart:
                 
                 /* Check if boomerang is quivered */
                 if (uquiver && uquiver->otyp == BOOMERANG) {
-                    /* Boomerang is quivered - return to fire it */
-                    return 1;
+                    /* Boomerang is quivered - if we were invoked by dofire() return 1
+                       so the caller will perform the firing; otherwise call dofire()
+                       with trajectory preview temporarily disabled to avoid recursion. */
+                    if (showboom_called_from_dofire) {
+                        return 1;
+                    } else {
+                        boolean saved = flags.show_boomerang_trajectory;
+                        flags.show_boomerang_trajectory = FALSE;
+                        int ret = dofire();
+                        flags.show_boomerang_trajectory = saved;
+                        return ret;
+                    }
                 } else {
                     /* No boomerang quivered - hand off to throw command */
                     /* Direction is already set, so throw will use it */

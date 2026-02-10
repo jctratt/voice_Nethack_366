@@ -400,6 +400,10 @@ struct you {
     time_t	uage;		/* time wasted */
     time_t	timecheck;	/* last time check */
 
+    /* Notes feature */
+    int note_count;          /* Number of player notes */
+    char **note_list;        /* Dynamically allocated array of note strings */
+
 }; /* end of `struct you' */
 
 #define Upolyd (u.umonnum != u.umonster)
