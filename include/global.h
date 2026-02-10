@@ -318,6 +318,9 @@ struct savefile_info {
 /* Savefile feature: this binary writes per-player intrinsics-tracker data */
 #define SFI1_INTRINSICS_TRACKED (1UL << 3)
 
+/* Savefile feature: this binary writes per-player notes data */
+#define SFI1_NOTES (1UL << 4)
+
 /*
  * Configurable internal parameters.
  *

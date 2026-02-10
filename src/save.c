@@ -305,8 +305,10 @@ register int fd, mode;
             bwrite(fd, (genericptr_t) u.intrinsics_tracked, intr_len);
     }
 
-    /* save notes data (variable-length) */
-    save_notes(fd);
+    /* save notes data (variable-length) -- only when supported */
+    if ((sfsaveinfo.sfi1 & SFI1_NOTES) == SFI1_NOTES) {
+        save_notes(fd);
+    }
 
     bwrite(fd, yyyymmddhhmmss(ubirthday), 14);
     bwrite(fd, (genericptr_t) &urealtime.realtime, sizeof urealtime.realtime);

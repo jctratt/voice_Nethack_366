@@ -619,8 +619,13 @@ unsigned int *stuckid, *steedid;
     } else
         u.intrinsics_tracked = (unsigned char *) 0;
 
-    /* restore notes saved after the u struct */
-    restore_notes(fd);
+    /* restore notes saved after the u struct -- only when present */
+    if ((sfrestinfo.sfi1 & SFI1_NOTES) == SFI1_NOTES) {
+        restore_notes(fd);
+    } else {
+        u.note_count = 0;
+        u.note_list = (char **) 0;
+    }
 
 #define ReadTimebuf(foo)                   \
     mread(fd, (genericptr_t) timebuf, 14); \
