@@ -296,19 +296,21 @@ register int fd, mode;
     urealtime.realtime += (long) (urealtime.finish_time
                                   - urealtime.start_timing);
     bwrite(fd, (genericptr_t) &u, sizeof u);
+    { char dbg[256]; Sprintf(dbg, "SAVE: wrote u struct, note_count=%d, note_list=%p", u.note_count, (void*)u.note_list); curses_debug_log(dbg); }
 
     /* save intrinsics tracker (length + bytes) -- only when supported */
     if ((sfsaveinfo.sfi1 & SFI1_INTRINSICS_TRACKED) == SFI1_INTRINSICS_TRACKED) {
         int intr_len = u.intrinsics_tracked ? (LAST_PROP + 1) : 0;
+        { char dbg[256]; Sprintf(dbg, "SAVE: writing intr_len=%d", intr_len); curses_debug_log(dbg); }
         bwrite(fd, (genericptr_t) &intr_len, sizeof intr_len);
         if (intr_len > 0)
             bwrite(fd, (genericptr_t) u.intrinsics_tracked, intr_len);
     }
 
-    /* save notes data (variable-length) -- only when supported */
-    if ((sfsaveinfo.sfi1 & SFI1_NOTES) == SFI1_NOTES) {
-        save_notes(fd);
-    }
+    /* save notes data (variable-length) */
+    curses_debug_log("SAVE: calling save_notes");
+    save_notes(fd);
+    curses_debug_log("SAVE: save_notes done");
 
     bwrite(fd, yyyymmddhhmmss(ubirthday), 14);
     bwrite(fd, (genericptr_t) &urealtime.realtime, sizeof urealtime.realtime);
@@ -364,8 +366,6 @@ register int fd, mode;
     savenames(fd, mode);
     save_waterlevel(fd, mode);
     save_msghistory(fd, mode);
-    /* save personal notes (notes are stored as lengths + bytes, -1 terminator) */
-    save_notes(fd);
     bflush(fd);
 }
 

@@ -607,47 +607,40 @@ unsigned int *stuckid, *steedid;
      * but non-null garbage = data exists, null = no data.
      * Use the garbage value as a boolean, then replace with fresh allocation. */
     
-    /* restore intrinsics tracker */
-    if (u.intrinsics_tracked) {
-        /* Non-null pointer (even if garbage) means data was saved */
-        u.intrinsics_tracked = (unsigned char *) alloc((unsigned) (LAST_PROP + 1));
-        if ((sfrestinfo.sfi1 & SFI1_INTRINSICS_TRACKED) == SFI1_INTRINSICS_TRACKED) {
-            int intr_len = 0;
-            mread(fd, (genericptr_t) &intr_len, sizeof intr_len);
-            if (intr_len > 0) {
-                mread(fd, (genericptr_t) u.intrinsics_tracked, intr_len);
-            } else {
-                (void) memset((genericptr_t) u.intrinsics_tracked, 0, (LAST_PROP + 1));
-            }
+    { char dbg[256]; Sprintf(dbg, "RESTORE: read u struct, note_count=%d, note_list=%p", u.note_count, (void*)u.note_list); curses_debug_log(dbg); }
+    /* restore intrinsics tracker - check SFI1 flag FIRST to match save order */
+    if ((sfrestinfo.sfi1 & SFI1_INTRINSICS_TRACKED) == SFI1_INTRINSICS_TRACKED) {
+        int intr_len = 0;
+        mread(fd, (genericptr_t) &intr_len, sizeof intr_len);
+        { char dbg[256]; Sprintf(dbg, "RESTORE: read intr_len=%d", intr_len); curses_debug_log(dbg); }
+        if (intr_len > 0) {
+            u.intrinsics_tracked = (unsigned char *) alloc((unsigned) (LAST_PROP + 1));
+            curses_debug_log("RESTORE: about to read intrinsic data bytes");
+            mread(fd, (genericptr_t) u.intrinsics_tracked, intr_len);
+            curses_debug_log("RESTORE: finished reading intrinsic data bytes");
         } else {
-            /* Old save without intrinsics data */
-            (void) memset((genericptr_t) u.intrinsics_tracked, 0, (LAST_PROP + 1));
+            u.intrinsics_tracked = (unsigned char *) 0;
+            curses_debug_log("RESTORE: intr_len=0, not reading data");
         }
     } else {
+        /* Old save without intrinsics data */
         u.intrinsics_tracked = (unsigned char *) 0;
+        curses_debug_log("RESTORE: SFI1_INTRINSICS_TRACKED not set, skipping");
     }
 
-    /* restore notes */
-    if (u.note_list) {
-        /* Non-null pointer (even if garbage) means data was saved */
-        if ((sfrestinfo.sfi1 & SFI1_NOTES) == SFI1_NOTES) {
-            restore_notes(fd);
-        } else {
-            /* Old save without notes data */
-            u.note_list = (char **) 0;
-            u.note_count = 0;
-        }
-    } else {
-        u.note_list = (char **) 0;
-        u.note_count = 0;
-    }
+    /* restore notes saved after the u struct */
+    curses_debug_log("RESTORE: calling restore_notes");
+    restore_notes(fd);
+    curses_debug_log("RESTORE: restore_notes done");
 
+    curses_debug_log("RESTORE: about to read ubirthday");
 #define ReadTimebuf(foo)                   \
     mread(fd, (genericptr_t) timebuf, 14); \
     timebuf[14] = '\0';                    \
     foo = time_from_yyyymmddhhmmss(timebuf);
 
     ReadTimebuf(ubirthday);
+    curses_debug_log("RESTORE: read ubirthday, about to read urealtime");
     mread(fd, &urealtime.realtime, sizeof urealtime.realtime);
     ReadTimebuf(urealtime.start_timing); /** [not used] **/
     /* current time is the time to use for next urealtime.realtime update */
@@ -1492,6 +1485,17 @@ const char *name;
     }
 
     compatible = (sfi.sfi1 & sfcap.sfi1);
+
+    /* Copy data format flags (not compression flags) from file to restore context */
+    if ((sfi.sfi1 & SFI1_INTRINSICS_TRACKED) == SFI1_INTRINSICS_TRACKED)
+        sfrestinfo.sfi1 |= SFI1_INTRINSICS_TRACKED;
+    else
+        sfrestinfo.sfi1 &= ~SFI1_INTRINSICS_TRACKED;
+    
+    if ((sfi.sfi1 & SFI1_NOTES) == SFI1_NOTES)
+        sfrestinfo.sfi1 |= SFI1_NOTES;
+    else
+        sfrestinfo.sfi1 &= ~SFI1_NOTES;
 
     if ((sfi.sfi1 & SFI1_ZEROCOMP) == SFI1_ZEROCOMP) {
         if ((compatible & SFI1_ZEROCOMP) != SFI1_ZEROCOMP) {

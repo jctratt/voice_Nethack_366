@@ -151,19 +151,22 @@ save_notes(int fd)
     int i;
     int len;
 
-    /* note_count is already in 'you' struct, don't write it again.
-     * Just write the actual note data. */
+    { char dbg[256]; Sprintf(dbg, "save_notes: writing note_count=%d", u.note_count); curses_debug_log(dbg); }
+    bwrite(fd, (genericptr_t) &u.note_count, sizeof(u.note_count));
     for (i = 0; i < u.note_count; i++) {
         if (u.note_list[i]) {
             len = strlen(u.note_list[i]);
+            { char dbg[256]; Sprintf(dbg, "save_notes: [%d] writing len=%d for note='%.40s'", i, len, u.note_list[i]); curses_debug_log(dbg); }
             bwrite(fd, (genericptr_t) &len, sizeof(len));
             bwrite(fd, (genericptr_t) u.note_list[i], len + 1);
         } else {
             len = 0;
+            { char dbg[256]; Sprintf(dbg, "save_notes: [%d] writing len=0 (null note)", i); curses_debug_log(dbg); }
             bwrite(fd, (genericptr_t) &len, sizeof(len));
             bwrite(fd, (genericptr_t) "", 1);
         }
     }
+    curses_debug_log("save_notes: finished writing all notes");
 }
 
 /* Restore player notes */
@@ -173,27 +176,32 @@ restore_notes(int fd)
     int i;
     int len;
 
-    /* note_count was already restored from 'you' struct.
-     * note_list garbage pointer was checked and replaced with fresh allocation.
-     * Now just read the actual note data. */
+    mread(fd, (genericptr_t) &u.note_count, sizeof(u.note_count));
+    { char dbg[256]; Sprintf(dbg, "restore_notes: read note_count=%d", u.note_count); curses_debug_log(dbg); }
+
     if (u.note_count > 0) {
         u.note_list = (char **) alloc(u.note_count * sizeof(char *));
         for (i = 0; i < u.note_count; i++) {
             mread(fd, (genericptr_t) &len, sizeof(len));
+            { char dbg[256]; Sprintf(dbg, "restore_notes: [%d] read len=%d", i, len); curses_debug_log(dbg); }
             if (len > 0) {
                 char *buf = (char *) alloc(len + 1);
+                curses_debug_log("restore_notes: about to mread note text");
                 mread(fd, (genericptr_t) buf, len + 1);
+                { char dbg[256]; Sprintf(dbg, "restore_notes: read %d bytes of text='%.40s'", len+1, buf); curses_debug_log(dbg); }
                 u.note_list[i] = sanitize_text(buf);
                 free((genericptr_t) buf);
             } else {
-                char tmp[1];
+                char tmp[2];  /* Need room for NUL terminator */
                 mread(fd, (genericptr_t) tmp, 1);
+                tmp[1] = '\0';  /* Ensure null termination */
                 u.note_list[i] = sanitize_text(tmp);
             }
         }
     } else {
         u.note_list = (char **) 0;
     }
+    curses_debug_log("restore_notes: finished all notes, returning");
 }
 
 /* Simple notes UI: list, add, delete */
