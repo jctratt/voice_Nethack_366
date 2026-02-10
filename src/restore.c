@@ -80,6 +80,10 @@ void FDECL(amii_setpens, (int)); /* use colors from save file */
 extern int amii_numcolors;
 #endif
 
+/* Debug: Track every read operation */
+static int restore_op_counter = 0;
+static boolean log_restore_ops = FALSE;  /* Only log during actual restore */
+
 #include "display.h"
 
 boolean restoring = FALSE;
@@ -546,7 +550,9 @@ unsigned int *stuckid, *steedid;
     unsigned long uid;
     boolean defer_perm_invent;
 
+    curses_debug_log("RESTORE: restgamestate() called, about to read uid");
     mread(fd, (genericptr_t) &uid, sizeof uid);
+    curses_debug_log("RESTORE: restgamestate() read uid successfully");
     if (SYSOPT_CHECK_SAVE_UID
         && uid != (unsigned long) getuid()) { /* strange ... */
         /* for wizard mode, issue a reminder; for others, treat it
@@ -609,7 +615,6 @@ unsigned int *stuckid, *steedid;
     
     { char dbg[256]; Sprintf(dbg, "RESTORE: read u struct, note_count=%d, note_list=%p", u.note_count, (void*)u.note_list); curses_debug_log(dbg); }
 
-#if 0  /* TEMPORARILY DISABLED FOR DEBUGGING - intrinsics restore */
     /* restore intrinsics tracker - check SFI1 flag FIRST to match save order */
     if ((sfrestinfo.sfi1 & SFI1_INTRINSICS_TRACKED) == SFI1_INTRINSICS_TRACKED) {
         int intr_len = 0;
@@ -629,19 +634,11 @@ unsigned int *stuckid, *steedid;
         u.intrinsics_tracked = (unsigned char *) 0;
         curses_debug_log("RESTORE: SFI1_INTRINSICS_TRACKED not set, skipping");
     }
-#else
-    u.intrinsics_tracked = (unsigned char *) 0;  /* Disabled for debugging */
-#endif
 
-#if 0  /* TEMPORARILY DISABLED FOR DEBUGGING - notes restore */
     /* restore notes saved after the u struct */
     curses_debug_log("RESTORE: calling restore_notes");
     restore_notes(fd);
     curses_debug_log("RESTORE: restore_notes done");
-#else
-    u.note_list = (char **) 0;  /* Disabled for debugging */
-    u.note_count = 0;
-#endif
 
     curses_debug_log("RESTORE: about to read ubirthday");
 #define ReadTimebuf(foo)                   \
@@ -652,7 +649,9 @@ unsigned int *stuckid, *steedid;
     ReadTimebuf(ubirthday);
     curses_debug_log("RESTORE: read ubirthday, about to read urealtime");
     mread(fd, &urealtime.realtime, sizeof urealtime.realtime);
+    curses_debug_log("RESTORE: read urealtime.realtime, about to read urealtime.start_timing");
     ReadTimebuf(urealtime.start_timing); /** [not used] **/
+    curses_debug_log("RESTORE: read urealtime.start_timing, setting start_timing to now");
     /* current time is the time to use for next urealtime.realtime update */
     urealtime.start_timing = getnow();
 
@@ -683,10 +682,15 @@ unsigned int *stuckid, *steedid;
     assign_level(&u.uz0, &u.uz);
 
     /* this stuff comes after potential aborted restore attempts */
+    curses_debug_log("RESTORE: about to call restore_killers");
     restore_killers(fd);
+    curses_debug_log("RESTORE: restore_killers complete, calling restore_timers");
     restore_timers(fd, RANGE_GLOBAL, FALSE, 0L);
+    curses_debug_log("RESTORE: restore_timers complete, calling restore_light_sources");
     restore_light_sources(fd);
+    curses_debug_log("RESTORE: restore_light_sources complete, calling restobjchn for invent");
     invent = restobjchn(fd, FALSE, FALSE);
+    curses_debug_log("RESTORE: invent restored, calling restobjchn for bc_obj");
 
     /* restore dangling (not on floor or in inventory) ball and/or chain */
     bc_obj = restobjchn(fd, FALSE, FALSE);
@@ -746,8 +750,12 @@ unsigned int *stuckid, *steedid;
     restnames(fd);
     restore_waterlevel(fd);
     restore_msghistory(fd);
-    /* restore personal notes */
+    /* restore personal notes - WRONG POSITION, notes are saved earlier */
+#if 0
+    curses_debug_log("RESTORE: calling restore_notes");
     restore_notes(fd);
+    curses_debug_log("RESTORE: restore_notes done");
+#endif
     /* must come after all mons & objs are restored */
     relink_timers(FALSE);
     relink_light_sources(FALSE);
@@ -850,10 +858,21 @@ register int fd;
     xchar ltmp;
     int rtmp;
     struct obj *otmp;
+    FILE *logfp;
+
+    /* Initialize restore operation logging */
+    restore_op_counter = 0;
+    log_restore_ops = TRUE;  /* Enable logging for this restore session */
+    if ((logfp = fopen("restore_ops.log", "w")) != NULL) {
+        fprintf(logfp, "=== RESTORE OPERATIONS LOG (main save file only) ===\n");
+        fclose(logfp);
+    }
 
     restoring = TRUE;
     get_plname_from_file(fd, plname);
+    curses_debug_log("RESTORE: about to call getlev");
     getlev(fd, 0, (xchar) 0, FALSE);
+    curses_debug_log("RESTORE: getlev() completed successfully");
     if (!restgamestate(fd, &stuckid, &steedid)) {
         display_nhwindow(WIN_MESSAGE, TRUE);
         savelev(-1, 0, FREE_SAVE); /* discard current level */
@@ -1248,6 +1267,8 @@ boolean ghostly;
 
     if (ghostly)
         clear_id_mapping();
+    
+    curses_debug_log("RESTORE: getlev() completed successfully");
 }
 
 void
@@ -1682,13 +1703,32 @@ register genericptr_t buf;
 register unsigned int len;
 {
     register int rlen;
+    FILE *logfp;
 #if defined(BSD) || defined(ULTRIX)
 #define readLenType int
 #else /* e.g. SYSV, __TURBOC__ */
 #define readLenType unsigned
 #endif
 
+    /* Debug logging */
+    if (log_restore_ops) {
+        restore_op_counter++;
+        if ((logfp = fopen("restore_ops.log", "a")) != NULL) {
+            fprintf(logfp, "READ.%d: requesting %u bytes\n", restore_op_counter, len);
+            fclose(logfp);
+        }
+    }
+
     rlen = read(fd, buf, (readLenType) len);
+
+    /* Debug logging - record actual bytes read */
+    if (log_restore_ops) {
+        if ((logfp = fopen("restore_ops.log", "a")) != NULL) {
+            fprintf(logfp, "READ.%d: got %d bytes\n", restore_op_counter, rlen);
+            fclose(logfp);
+        }
+    }
+
     if ((readLenType) rlen != (readLenType) len) {
         if (restoreprocs.mread_flags == 1) { /* means "return anyway" */
             restoreprocs.mread_flags = -1;

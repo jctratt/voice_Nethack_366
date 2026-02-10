@@ -341,10 +341,8 @@ NEARDATA struct savefile_info sfrestinfo, sfsaveinfo = {
 #if defined(RLECOMP)
         | SFI1_RLECOMP
 #endif
-/* TEMPORARILY DISABLED FOR DEBUGGING
         | SFI1_INTRINSICS_TRACKED
         | SFI1_NOTES
-*/
     ,
 #ifdef NHSTDC
     0x00000000UL, 0x00000000UL

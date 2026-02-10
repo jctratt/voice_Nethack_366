@@ -2208,11 +2208,17 @@ restore_killers(fd)
 int fd;
 {
     struct kinfo *kptr;
+    boolean has_next;
 
     for (kptr = &killer; kptr != (struct kinfo *) 0; kptr = kptr->next) {
         mread(fd, (genericptr_t) kptr, sizeof (struct kinfo));
-        if (kptr->next) {
+        /* The next pointer from the save file is garbage (old memory address).
+         * Check if it was non-null to know if another entry follows. */
+        has_next = (kptr->next != (struct kinfo *) 0);
+        if (has_next) {
             kptr->next = (struct kinfo *) alloc(sizeof (struct kinfo));
+        } else {
+            kptr->next = (struct kinfo *) 0;  /* Ensure it's null, not garbage */
         }
     }
 }

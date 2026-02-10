@@ -22,6 +22,9 @@ static int count_only;
 int dotcnt, dotrow; /* also used in restore */
 #endif
 
+/* Debug: Track every write operation */
+static int save_op_counter = 0;
+
 STATIC_DCL void FDECL(savelevchn, (int, int));
 STATIC_DCL void FDECL(savedamage, (int, int));
 STATIC_DCL void FDECL(saveobj, (int, struct obj *));
@@ -111,6 +114,14 @@ dosave0()
     xchar ltmp;
     d_level uz_save;
     char whynot[BUFSZ];
+    FILE *logfp;
+
+    /* Initialize save operation logging */
+    save_op_counter = 0;
+    if ((logfp = fopen("save_ops.log", "w")) != NULL) {
+        fprintf(logfp, "=== SAVE OPERATIONS LOG ===\n");
+        fclose(logfp);
+    }
 
     /* we may get here via hangup signal, in which case we want to fix up
        a few of things before saving so that they won't be restored in
@@ -298,7 +309,6 @@ register int fd, mode;
     bwrite(fd, (genericptr_t) &u, sizeof u);
     { char dbg[256]; Sprintf(dbg, "SAVE: wrote u struct, note_count=%d, note_list=%p", u.note_count, (void*)u.note_list); curses_debug_log(dbg); }
 
-#if 0  /* TEMPORARILY DISABLED FOR DEBUGGING - intrinsics save */
     /* save intrinsics tracker (length + bytes) -- only when supported */
     if ((sfsaveinfo.sfi1 & SFI1_INTRINSICS_TRACKED) == SFI1_INTRINSICS_TRACKED) {
         int intr_len = u.intrinsics_tracked ? (LAST_PROP + 1) : 0;
@@ -307,18 +317,19 @@ register int fd, mode;
         if (intr_len > 0)
             bwrite(fd, (genericptr_t) u.intrinsics_tracked, intr_len);
     }
-#endif
 
-#if 0  /* TEMPORARILY DISABLED FOR DEBUGGING - notes save */
     /* save notes data (variable-length) */
     curses_debug_log("SAVE: calling save_notes");
     save_notes(fd);
     curses_debug_log("SAVE: save_notes done");
-#endif
 
+    curses_debug_log("SAVE: about to write ubirthday");
     bwrite(fd, yyyymmddhhmmss(ubirthday), 14);
+    curses_debug_log("SAVE: wrote ubirthday, about to write urealtime.realtime");
     bwrite(fd, (genericptr_t) &urealtime.realtime, sizeof urealtime.realtime);
+    curses_debug_log("SAVE: wrote urealtime.realtime, about to write urealtime.start_timing");
     bwrite(fd, yyyymmddhhmmss(urealtime.start_timing), 14);  /** Why? **/
+    curses_debug_log("SAVE: wrote urealtime.start_timing timestamp");
     /* this is the value to use for the next update of urealtime.realtime */
     urealtime.start_timing = urealtime.finish_time;
     save_killers(fd, mode);
@@ -370,7 +381,9 @@ register int fd, mode;
     savenames(fd, mode);
     save_waterlevel(fd, mode);
     save_msghistory(fd, mode);
+    curses_debug_log("SAVE: about to bflush and complete");
     bflush(fd);
+    curses_debug_log("SAVE: bflush complete, savegamestate done");
 }
 
 boolean
@@ -745,6 +758,14 @@ register genericptr_t loc;
 register unsigned num;
 {
     boolean failed;
+    FILE *logfp;
+
+    /* Debug logging */
+    save_op_counter++;
+    if ((logfp = fopen("save_ops.log", "a")) != NULL) {
+        fprintf(logfp, "WRITE.%d: %u bytes\n", save_op_counter, num);
+        fclose(logfp);
+    }
 
 #ifdef MFLOPPY
     bytes_counted += num;
