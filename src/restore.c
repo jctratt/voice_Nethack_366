@@ -605,6 +605,8 @@ unsigned int *stuckid, *steedid;
     /* NULL out pointers that will be restored separately - the saved pointer values are garbage */
     u.intrinsics_tracked = (unsigned char *) 0;
     u.note_list = (char **) 0;
+    /* Also reset note_count - will be restored from file data, not from saved u struct */
+    u.note_count = 0;
 
     /* restore intrinsics tracker */
     if ((sfrestinfo.sfi1 & SFI1_INTRINSICS_TRACKED) == SFI1_INTRINSICS_TRACKED) {
