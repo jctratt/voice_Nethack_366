@@ -602,31 +602,44 @@ unsigned int *stuckid, *steedid;
 #endif
     mread(fd, (genericptr_t) &u, sizeof(struct you));
 
-    /* NULL out pointers that will be restored separately - the saved pointer values are garbage */
-    u.intrinsics_tracked = (unsigned char *) 0;
-    u.note_list = (char **) 0;
-    /* Also reset note_count - will be restored from file data, not from saved u struct */
-    u.note_count = 0;
-
+    /* Handle pointers in 'you' struct following NetHack's oextra pattern:
+     * The pointer values read from the save file are garbage (old memory addresses),
+     * but non-null garbage = data exists, null = no data.
+     * Use the garbage value as a boolean, then replace with fresh allocation. */
+    
     /* restore intrinsics tracker */
-    if ((sfrestinfo.sfi1 & SFI1_INTRINSICS_TRACKED) == SFI1_INTRINSICS_TRACKED) {
-        int intr_len = 0;
-
-        mread(fd, (genericptr_t) &intr_len, sizeof intr_len);
-        if (intr_len > 0) {
-            u.intrinsics_tracked = (unsigned char *) alloc((unsigned) intr_len);
-            mread(fd, (genericptr_t) u.intrinsics_tracked, intr_len);
-        } else
-            u.intrinsics_tracked = (unsigned char *) 0;
-    } else
-        u.intrinsics_tracked = (unsigned char *) 0;
-
-    /* restore notes saved after the u struct -- only when present */
-    if ((sfrestinfo.sfi1 & SFI1_NOTES) == SFI1_NOTES) {
-        restore_notes(fd);
+    if (u.intrinsics_tracked) {
+        /* Non-null pointer (even if garbage) means data was saved */
+        u.intrinsics_tracked = (unsigned char *) alloc((unsigned) (LAST_PROP + 1));
+        if ((sfrestinfo.sfi1 & SFI1_INTRINSICS_TRACKED) == SFI1_INTRINSICS_TRACKED) {
+            int intr_len = 0;
+            mread(fd, (genericptr_t) &intr_len, sizeof intr_len);
+            if (intr_len > 0) {
+                mread(fd, (genericptr_t) u.intrinsics_tracked, intr_len);
+            } else {
+                (void) memset((genericptr_t) u.intrinsics_tracked, 0, (LAST_PROP + 1));
+            }
+        } else {
+            /* Old save without intrinsics data */
+            (void) memset((genericptr_t) u.intrinsics_tracked, 0, (LAST_PROP + 1));
+        }
     } else {
-        u.note_count = 0;
+        u.intrinsics_tracked = (unsigned char *) 0;
+    }
+
+    /* restore notes */
+    if (u.note_list) {
+        /* Non-null pointer (even if garbage) means data was saved */
+        if ((sfrestinfo.sfi1 & SFI1_NOTES) == SFI1_NOTES) {
+            restore_notes(fd);
+        } else {
+            /* Old save without notes data */
+            u.note_list = (char **) 0;
+            u.note_count = 0;
+        }
+    } else {
         u.note_list = (char **) 0;
+        u.note_count = 0;
     }
 
 #define ReadTimebuf(foo)                   \
