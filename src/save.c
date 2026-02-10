@@ -363,7 +363,7 @@ register int fd, mode;
     save_waterlevel(fd, mode);
     save_msghistory(fd, mode);
     /* save personal notes (notes are stored as lengths + bytes, -1 terminator) */
-    save_notes(fd, mode);
+    save_notes(fd);
     bflush(fd);
 }
 
