@@ -881,7 +881,7 @@ int propidx; /* special cases can have negative values */
      * player has explicitly enabled showing intrinsic sources, or when
      * temporary enlightenment allows it.
      */
-    if (wizard || show_intrinsic_sources_flag || iflags.intrinsic_sources || u.show_intrinsic_sources) {
+    if (wizard || show_intrinsic_sources_flag || iflags.intrinsic_sources) {
         static NEARDATA const char because_of[] = " because of %s";
 
         if (propidx >= 0) {

@@ -622,8 +622,6 @@ unsigned int *stuckid, *steedid;
     } else {
         iflags.intrinsic_sources = FALSE; /* default if not present */
     }
-    /* Keep per-character copy in sync */
-    u.show_intrinsic_sources = iflags.intrinsic_sources;
 
     /* restore intrinsics tracker - check SFI1 flag FIRST to match save order */
     if ((sfrestinfo.sfi1 & SFI1_INTRINSICS_TRACKED) == SFI1_INTRINSICS_TRACKED) {
