@@ -610,6 +610,10 @@ u_init()
 
     u.uroleplay = tmpuroleplay; /* restore options set via rcfile */
 
+    /* Initialize per-character mirror of the persistent option so new games
+       inherit OPTIONS=intrinsic_sources */
+    u.show_intrinsic_sources = iflags.intrinsic_sources;
+
 #if 0  /* documentation of more zero values as desirable */
     u.usick_cause[0] = 0;
     u.uluck  = u.moreluck = 0;

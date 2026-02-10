@@ -312,8 +312,8 @@ struct instance_flags {
                                * on some non-move commands */
     boolean menu_tab_sep;     /* Use tabs to separate option menu fields */
     boolean news;             /* print news */
-    boolean num_pad;          /* use numbers for movement commands */
-    boolean perm_invent;      /* keep full inventories up until dismissed */
+    boolean num_pad;          /* use numbers for movement commands */    /* Show which items grant intrinsics in attributes display (OPTIONS) */
+    boolean intrinsic_sources;    boolean perm_invent;      /* keep full inventories up until dismissed */
     boolean renameallowed;    /* can change hero name during role selection */
     boolean renameinprogress; /* we are changing hero name */
     boolean status_updates;   /* allow updates to bottom status lines;
