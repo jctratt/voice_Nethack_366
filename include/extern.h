@@ -264,8 +264,6 @@ E boolean FDECL(paranoid_query, (BOOLEAN_P, const char *));
 E int dotogglevoice(void);
 #endif /* VOICE_ENABLED */
 
-E int dotoggleintrinsicsources(void);
-
 /* ### notes.c ### */
 E int NDECL(donotes);
 E void FDECL(add_note, (const char *));

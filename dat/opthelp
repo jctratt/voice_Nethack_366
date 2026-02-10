@@ -64,6 +64,11 @@ use_darkgray   use bold black instead of blue for black glyphs.   [TRUE]
 use_inverse    display detected monsters in highlighted manner    [FALSE]
 verbose        print more commentary during the game              [TRUE]
 voice_enabled: Enable or disable voice output for game messages.  [FALSE]
+intrinsic_sources: Show which items grant intrinsics in the attributes display.  [FALSE]
+    When set, NetHack will display the source object for each intrinsic in the
+    attributes/enlightenment display. Default is off to avoid revealing
+    information normally discovered through gameplay; enable only for
+    debugging or personal convenience.
 whatis_menu    show menu when getting a map location              [FALSE]
 whatis_moveskip skip same glyphs when getting a map location      [FALSE]
 
