@@ -151,7 +151,7 @@ save_notes(int fd)
     int i;
     int len;
 
-    bwrite(fd, (genericptr_t) &u.note_count, sizeof(u.note_count));
+    /* note_count is already saved as part of u struct, don't write it again */
     for (i = 0; i < u.note_count; i++) {
         if (u.note_list[i]) {
             len = strlen(u.note_list[i]);
@@ -172,8 +172,7 @@ restore_notes(int fd)
     int i;
     int len;
 
-    mread(fd, (genericptr_t) &u.note_count, sizeof(u.note_count));
-
+    /* note_count was already restored as part of u struct, don't read it again */
     if (u.note_count > 0) {
         u.note_list = (char **) alloc(u.note_count * sizeof(char *));
         for (i = 0; i < u.note_count; i++) {
