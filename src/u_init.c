@@ -600,6 +600,11 @@ u_init()
      * necessary when aborting from a failed restore */
     (void) memset((genericptr_t) &u, 0, sizeof(u));
     u.ustuck = (struct monst *) 0;
+
+    /* Initialize notes */
+    u.note_count = 0;
+    u.note_list = (char **) 0;
+
     (void) memset((genericptr_t) &ubirthday, 0, sizeof(ubirthday));
     (void) memset((genericptr_t) &urealtime, 0, sizeof(urealtime));
 

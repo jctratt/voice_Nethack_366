@@ -3482,6 +3482,8 @@ struct ext_func_tab extcmdlist[] = {
             domonability, IFBURIED | AUTOCOMPLETE },
     { 'N', "name", "name a monster or an object",
             docallcmd, IFBURIED | AUTOCOMPLETE },
+    { '\0', "notes", "manage your notes",
+            donotes, IFBURIED | AUTOCOMPLETE },
         { '\0', "priceid", "price identification (search shop prices)",
             price_identify, IFBURIED | AUTOCOMPLETE },
     { M('o'), "offer", "offer a sacrifice to the gods",

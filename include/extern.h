@@ -263,6 +263,16 @@ E boolean FDECL(paranoid_query, (BOOLEAN_P, const char *));
 E int dotogglevoice(void);
 #endif /* VOICE_ENABLED */
 
+/* ### notes.c ### */
+E int NDECL(donotes);
+E void FDECL(add_note, (const char *));
+E void FDECL(delete_note, (int));
+E const char *FDECL(get_note, (int));
+E void FDECL(set_note, (int, const char *));
+E void NDECL(free_notes);
+E void FDECL(save_notes, (int));
+E void FDECL(restore_notes, (int));
+
 /* ### dbridge.c ### */
 
 E boolean FDECL(is_pool, (int, int));

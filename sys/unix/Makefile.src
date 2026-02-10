@@ -518,7 +518,7 @@ HOBJ = $(FIRSTOBJ) allmain.o alloc.o apply.o artifact.o attrib.o ball.o \
 	role.o rumors.o save.o shk.o shknam.o sit.o sounds.o sp_lev.o spell.o \
 	sys.o \
 	steal.o steed.o teleport.o timeout.o topten.o track.o trap.o u_init.o \
-	uhitm.o vault.o vision.o vis_tab.o weapon.o were.o wield.o windows.o \
+	notes.o uhitm.o vault.o vision.o vis_tab.o weapon.o were.o wield.o windows.o \
 	wizard.o worm.o worn.o write.o zap.o \
 	$(REGEXOBJ) $(RANDOBJ) $(SYSOBJ) $(WINOBJ) $(HINTOBJ) version.o
 # the .o files from the HACKCSRC, SYSSRC, and WINSRC lists
@@ -1077,6 +1077,7 @@ topten.o: topten.c $(HACK_H) ../include/dlb.h ../include/patchlevel.h
 track.o: track.c $(HACK_H)
 trap.o: trap.c $(HACK_H)
 u_init.o: u_init.c $(HACK_H)
+notes.o: notes.c $(HACK_H)
 uhitm.o: uhitm.c $(HACK_H)
 vault.o: vault.c $(HACK_H)
 version.o: version.c $(HACK_H) ../include/dlb.h ../include/date.h \

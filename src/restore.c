@@ -602,6 +602,9 @@ unsigned int *stuckid, *steedid;
 #endif
     mread(fd, (genericptr_t) &u, sizeof(struct you));
 
+    /* restore notes saved after the u struct */
+    restore_notes(fd);
+
 #define ReadTimebuf(foo)                   \
     mread(fd, (genericptr_t) timebuf, 14); \
     timebuf[14] = '\0';                    \
