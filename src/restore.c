@@ -602,6 +602,10 @@ unsigned int *stuckid, *steedid;
 #endif
     mread(fd, (genericptr_t) &u, sizeof(struct you));
 
+    /* NULL out pointers that will be restored separately - the saved pointer values are garbage */
+    u.intrinsics_tracked = (unsigned char *) 0;
+    u.note_list = (char **) 0;
+
     /* restore intrinsics tracker */
     if ((sfrestinfo.sfi1 & SFI1_INTRINSICS_TRACKED) == SFI1_INTRINSICS_TRACKED) {
         int intr_len = 0;
