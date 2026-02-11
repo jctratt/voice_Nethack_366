@@ -1204,14 +1204,7 @@ int after; /* this is extra fast monster movement */
         wasseen = canseemon(mtmp);
         remove_monster(omx, omy);
         place_monster(mtmp, nix, niy);
-        /* Show leash feedback only for the pet's move that brings it
-           to exactly two squares away (i.e., tightened on its last move). */
-        if (mtmp->mleashed) {
-            if (dist2(omx, omy, u.ux, u.uy) > 2
-                && dist2(nix, niy, u.ux, u.uy) == 2) {
-                pline("The leash tightens.");
-            }
-        }
+        /* leash feedback is handled once-per-player-input in check_leash_end_of_turn() */
         if (cursemsg[chi] && (wasseen || canseemon(mtmp))) {
             /* describe top item of pile, not necessarily cursed item itself;
                don't use glyph_at() here--it would return the pet but we want

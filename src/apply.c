@@ -820,6 +820,27 @@ register xchar x, y;
     }
 }
 
+void
+check_leash_end_of_turn()
+{
+    struct monst *mtmp;
+    static long last_leash_tight_moves = -1L;
+
+    for (mtmp = fmon; mtmp; mtmp = mtmp->nmon) {
+        if (DEADMONSTER(mtmp))
+            continue;
+        if (!mtmp->mleashed)
+            continue;
+        if (max(abs(mtmp->mx - u.ux), abs(mtmp->my - u.uy)) == 2) {
+            if (last_leash_tight_moves != moves) {
+                pline("The leash tightens.");
+                last_leash_tight_moves = moves;
+            }
+            return;
+        }
+    }
+}
+
 const char *
 beautiful()
 {
