@@ -6477,14 +6477,15 @@ doshowlines(VOID_ARGS)
                     {
                         struct monst *mtmp = m_at(sx, sy);
                         if (mtmp && canseemon(mtmp)) {
-                            /* stop ray at visible monster to avoid drawing over it */
-                            break;
+                            /* skip drawing on visible monster tiles and continue the ray */
+                            continue;
                         }
                     }
-                    /* Treat a known (remembered) monster glyph as a blocking tile
-                       so the showlines won't draw over or route through it. */
+                    /* If we have a remembered monster glyph at this location, do not
+                       draw over it but let the ray continue (don't treat it as an obstacle). */
                     if (glyph_is_monster(glyph_at(sx, sy))) {
-                        break;
+                        /* skip drawing on remembered monster glyphs and continue */
+                        continue;
                     }
                     /* visible tile: stop only on hard boundaries (where a wand would bounce)
                        unless the tile displays as blank (player-seen blank space) in which
@@ -6533,10 +6534,10 @@ doshowlines(VOID_ARGS)
                         }
                     }
                 } else {
-                    /* Unknown to player: if we have a remembered monster on this tile,
-                       treat it as blocking so we don't draw over it. */
+                    /* Unknown to player: if we have a remembered monster glyph here,
+                       skip drawing over it but let the ray continue. */
                     if (glyph_is_monster(glyph_at(sx, sy))) {
-                        break;
+                        continue;
                     }
                     /* Unknown to player: draw a yellow beam glyph for every tile
                        and continue to the window boundary (no checking/cheating). */
@@ -6579,14 +6580,14 @@ doshowlines(VOID_ARGS)
                     break;
                 if (cansee(sx, sy)) {
                     /* visible tile: stop only on hard boundaries unless visually blank.
-                       Do not draw over visible monsters; stop at them so beams don't pass. */
+                       Do not draw over visible monsters; skip them and continue the ray. */
                     if (m_at(sx, sy) && canseemon(m_at(sx, sy))) {
-                        /* stop the ray at visible monster (don't tmp_at it) */
-                        break;
+                        /* skip this tile (don't tmp_at it) and continue the ray */
+                        continue;
                     }
-                    /* Treat a known (remembered) monster glyph as a blocking tile */
+                    /* If there's a remembered monster glyph here, skip drawing and continue */
                     if (glyph_is_monster(glyph_at(sx, sy))) {
-                        break;
+                        continue;
                     }
                     if (!ZAP_POS(levl[sx][sy].typ) || closed_door(sx, sy)) {
                         int bg_glyph = back_to_glyph(sx, sy);
@@ -6617,14 +6618,15 @@ doshowlines(VOID_ARGS)
                     sy += dys[i];
                     if (!isok(sx, sy) || levl[sx][sy].typ == STONE)
                         break;
-                    /* do not draw over visible monsters; stop at those tiles */
+                    /* do not draw over visible monsters; skip those tiles and continue */
                     if (m_at(sx, sy) && canseemon(m_at(sx, sy))) {
-                        /* stop the ray at visible monster */
-                        break;
+                        /* skip drawing on this tile */
+                        continue;
                     }
-                    /* stop at known/remembered monsters too */
+                    /* skip known/remembered monsters too (don't tmp_at them) */
                     if (glyph_is_monster(glyph_at(sx, sy))) {
-                        break;
+                        /* skip drawing */
+                        continue;
                     } else if (!OBJ_AT(sx, sy)) {
                         tmp_at(sx, sy);
                         count_shown++;
