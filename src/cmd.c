@@ -6477,9 +6477,14 @@ doshowlines(VOID_ARGS)
                     {
                         struct monst *mtmp = m_at(sx, sy);
                         if (mtmp && canseemon(mtmp)) {
-                            /* skip drawing on this tile and continue the ray */
-                            continue;
+                            /* stop ray at visible monster to avoid drawing over it */
+                            break;
                         }
+                    }
+                    /* Treat a known (remembered) monster glyph as a blocking tile
+                       so the showlines won't draw over or route through it. */
+                    if (glyph_is_monster(glyph_at(sx, sy))) {
+                        break;
                     }
                     /* visible tile: stop only on hard boundaries (where a wand would bounce)
                        unless the tile displays as blank (player-seen blank space) in which
@@ -6528,6 +6533,11 @@ doshowlines(VOID_ARGS)
                         }
                     }
                 } else {
+                    /* Unknown to player: if we have a remembered monster on this tile,
+                       treat it as blocking so we don't draw over it. */
+                    if (glyph_is_monster(glyph_at(sx, sy))) {
+                        break;
+                    }
                     /* Unknown to player: draw a yellow beam glyph for every tile
                        and continue to the window boundary (no checking/cheating). */
                     int zg = zapdir_to_glyph(dxs[i], dys[i], 0);
@@ -6569,11 +6579,14 @@ doshowlines(VOID_ARGS)
                     break;
                 if (cansee(sx, sy)) {
                     /* visible tile: stop only on hard boundaries unless visually blank.
-                       Do not draw over visible monsters; skip those tiles instead. */
+                       Do not draw over visible monsters; stop at them so beams don't pass. */
                     if (m_at(sx, sy) && canseemon(m_at(sx, sy))) {
-                        /* skip this tile (don't tmp_at it) and continue the ray */
-                        sx += 0; /* no-op to keep patch context readable */
-                        /* fall through to continue the while-loop */
+                        /* stop the ray at visible monster (don't tmp_at it) */
+                        break;
+                    }
+                    /* Treat a known (remembered) monster glyph as a blocking tile */
+                    if (glyph_is_monster(glyph_at(sx, sy))) {
+                        break;
                     }
                     if (!ZAP_POS(levl[sx][sy].typ) || closed_door(sx, sy)) {
                         int bg_glyph = back_to_glyph(sx, sy);
@@ -6604,9 +6617,14 @@ doshowlines(VOID_ARGS)
                     sy += dys[i];
                     if (!isok(sx, sy) || levl[sx][sy].typ == STONE)
                         break;
-                    /* do not draw over visible monsters; skip those tiles */
+                    /* do not draw over visible monsters; stop at those tiles */
                     if (m_at(sx, sy) && canseemon(m_at(sx, sy))) {
-                        /* skip drawing on this tile */
+                        /* stop the ray at visible monster */
+                        break;
+                    }
+                    /* stop at known/remembered monsters too */
+                    if (glyph_is_monster(glyph_at(sx, sy))) {
+                        break;
                     } else if (!OBJ_AT(sx, sy)) {
                         tmp_at(sx, sy);
                         count_shown++;
