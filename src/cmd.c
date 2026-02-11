@@ -6471,6 +6471,16 @@ doshowlines(VOID_ARGS)
                     break;
 
                 if (cansee(sx, sy)) {
+                    /* If there's a monster here that the player can see, do not
+                       draw a beam glyph over it — let the monster glyph remain
+                       visible and continue the ray. */
+                    {
+                        struct monst *mtmp = m_at(sx, sy);
+                        if (mtmp && canseemon(mtmp)) {
+                            /* skip drawing on this tile and continue the ray */
+                            continue;
+                        }
+                    }
                     /* visible tile: stop only on hard boundaries (where a wand would bounce)
                        unless the tile displays as blank (player-seen blank space) in which
                        case treat it like an unseen tile and draw a yellow ray through it. */
@@ -6558,7 +6568,13 @@ doshowlines(VOID_ARGS)
                 if (!isok(sx, sy) || levl[sx][sy].typ == STONE)
                     break;
                 if (cansee(sx, sy)) {
-                    /* visible tile: stop only on hard boundaries unless visually blank */
+                    /* visible tile: stop only on hard boundaries unless visually blank.
+                       Do not draw over visible monsters; skip those tiles instead. */
+                    if (m_at(sx, sy) && canseemon(m_at(sx, sy))) {
+                        /* skip this tile (don't tmp_at it) and continue the ray */
+                        sx += 0; /* no-op to keep patch context readable */
+                        /* fall through to continue the while-loop */
+                    }
                     if (!ZAP_POS(levl[sx][sy].typ) || closed_door(sx, sy)) {
                         int bg_glyph = back_to_glyph(sx, sy);
                         int bg_ch, bg_color; unsigned bg_spec;
@@ -6572,7 +6588,7 @@ doshowlines(VOID_ARGS)
                             break;
                         }
                     } else {
-                        if (!m_at(sx, sy) && !OBJ_AT(sx, sy)) {
+                        if (!OBJ_AT(sx, sy)) {
                             tmp_at(sx, sy);
                             count_shown++;
                         }
@@ -6588,7 +6604,10 @@ doshowlines(VOID_ARGS)
                     sy += dys[i];
                     if (!isok(sx, sy) || levl[sx][sy].typ == STONE)
                         break;
-                    if (!m_at(sx, sy) && !OBJ_AT(sx, sy)) {
+                    /* do not draw over visible monsters; skip those tiles */
+                    if (m_at(sx, sy) && canseemon(m_at(sx, sy))) {
+                        /* skip drawing on this tile */
+                    } else if (!OBJ_AT(sx, sy)) {
                         tmp_at(sx, sy);
                         count_shown++;
                     }
