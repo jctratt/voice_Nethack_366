@@ -356,7 +356,7 @@ boolean resuming;
         /****************************************/
         /* once-per-player-input things go here */
         /****************************************/
-        /* end-of-turn leash check: print once if any leashed pet is 2 away */
+        /* end-of-turn leash check: print once if any leashed pet is 3 away */
         check_leash_end_of_turn();
 
         time_check();

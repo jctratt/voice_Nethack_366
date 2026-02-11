@@ -831,7 +831,8 @@ check_leash_end_of_turn()
             continue;
         if (!mtmp->mleashed)
             continue;
-        if (max(abs(mtmp->mx - u.ux), abs(mtmp->my - u.uy)) == 2) {
+        /* Trigger the tighten message when the pet is three squares away */
+        if (max(abs(mtmp->mx - u.ux), abs(mtmp->my - u.uy)) == 3) {
             if (last_leash_tight_moves != moves) {
                 pline("The leash tightens.");
                 last_leash_tight_moves = moves;
