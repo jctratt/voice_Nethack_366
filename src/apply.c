@@ -774,11 +774,6 @@ register xchar x, y;
         }
         if (dist2(u.ux, u.uy, mtmp->mx, mtmp->my)
             > dist2(x, y, mtmp->mx, mtmp->my)) {
-            /* If the leashed pet is now exactly two squares away,
-               give the player a little feedback. */
-            if (dist2(u.ux, u.uy, mtmp->mx, mtmp->my) == 2) {
-                pline("The leash tightens.");
-            }
             if (!um_dist(mtmp->mx, mtmp->my, 3)) {
                 ; /* still close enough */
             } else if (otmp->cursed && !breathless(mtmp->data)) {
