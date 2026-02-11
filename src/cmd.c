@@ -2654,13 +2654,10 @@ int final;
 
 /* attributes: intrinsics and the like, other non-obvious capabilities */
 STATIC_OVL void
-attributes_enlightenment(mode, final)
-int mode;
+attributes_enlightenment(unused_mode, final)
+int unused_mode UNUSED;
 int final;
 {
-    /* allow showing of intrinsic sources when magic enlightenment is requested */
-    set_intrinsic_sources_allowed((mode & MAGICENLIGHTENMENT) ? TRUE : FALSE);
-
     static NEARDATA const char if_surroundings_permitted[] =
         " if surroundings permitted";
     int ltmp, armpro;
@@ -3433,8 +3430,6 @@ dotogglevoice(void) /* toggle voice_enabled */
     return 0;
 }
 #endif /* VOICE_ENABLED */
-
-
 
 /* ordered by command name */
 int doshowlines(VOID_ARGS);

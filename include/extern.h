@@ -122,7 +122,6 @@ E boolean FDECL(extremeattr, (int));
 E void FDECL(adjalign, (int));
 E int FDECL(is_innate, (int));
 E char *FDECL(from_what, (int));
-E void FDECL(set_intrinsic_sources_allowed, (BOOLEAN_P));
 E void FDECL(uchangealign, (int, int));
 
 /* ### ball.c ### */

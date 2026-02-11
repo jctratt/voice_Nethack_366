@@ -318,7 +318,6 @@ NEARDATA struct savefile_info sfcap = {
 #endif
         | SFI1_INTRINSICS_TRACKED
         | SFI1_NOTES
-        | SFI1_INTRINSIC_SOURCES
     ,
 #ifdef NHSTDC
     0x00000000UL, 0x00000000UL
@@ -344,7 +343,6 @@ NEARDATA struct savefile_info sfrestinfo, sfsaveinfo = {
 #endif
         | SFI1_INTRINSICS_TRACKED
         | SFI1_NOTES
-        | SFI1_INTRINSIC_SOURCES
     ,
 #ifdef NHSTDC
     0x00000000UL, 0x00000000UL

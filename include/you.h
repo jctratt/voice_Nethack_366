@@ -303,8 +303,6 @@ struct you {
     /* Per-player tracking flags for intrinsics menu (0/1 for each prop) */
     unsigned char *intrinsics_tracked;
 
-    /* (removed) show_intrinsic_sources is deprecated; use iflags.intrinsic_sources */
-
     unsigned umconf;
     Bitfield(usick_type, 2);
 #define SICK_VOMITABLE 0x01

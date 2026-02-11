@@ -859,16 +859,6 @@ int propidx;
     return 0;
 }
 
-/* control whether non-wizard enlightenment-based display is allowed */
-static boolean show_intrinsic_sources_flag = FALSE;
-
-void
-set_intrinsic_sources_allowed(on)
-boolean on;
-{
-    show_intrinsic_sources_flag = on;
-}
-
 char *
 from_what(propidx)
 int propidx; /* special cases can have negative values */
@@ -877,11 +867,9 @@ int propidx; /* special cases can have negative values */
 
     buf[0] = '\0';
     /*
-     * Restrict the source of the attributes to wizard mode or when the
-     * player has explicitly enabled showing intrinsic sources, or when
-     * temporary enlightenment allows it.
+     * Restrict the source of the attributes just to debug mode for now
      */
-    if (wizard || show_intrinsic_sources_flag || iflags.intrinsic_sources) {
+    if (wizard) {
         static NEARDATA const char because_of[] = " because of %s";
 
         if (propidx >= 0) {

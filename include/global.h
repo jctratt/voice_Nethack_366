@@ -321,9 +321,6 @@ struct savefile_info {
 /* Savefile feature: this binary writes per-player notes data */
 #define SFI1_NOTES (1UL << 4)
 
-/* Savefile feature: this binary writes the persistent 'intrinsic_sources' option */
-#define SFI1_INTRINSIC_SOURCES (1UL << 5)
-
 /*
  * Configurable internal parameters.
  *
