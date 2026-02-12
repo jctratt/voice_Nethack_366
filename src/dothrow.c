@@ -317,64 +317,20 @@ dothrow()
 static void
 autoquiver()
 {
-    struct obj *otmp, *oammo = 0, *omissile = 0, *omisc = 0, *altammo = 0;
+    struct obj *cand;
 
+    /* Keep existing behavior: do nothing if quiver already set. */
     if (uquiver)
         return;
 
-    /* Scan through the inventory */
-    for (otmp = invent; otmp; otmp = otmp->nobj) {
-        if (otmp->owornmask || otmp->oartifact || !otmp->dknown) {
-            ; /* Skip it */
-        } else if (otmp->otyp == ROCK
-                   /* seen rocks or known flint or known glass */
-                   || (otmp->otyp == FLINT
-                       && objects[otmp->otyp].oc_name_known)
-                   || (otmp->oclass == GEM_CLASS
-                       && objects[otmp->otyp].oc_material == GLASS
-                       && objects[otmp->otyp].oc_name_known)
-                   || (otmp->otyp == COIN_CLASS
-                       && objects[otmp->otyp].oc_name_known)
-                   ) {
-            if (uslinging())
-                oammo = otmp;
-            else if (ammo_and_launcher(otmp, uswapwep))
-                altammo = otmp;
-            else if (!omisc)
-                omisc = otmp;
-        } else if (otmp->oclass == GEM_CLASS) {
-            ; /* skip non-rock gems--they're ammo but
-                 player has to select them explicitly */
-        } else if (is_ammo(otmp)) {
-            if (ammo_and_launcher(otmp, uwep))
-                /* Ammo matched with launcher (bow+arrow, crossbow+bolt) */
-                oammo = otmp;
-            else if (ammo_and_launcher(otmp, uswapwep))
-                altammo = otmp;
-            else
-                /* Mismatched ammo (no better than an ordinary weapon) */
-                omisc = otmp;
-        } else if (is_missile(otmp)) {
-            /* Missile (dart, shuriken, etc.) */
-            omissile = otmp;
-        } else if (otmp->oclass == WEAPON_CLASS && throwing_weapon(otmp)) {
-            /* Ordinary weapon */
-            if (objects[otmp->otyp].oc_skill == P_DAGGER && !omissile)
-                omissile = otmp;
-            else
-                omisc = otmp;
-        }
+    /* Delegate selection to the centralized helper which understands
+       user preference / skill-aware scoring. */
+    cand = select_quiver_candidate();
+    if (cand) {
+        setuqwep(cand);
+        /* user-visible feedback showing which inventory letter was chosen */
+        pline("Quiver order: '%c' selected", cand->invlet);
     }
-
-    /* Pick the best choice */
-    if (oammo)
-        setuqwep(oammo);
-    else if (omissile)
-        setuqwep(omissile);
-    else if (altammo)
-        setuqwep(altammo);
-    else if (omisc)
-        setuqwep(omisc);
 
     return;
 }
