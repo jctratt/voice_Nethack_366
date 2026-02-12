@@ -3685,6 +3685,8 @@ struct ext_func_tab extcmdlist[] = {
             doprring, IFBURIED },
     { SPBOOK_SYM, "seespells", "list and reorder known spells",
             dovspell, IFBURIED | AUTOCOMPLETE },
+    { '\0', "setquiver", "reorder quiver priority",
+            dosetquiver, IFBURIED | AUTOCOMPLETE },
     { TOOL_SYM, "seetools", "show the tools currently in use",
             doprtool, IFBURIED },
     { '^', "seetrap", "show the type of adjacent trap", doidtrap, IFBURIED },

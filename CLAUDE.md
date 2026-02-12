@@ -1,5 +1,5 @@
 # NetHack Voice Commands Project
-
+Hi, AI, I'm user Jeff!
 ## Build Commands
 - newer copile-all.sh has created to replace the following lines when more than just make is needed
 - see compile-all.sh (Setup and Compile: `cd sys/unix/ && sh setup.sh hints/linux && cd ../.. && make all`)

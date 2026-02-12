@@ -151,6 +151,10 @@ packorder     a list of default symbols for kinds of       [")[%?+!=/(*`0_]
               some other things) gets shown if the 'sortpack' option is on
               (If you specify only some kinds of items, the others from the
               default order will be appended to the end.)
+quiverorder   persistent ordering preference for quiver         []
+              candidates expressed as inventory letters (e.g.
+              `quiverorder:DejL`); affects `autoquiver` and `#setquiver`
+              (empty value clears any saved ordering)
 paranoid_confirmation  space separated list    [paranoid_confirmation:pray]
               of situations where alternate prompting is desired
               Confirm -- when requiring "yes", also require "no" to reject

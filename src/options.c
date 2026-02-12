@@ -95,6 +95,7 @@ static struct Bool_Opt {
     { "autoopen", &flags.autoopen, TRUE, SET_IN_GAME },
     { "autopickup", &flags.pickup, TRUE, SET_IN_GAME },
     { "autoquiver", &flags.autoquiver, FALSE, SET_IN_GAME },
+    { "quiver_autoswap", &flags.quiver_autoswap, FALSE, SET_IN_GAME },
 #if defined(MICRO) && !defined(AMIGA)
     { "BIOS", &iflags.BIOS, FALSE, SET_IN_FILE },
 #else
@@ -499,6 +500,10 @@ extern boolean colors_changed; /* in tos.c */
 extern char *shade[3];          /* in sys/msdos/video.c */
 extern char ttycolors[CLR_MAX]; /* in sys/msdos/video.c */
 #endif
+
+/* quiver ordering persistence (defined in quiver.c) */
+extern int *quiver_orderindx; /* array of otyp values, user preference order */
+extern int quiver_ordercnt;  /* number of entries in quiver_orderindx */
 
 static char def_inv_order[MAXOCLASSES] = {
     COIN_CLASS, AMULET_CLASS, WEAPON_CLASS, ARMOR_CLASS,
@@ -3173,6 +3178,61 @@ boolean tinitial, tfrom_file;
                 config_error_add("Unknown %s parameter '%s'", fullname, op);
                 return FALSE;
             }
+        }
+        return retval;
+    }
+
+    /* quiverorder: sequence of inventory letters (a-zA-Z) referring to
+       quiver candidates; letters that don't match current inventory are
+       ignored.  Stored internally as an array of `otyp' values. */
+    fullname = "quiverorder";
+    if (match_optname(opts, fullname, 6, TRUE)) {
+        if (duplicate)
+            complain_about_duplicate(opts, 1);
+        op = string_for_opt(opts, negated);
+        if (negated) {
+            bad_negation(fullname, FALSE);
+            return FALSE;
+        }
+        if (op == empty_optstr)
+            return FALSE;
+
+        /* map inv-letters -> otyp list */
+        {
+            int tmpcnt = 0;
+            int *tmpindx = (int *) 0;
+            char *p;
+
+            for (p = op; *p; ++p) {
+                char c = *p;
+                struct obj *otmp;
+
+                if (!isalpha((uchar) c))
+                    continue;
+                for (otmp = invent; otmp; otmp = otmp->nobj) {
+                    if (otmp->invlet == c) {
+                        if (is_ammo(otmp) || is_missile(otmp)
+                            || (otmp->oclass == WEAPON_CLASS && throwing_weapon(otmp))
+                            || otmp->otyp == ROCK || otmp->otyp == FLINT) {
+                            int j, found = 0;
+                            for (j = 0; j < tmpcnt; ++j)
+                                if (tmpindx[j] == otmp->otyp) {
+                                    found = 1;
+                                    break;
+                                }
+                            if (!found) {
+                                tmpindx = (int *) realloc(tmpindx, (tmpcnt + 1) * sizeof(int));
+                                tmpindx[tmpcnt++] = otmp->otyp;
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+            if (quiver_orderindx)
+                free((genericptr_t) quiver_orderindx);
+            quiver_orderindx = tmpindx;
+            quiver_ordercnt = tmpcnt;
         }
         return retval;
     }
@@ -5887,6 +5947,28 @@ char *buf;
     } else if (!strcmp(optname, "packorder")) {
         oc_to_str(flags.inv_order, ocl);
         Sprintf(buf, "%s", ocl);
+    } else if (!strcmp(optname, "quiverorder")) {
+        /* show as inventory letters (a-zA-Z) when possible */
+        char qletters[BUFSZ];
+        int qlen = 0;
+        struct obj *otmp;
+
+        if (!quiver_ordercnt || !quiver_orderindx) {
+            Strcpy(buf, "none");
+        } else {
+            for (i = 0; i < quiver_ordercnt; ++i) {
+                int otyp = quiver_orderindx[i];
+                for (otmp = invent; otmp; otmp = otmp->nobj) {
+                    if (otmp->otyp == otyp) {
+                        qletters[qlen++] = otmp->invlet;
+                        break;
+                    }
+                }
+            }
+            qletters[qlen] = '\0';
+            Sprintf(buf, "%s", qlen ? qletters : "none");
+        }
+
 #ifdef CHANGE_COLOR
     } else if (!strcmp(optname, "palette")) {
         Sprintf(buf, "%s", get_color_string());
@@ -5923,6 +6005,9 @@ char *buf;
     } else if (!strcmp(optname, "pickup_types")) {
         oc_to_str(flags.pickup_types, ocl);
         Sprintf(buf, "%s", ocl[0] ? ocl : "all");
+
+
+
     } else if (!strcmp(optname, "pile_limit")) {
         Sprintf(buf, "%d", flags.pile_limit);
     } else if (!strcmp(optname, "autosave")) {

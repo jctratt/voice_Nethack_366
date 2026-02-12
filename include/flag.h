@@ -23,6 +23,7 @@ struct flag {
     boolean acoustics;  /* allow dungeon sound messages */
     boolean autodig;    /* MRKR: Automatically dig */
     boolean autoquiver; /* Automatically fill quiver */
+    boolean quiver_autoswap; /* auto-switch quivered item to higher-priority when picked up */
     boolean autoopen;   /* open doors by walking into them */
     boolean beginner;
     boolean biff;      /* enable checking for mail */
