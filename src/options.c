@@ -95,6 +95,7 @@ static struct Bool_Opt {
     { "autoopen", &flags.autoopen, TRUE, SET_IN_GAME },
     { "autopickup", &flags.pickup, TRUE, SET_IN_GAME },
     { "autoquiver", &flags.autoquiver, FALSE, SET_IN_GAME },
+    { "quiver_autoswap", &flags.quiver_autoswap, FALSE, SET_IN_GAME },
 #if defined(MICRO) && !defined(AMIGA)
     { "BIOS", &iflags.BIOS, FALSE, SET_IN_FILE },
 #else

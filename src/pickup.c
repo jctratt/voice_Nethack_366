@@ -1640,6 +1640,43 @@ struct obj *otmp;
     }
 
     result = addinv(otmp);
+
+    /* If configured, and the picked-up object is a quiver candidate, then
+       auto-switch the quiver to it when it has higher priority per the
+       user's `quiver_orderindx` ordering. */
+    if (flags.quiver_autoswap && quiver_ordercnt > 0 && quiver_orderindx) {
+        struct obj *picked = result;
+        int newpos = -1, curpos = INT_MAX, i;
+
+        if (picked && (is_ammo(picked) || is_missile(picked)
+                       || (picked->oclass == WEAPON_CLASS && throwing_weapon(picked))
+                       || picked->otyp == ROCK || picked->otyp == FLINT)) {
+            /* find picked object's position in user's quiver order */
+            for (i = 0; i < quiver_ordercnt; ++i)
+                if (quiver_orderindx[i] == picked->otyp) {
+                    newpos = i;
+                    break;
+                }
+            if (newpos >= 0) {
+                if (uquiver) {
+                    for (i = 0; i < quiver_ordercnt; ++i)
+                        if (quiver_orderindx[i] == uquiver->otyp) {
+                            curpos = i;
+                            break;
+                        }
+                } else {
+                    curpos = INT_MAX; /* empty quiver counts as lowest priority */
+                }
+
+                if (newpos < curpos) {
+                    /* switch to the newly-picked higher-priority ammo */
+                    setuqwep(picked);
+                    pline("You feel more confident.");
+                }
+            }
+        }
+    }
+
     /* if you're taking a shop item from outside the shop, make shk notice */
     if (robshop)
         remote_burglary(ox, oy);
