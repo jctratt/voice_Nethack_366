@@ -157,6 +157,16 @@ struct obj *obj;
         score += 400;
     }
 
+    /* Favor weapons whose `oc_skill` is a positive weapon skill (for
+       example `P_DAGGER`) when the player already has training in that
+       weapon.  This prevents many small generic missiles (darts/shuriken)
+       from outranking a single trained throwing-weapon such as a dagger. */
+    if (objects[obj->otyp].oc_skill > 0) {
+        int wskill = objects[obj->otyp].oc_skill;
+        if (P_SKILL(wskill) >= P_BASIC)
+            score += 140; /* tunable — gives trained weapons a meaningful edge */
+    }
+
     /* Base preference by type */
     if (is_ammo(obj)) {
         /* matched-launcher already received a large boost above; give

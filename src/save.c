@@ -6,6 +6,10 @@
 #include "hack.h"
 #include "lev.h"
 
+/* quiver ordering persistence (declared in quiver.c) */
+extern int *quiver_orderindx;
+extern int quiver_ordercnt;
+
 #ifndef NO_SIGNAL
 #include <signal.h>
 #endif
@@ -369,6 +373,13 @@ register int fd, mode;
     bwrite(fd, (genericptr_t) &quest_status, sizeof quest_status);
     bwrite(fd, (genericptr_t) spl_book,
            sizeof(struct spell) * (MAXSPELL + 1));
+
+    /* persist quiver order (count + otyp array) */
+    bwrite(fd, (genericptr_t) &quiver_ordercnt, sizeof quiver_ordercnt);
+    if (quiver_ordercnt > 0 && quiver_orderindx)
+        bwrite(fd, (genericptr_t) quiver_orderindx,
+               quiver_ordercnt * sizeof(*quiver_orderindx));
+
     save_artifacts(fd);
     save_oracles(fd, mode);
     if (ustuck_id)

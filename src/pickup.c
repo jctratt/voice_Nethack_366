@@ -8,6 +8,11 @@
  */
 
 #include "hack.h"
+#include <limits.h> /* for INT_MAX used by quiver autoswap */
+
+/* quiver ordering persistence (defined in quiver.c) */
+extern int *quiver_orderindx;
+extern int quiver_ordercnt;
 
 #define CONTAINED_SYM '>' /* from invent.c */
 

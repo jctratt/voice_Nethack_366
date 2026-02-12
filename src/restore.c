@@ -4,6 +4,10 @@
 /* NetHack may be freely redistributed.  See license for details. */
 
 #include "hack.h"
+
+/* quiver ordering persistence (defined in quiver.c) */
+extern int *quiver_orderindx;
+extern int quiver_ordercnt;
 #include "lev.h"
 #include "tcap.h" /* for TERMLIB and ASCIIGRAPH */
 
@@ -735,6 +739,16 @@ unsigned int *stuckid, *steedid;
     mread(fd, (genericptr_t) &monstermoves, sizeof monstermoves);
     mread(fd, (genericptr_t) &quest_status, sizeof (struct q_score));
     mread(fd, (genericptr_t) spl_book, (MAXSPELL + 1) * sizeof (struct spell));
+
+    /* restore quiver order saved by save.c */
+    mread(fd, (genericptr_t) &quiver_ordercnt, sizeof quiver_ordercnt);
+    if (quiver_ordercnt > 0) {
+        quiver_orderindx = (int *) alloc((unsigned) quiver_ordercnt * sizeof(int));
+        mread(fd, (genericptr_t) quiver_orderindx,
+              quiver_ordercnt * sizeof(*quiver_orderindx));
+    } else
+        quiver_orderindx = (int *) 0;
+
     restore_artifacts(fd);
     restore_oracles(fd);
     if (u.ustuck)

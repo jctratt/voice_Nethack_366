@@ -5,6 +5,10 @@
 
 #include "hack.h"
 
+/* quiver ordering (externs defined in quiver.c) */
+extern int *quiver_orderindx;
+extern int quiver_ordercnt;
+
 #ifndef C /* same as cmd.c */
 #define C(c) (0x1f & (c))
 #endif
@@ -2811,9 +2815,26 @@ long *out_cnt;
                 sticky_inv_hack = otmp->sticky;
 #endif /* STICKY_OBJECTS */
 
-            add_menu(win, obj_to_glyph(otmp, rn2_on_display_rng), &any, ilet,
-                     wizid ? def_oc_syms[(int) otmp->oclass].sym : 0,
-                     ATR_NONE, doname(otmp), MENU_UNSELECTED);
+            {
+                char lab[BUFSZ];
+                int qpos = -1, qi;
+
+                Strcpy(lab, doname(otmp));
+                if (quiver_ordercnt > 0 && quiver_orderindx) {
+                    for (qi = 0; qi < quiver_ordercnt; ++qi) {
+                        if (quiver_orderindx[qi] == otmp->otyp) {
+                            qpos = qi;
+                            break;
+                        }
+                    }
+                }
+                if (qpos >= 0) {
+                    Sprintf(eos(lab), " [q%d]", qpos + 1);
+                }
+                add_menu(win, obj_to_glyph(otmp, rn2_on_display_rng), &any,
+                         ilet, wizid ? def_oc_syms[(int) otmp->oclass].sym : 0,
+                         ATR_NONE, lab, MENU_UNSELECTED);
+            }
 #ifdef STICKY_OBJECTS
                 sticky_inv_hack = 0;
 #endif /* STICKY_OBJECTS */
