@@ -2428,7 +2428,7 @@ E int FDECL(spelleffects, (int, BOOLEAN_P));
 E int FDECL(tport_spell, (int));
 E void NDECL(losespells);
 E int NDECL(dovspell);
-E int NDECL(doquiverorder);
+E int NDECL(dosetquiver);
 E struct obj *NDECL(select_quiver_candidate);
 E void FDECL(initialspell, (struct obj *));
 
