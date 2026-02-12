@@ -157,14 +157,24 @@ struct obj *obj;
         score += 400;
     }
 
-    /* Favor weapons whose `oc_skill` is a positive weapon skill (for
-       example `P_DAGGER`) when the player already has training in that
-       weapon.  This prevents many small generic missiles (darts/shuriken)
-       from outranking a single trained throwing-weapon such as a dagger. */
+    /* Favor weapons whose `oc_skill` is a positive weapon skill
+       (for example `P_DAGGER`) when the player already has training in
+       that weapon.  Scale the bonus by proficiency so EXPERT training
+       strongly dominates generic missiles, SKILLED gets a solid edge,
+       and BASIC gets a modest preference. */
     if (objects[obj->otyp].oc_skill > 0) {
         int wskill = objects[obj->otyp].oc_skill;
-        if (P_SKILL(wskill) >= P_BASIC)
-            score += 140; /* tunable — gives trained weapons a meaningful edge */
+        int skl = P_SKILL(wskill);
+        if (skl >= P_BASIC) {
+            /* Tuned weights: BASIC < SKILLED < EXPERT to strongly favor
+               high-skill throwing weapons when the player has trained. */
+            if (skl >= P_EXPERT)
+                score += 420; /* strong bias for expert */
+            else if (skl >= P_SKILLED)
+                score += 260; /* clear preference for skilled */
+            else
+                score += 120; /* modest advantage for basic */
+        }
     }
 
     /* Base preference by type */
