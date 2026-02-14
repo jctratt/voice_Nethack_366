@@ -13,8 +13,10 @@
 /*
  * Incrementing EDITLEVEL can be used to force invalidation of old bones
  * and save files.
+ *
+ * NOTE: increased because `struct flag` layout changed (added `invweight`).
  */
-#define EDITLEVEL 0
+#define EDITLEVEL 1
 
 #define COPYRIGHT_BANNER_A "NetHack, Copyright 1985-2020"
 #define COPYRIGHT_BANNER_B \

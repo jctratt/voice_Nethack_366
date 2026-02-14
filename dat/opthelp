@@ -40,6 +40,7 @@ null           allow nulls to be sent to your terminal            [TRUE]
                try turning this option off (forcing NetHack to use its own
                delay code) if moving objects seem to teleport across rooms
 perm_invent    keep inventory in a permanent window               [FALSE]
+invweight      show per-item inventory weight in inventory list  [FALSE]
 pickup_thrown  override pickup_types for thrown objects           [TRUE]
 pushweapon     when wielding a new weapon, put your previously    [FALSE]
                wielded weapon into the secondary weapon slot

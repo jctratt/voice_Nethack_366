@@ -2820,6 +2820,16 @@ long *out_cnt;
                 int qpos = -1, qi;
 
                 Strcpy(lab, doname(otmp));
+                /* show per-item and total weight in inventory listing when
+                   OPTIONS=invweight is enabled (format: [TOTALxITEM]) */
+                if (flags.invweight) {
+                    long total_wt = (long) otmp->owt;
+                    long per_wt = (otmp->quan > 1) ? (total_wt / otmp->quan) : total_wt;
+                    if (otmp->quan > 1 && total_wt > 0)
+                        Sprintf(eos(lab), " [%ldx%ld]", total_wt, per_wt);
+                    else if (total_wt > 0)
+                        Sprintf(eos(lab), " [%ld]", total_wt);
+                }
                 if (quiver_ordercnt > 0 && quiver_orderindx) {
                     for (qi = 0; qi < quiver_ordercnt; ++qi) {
                         if (quiver_orderindx[qi] == otmp->otyp) {
