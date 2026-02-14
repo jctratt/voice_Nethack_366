@@ -191,7 +191,6 @@ static struct Bool_Opt {
 #endif
     /* moved perm_invent from flags to iflags and out of save file in 3.6.2 */
     { "perm_invent", &iflags.perm_invent, FALSE, SET_IN_GAME },
-    { "invweight", &flags.invweight, FALSE, SET_IN_GAME },
     { "pickup_thrown", &flags.pickup_thrown, TRUE, SET_IN_GAME },
     { "popup_dialog", &iflags.wc_popup_dialog, FALSE, SET_IN_GAME },   /*WC*/
     { "preload_tiles", &iflags.wc_preload_tiles, TRUE, DISP_IN_GAME }, /*WC*/
