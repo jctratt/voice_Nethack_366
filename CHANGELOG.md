@@ -2,6 +2,10 @@
 
 Commits since `README.md` was last updated (commit c012979 — 2025-03-05):
 
+- bbe76a5 / b550dea0 2026-02-14 Jeff Tratt — Feature: `OPTIONS=invweight` — add persistent per-item inventory weight display (format: `[TOTALxITEM]`, e.g. `[60x20]` for 3 items of 20 each). Implemented persistent `flags.invweight`, added inventory display, documented option in `dat/opthelp`, and updated save/restore handling. NOTE: `EDITLEVEL` was incremented because `struct flag` layout changed (old savefiles/bones invalidated). Replaced an expect-based test with in-source changes; see tests for follow-up unit-style coverage.
+
+
+
 - UNCOMMITTED 2026-02-07 Jeff Tratt — Add `show_boomerang_trajectory` option; make `f` open #showboomerang when boomerang is quivered; pressing `f` inside #showboomerang fires the quivered boomerang or hands off to `t` when no boomerang is quivered; remove auto-opening from `t`; fix display cleanup, terminal state, and direction handoff behavior.
 
 - d4f0d43 2026-02-09 Jeff Tratt — Fix: pressing `f` in #showboomerang now fires a quivered boomerang even when the preview was started directly; add `showboom_called_from_dofire` guard and extern; tested via manual smoke tests.
