@@ -321,6 +321,12 @@ struct savefile_info {
 /* Savefile feature: this binary writes per-player notes data */
 #define SFI1_NOTES (1UL << 4)
 
+/* Savefile feature: this binary writes per-player inventory-weight toggle (iflags.invweight) */
+#define SFI1_INVWEIGHT (1UL << 5)
+
+/* Savefile feature: this binary writes per-player quiver-order preference */
+#define SFI1_QUIVERORDER (1UL << 6)
+
 /*
  * Configurable internal parameters.
  *

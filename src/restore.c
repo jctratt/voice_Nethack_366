@@ -213,6 +213,28 @@ boolean ghostly;
     free((genericptr_t) tmp_dam);
 }
 
+/* Validate buflen read from a save file before using it.  Returns TRUE if
+   buf length looks sane, FALSE otherwise (caller should treat as absent). */
+#define MAX_OEXTRA_BUFLEN 8192
+#define MAX_OBJ_RECORD_SIZE 65536
+
+STATIC_OVL boolean
+valid_buflen(len, where)
+int len;
+const char *where;
+{
+    if (len <= 0)
+        return FALSE;
+    if (len > MAX_OEXTRA_BUFLEN) {
+        char dbg[256];
+        Sprintf(dbg, "RESTORE: suspicious %s length=%d (max=%d); ignoring", where, len,
+                MAX_OEXTRA_BUFLEN);
+        curses_debug_log(dbg);
+        return FALSE;
+    }
+    return TRUE;
+}
+
 /* restore one object */
 STATIC_OVL void
 restobj(fd, otmp)
@@ -222,6 +244,22 @@ struct obj *otmp;
     int buflen;
 
     mread(fd, (genericptr_t) otmp, sizeof(struct obj));
+    { char dbg[128]; Sprintf(dbg, "RESTORE-FIELD: obj o_id=%u otyp=%d invlet=%c where=%d quan=%ld", (unsigned)otmp->o_id, (int)otmp->otyp, otmp->invlet ? otmp->invlet : '?', (int)otmp->where, (long)otmp->quan); curses_debug_log(dbg); }
+
+    /* Defensive validation: detect obviously-corrupted object types coming
+       from malformed or tampered savefiles.  Log details (so triage can
+       find the bad save) and sanitize the type to a harmless object to
+       avoid crashes later when code indexes `objects[otyp]`. */
+    if (otmp->otyp < 1 || otmp->otyp >= NUM_OBJECTS) {
+        char dbg[256];
+        Sprintf(dbg, "RESTORE: invalid otyp=%d for o_id=%u invlet=%c quan=%ld owt=%d; sanitizing to ROCK",
+                otmp->otyp, (unsigned) otmp->o_id, otmp->invlet ? otmp->invlet : '?', (long) otmp->quan, (int) otmp->owt);
+        curses_debug_log(dbg);
+        /* sanitize to a safe, inert object type to prevent out-of-bounds
+           indexing elsewhere (xname_flags already guards too). */
+        otmp->otyp = ROCK;
+        otmp->oartifact = 0;
+    }
 
     /* next object pointers are invalid; otmp->cobj needs to be left
        as is--being non-null is key to restoring container contents */
@@ -232,38 +270,94 @@ struct obj *otmp;
 
         /* oname - object's name */
         mread(fd, (genericptr_t) &buflen, sizeof(buflen));
-        if (buflen > 0) { /* includes terminating '\0' */
-            new_oname(otmp, buflen);
-            mread(fd, (genericptr_t) ONAME(otmp), buflen);
+        if (buflen > 0) {
+            if (valid_buflen(buflen, "oname")) { /* includes terminating '\0' */
+                new_oname(otmp, buflen);
+                mread(fd, (genericptr_t) ONAME(otmp), buflen);
+            } else {
+                /* consume & discard corrupted/oversized oname bytes so
+                   subsequent reads remain aligned */
+                char discard[256];
+                unsigned remaining = (unsigned) buflen;
+                while (remaining) {
+                    unsigned chunk = (remaining > sizeof(discard)) ? sizeof(discard) : remaining;
+                    mread(fd, (genericptr_t) discard, chunk);
+                    remaining -= chunk;
+                }
+            }
         }
         /* omonst - corpse or statue might retain full monster details */
         mread(fd, (genericptr_t) &buflen, sizeof(buflen));
         if (buflen > 0) {
-            newomonst(otmp);
-            /* this is actually a monst struct, so we
-               can just defer to restmon() here */
-            restmon(fd, OMONST(otmp));
+            if (valid_buflen(buflen, "omonst")) {
+                newomonst(otmp);
+                /* this is actually a monst struct, so we
+                   can just defer to restmon() here */
+                restmon(fd, OMONST(otmp));
+            } else {
+                /* discard malformed monst bytes */
+                char discard[256];
+                unsigned remaining = (unsigned) buflen;
+                while (remaining) {
+                    unsigned chunk = (remaining > sizeof(discard)) ? sizeof(discard) : remaining;
+                    mread(fd, (genericptr_t) discard, chunk);
+                    remaining -= chunk;
+                }
+            }
         }
         /* omid - monster id number, connecting corpse to ghost */
         mread(fd, (genericptr_t) &buflen, sizeof(buflen));
         if (buflen > 0) {
-            newomid(otmp);
-            mread(fd, (genericptr_t) OMID(otmp), buflen);
+            if (valid_buflen(buflen, "omid")) {
+                newomid(otmp);
+                mread(fd, (genericptr_t) OMID(otmp), buflen);
+            } else {
+                /* discard malformed omid bytes */
+                char discard[256];
+                unsigned remaining = (unsigned) buflen;
+                while (remaining) {
+                    unsigned chunk = (remaining > sizeof(discard)) ? sizeof(discard) : remaining;
+                    mread(fd, (genericptr_t) discard, chunk);
+                    remaining -= chunk;
+                }
+            }
         }
         /* olong - temporary gold */
         mread(fd, (genericptr_t) &buflen, sizeof(buflen));
         if (buflen > 0) {
-            newolong(otmp);
-            mread(fd, (genericptr_t) OLONG(otmp), buflen);
+            if (valid_buflen(buflen, "olong")) {
+                newolong(otmp);
+                mread(fd, (genericptr_t) OLONG(otmp), buflen);
+            } else {
+                /* discard malformed olong bytes */
+                char discard[256];
+                unsigned remaining = (unsigned) buflen;
+                while (remaining) {
+                    unsigned chunk = (remaining > sizeof(discard)) ? sizeof(discard) : remaining;
+                    mread(fd, (genericptr_t) discard, chunk);
+                    remaining -= chunk;
+                }
+            }
         }
         /* omailcmd - feedback mechanism for scroll of mail */
         mread(fd, (genericptr_t) &buflen, sizeof(buflen));
         if (buflen > 0) {
-            char *omailcmd = (char *) alloc(buflen);
+            if (valid_buflen(buflen, "omailcmd")) {
+                char *omailcmd = (char *) alloc(buflen);
 
-            mread(fd, (genericptr_t) omailcmd, buflen);
-            new_omailcmd(otmp, omailcmd);
-            free((genericptr_t) omailcmd);
+                mread(fd, (genericptr_t) omailcmd, buflen);
+                new_omailcmd(otmp, omailcmd);
+                free((genericptr_t) omailcmd);
+            } else {
+                /* discard malformed omailcmd bytes */
+                char discard[256];
+                unsigned remaining = (unsigned) buflen;
+                while (remaining) {
+                    unsigned chunk = (remaining > sizeof(discard)) ? sizeof(discard) : remaining;
+                    mread(fd, (genericptr_t) discard, chunk);
+                    remaining -= chunk;
+                }
+            }
         }
     }
 }
@@ -281,6 +375,12 @@ boolean ghostly, frozen;
         mread(fd, (genericptr_t) &buflen, sizeof buflen);
         if (buflen == -1)
             break;
+        if (buflen < -1 || buflen > MAX_OBJ_RECORD_SIZE) {
+            char dbg[256];
+            Sprintf(dbg, "RESTORE: suspicious object record size=%d; aborting object chain", buflen);
+            curses_debug_log(dbg);
+            break;
+        }
 
         otmp = newobj();
         restobj(fd, otmp);
@@ -555,6 +655,7 @@ unsigned int *stuckid, *steedid;
     boolean defer_perm_invent;
 
     curses_debug_log("RESTORE: restgamestate() called, about to read uid");
+    curses_debug_log("RESTORE-FIELD: uid");
     mread(fd, (genericptr_t) &uid, sizeof uid);
     curses_debug_log("RESTORE: restgamestate() read uid successfully");
     if (SYSOPT_CHECK_SAVE_UID
@@ -567,6 +668,7 @@ unsigned int *stuckid, *steedid;
     }
 
     newgamecontext = context; /* copy statically init'd context */
+    curses_debug_log("RESTORE-FIELD: context");
     mread(fd, (genericptr_t) &context, sizeof (struct context_info));
     context.warntype.species = (context.warntype.speciesidx >= LOW_PM)
                                   ? &mons[context.warntype.speciesidx]
@@ -579,6 +681,7 @@ unsigned int *stuckid, *steedid;
        file option values instead of keeping old save file option values
        if partial restore fails and we resort to starting a new game */
     newgameflags = flags;
+    curses_debug_log("RESTORE-FIELD: flags");
     mread(fd, (genericptr_t) &flags, sizeof (struct flag));
     /* avoid keeping permanent inventory window up to date during restore
        (setworn() calls update_inventory); attempting to include the cost
@@ -610,6 +713,7 @@ unsigned int *stuckid, *steedid;
 #ifdef AMII_GRAPHICS
     amii_setpens(amii_numcolors); /* use colors from save file */
 #endif
+    curses_debug_log("RESTORE-FIELD: u(struct you)");
     mread(fd, (genericptr_t) &u, sizeof(struct you));
 
     /* Handle pointers in 'you' struct following NetHack's oextra pattern:
@@ -622,10 +726,12 @@ unsigned int *stuckid, *steedid;
     /* restore intrinsics tracker - check SFI1 flag FIRST to match save order */
     if ((sfrestinfo.sfi1 & SFI1_INTRINSICS_TRACKED) == SFI1_INTRINSICS_TRACKED) {
         int intr_len = 0;
+        curses_debug_log("RESTORE-FIELD: intr_len");
         mread(fd, (genericptr_t) &intr_len, sizeof intr_len);
         { char dbg[256]; Sprintf(dbg, "RESTORE: read intr_len=%d", intr_len); curses_debug_log(dbg); }
         if (intr_len > 0) {
             u.intrinsics_tracked = (unsigned char *) alloc((unsigned) (LAST_PROP + 1));
+            curses_debug_log("RESTORE-FIELD: intrinsics_tracked_bytes");
             curses_debug_log("RESTORE: about to read intrinsic data bytes");
             mread(fd, (genericptr_t) u.intrinsics_tracked, intr_len);
             curses_debug_log("RESTORE: finished reading intrinsic data bytes");
@@ -641,7 +747,9 @@ unsigned int *stuckid, *steedid;
 
     /* restore notes saved after the u struct */
     curses_debug_log("RESTORE: calling restore_notes");
+    curses_debug_log("RESTORE-FIELD: notes_start");
     restore_notes(fd);
+    curses_debug_log("RESTORE-FIELD: notes_end");
     curses_debug_log("RESTORE: restore_notes done");
 
     curses_debug_log("RESTORE: about to read ubirthday");
@@ -650,9 +758,12 @@ unsigned int *stuckid, *steedid;
     timebuf[14] = '\0';                    \
     foo = time_from_yyyymmddhhmmss(timebuf);
 
+    curses_debug_log("RESTORE-FIELD: ubirthday");
     ReadTimebuf(ubirthday);
+    curses_debug_log("RESTORE-FIELD: urealtime.realtime");
     curses_debug_log("RESTORE: read ubirthday, about to read urealtime");
     mread(fd, &urealtime.realtime, sizeof urealtime.realtime);
+    curses_debug_log("RESTORE-FIELD: urealtime.start_timing");
     curses_debug_log("RESTORE: read urealtime.realtime, about to read urealtime.start_timing");
     ReadTimebuf(urealtime.start_timing); /** [not used] **/
     curses_debug_log("RESTORE: read urealtime.start_timing, setting start_timing to now");
@@ -693,11 +804,15 @@ unsigned int *stuckid, *steedid;
     curses_debug_log("RESTORE: restore_timers complete, calling restore_light_sources");
     restore_light_sources(fd);
     curses_debug_log("RESTORE: restore_light_sources complete, calling restobjchn for invent");
+    curses_debug_log("RESTORE-FIELD: invent_objchain_start");
     invent = restobjchn(fd, FALSE, FALSE);
+    curses_debug_log("RESTORE-FIELD: invent_objchain_end");
     curses_debug_log("RESTORE: invent restored, calling restobjchn for bc_obj");
 
     /* restore dangling (not on floor or in inventory) ball and/or chain */
+    curses_debug_log("RESTORE-FIELD: bc_objchain_start");
     bc_obj = restobjchn(fd, FALSE, FALSE);
+    curses_debug_log("RESTORE-FIELD: bc_objchain_end");
     while (bc_obj) {
         struct obj *nobj = bc_obj->nobj;
 
@@ -707,8 +822,13 @@ unsigned int *stuckid, *steedid;
         bc_obj = nobj;
     }
 
+    curses_debug_log("RESTORE-FIELD: migrating_objs_start");
     migrating_objs = restobjchn(fd, FALSE, FALSE);
+    curses_debug_log("RESTORE-FIELD: migrating_objs_end");
+    curses_debug_log("RESTORE-FIELD: migrating_mons_start");
     migrating_mons = restmonchn(fd, FALSE);
+    curses_debug_log("RESTORE-FIELD: migrating_mons_end");
+    curses_debug_log("RESTORE-FIELD: mvitals");
     mread(fd, (genericptr_t) mvitals, sizeof mvitals);
 
     /*
@@ -733,21 +853,39 @@ unsigned int *stuckid, *steedid;
     if (!uwep || uwep->otyp == PICK_AXE || uwep->otyp == GRAPPLING_HOOK)
         unweapon = TRUE;
 
+    curses_debug_log("RESTORE-FIELD: dungeon_state");
     restore_dungeon(fd);
+    curses_debug_log("RESTORE-FIELD: levchn");
     restlevchn(fd);
+    curses_debug_log("RESTORE-FIELD: moves");
     mread(fd, (genericptr_t) &moves, sizeof moves);
+    curses_debug_log("RESTORE-FIELD: monstermoves");
     mread(fd, (genericptr_t) &monstermoves, sizeof monstermoves);
     mread(fd, (genericptr_t) &quest_status, sizeof (struct q_score));
     mread(fd, (genericptr_t) spl_book, (MAXSPELL + 1) * sizeof (struct spell));
 
     /* restore quiver order saved by save.c */
-    mread(fd, (genericptr_t) &quiver_ordercnt, sizeof quiver_ordercnt);
-    if (quiver_ordercnt > 0) {
-        quiver_orderindx = (int *) alloc((unsigned) quiver_ordercnt * sizeof(int));
-        mread(fd, (genericptr_t) quiver_orderindx,
-              quiver_ordercnt * sizeof(*quiver_orderindx));
-    } else
+    if ((sfrestinfo.sfi1 & SFI1_QUIVERORDER) == SFI1_QUIVERORDER) {
+        mread(fd, (genericptr_t) &quiver_ordercnt, sizeof quiver_ordercnt);
+        if (quiver_ordercnt > 0) {
+            quiver_orderindx = (int *) alloc((unsigned) quiver_ordercnt * sizeof(int));
+            mread(fd, (genericptr_t) quiver_orderindx,
+                  quiver_ordercnt * sizeof(*quiver_orderindx));
+        } else
+            quiver_orderindx = (int *) 0;
+    } else {
+        /* old savefile: no quiver-order present — use safe defaults */
         quiver_orderindx = (int *) 0;
+        quiver_ordercnt = 0;
+    }
+
+    /* restore inventory-weight toggle if present in savefile */
+    if ((sfrestinfo.sfi1 & SFI1_INVWEIGHT) == SFI1_INVWEIGHT) {
+        mread(fd, (genericptr_t) &iflags.invweight, sizeof iflags.invweight);
+    } else {
+        /* default -- off */
+        iflags.invweight = FALSE;
+    }
 
     restore_artifacts(fd);
     restore_oracles(fd);
@@ -755,14 +893,19 @@ unsigned int *stuckid, *steedid;
         mread(fd, (genericptr_t) stuckid, sizeof *stuckid);
     if (u.usteed)
         mread(fd, (genericptr_t) steedid, sizeof *steedid);
+    curses_debug_log("RESTORE-FIELD: stuckid/steedid/pl_character");
     mread(fd, (genericptr_t) pl_character, sizeof pl_character);
 
+    curses_debug_log("RESTORE-FIELD: pl_fruit");
     mread(fd, (genericptr_t) pl_fruit, sizeof pl_fruit);
     freefruitchn(ffruit); /* clean up fruit(s) made by initoptions() */
     ffruit = loadfruitchn(fd);
 
+    curses_debug_log("RESTORE-FIELD: rest_names");
     restnames(fd);
+    curses_debug_log("RESTORE-FIELD: waterlevel");
     restore_waterlevel(fd);
+    curses_debug_log("RESTORE-FIELD: msghistory");
     restore_msghistory(fd);
     /* restore personal notes - WRONG POSITION, notes are saved earlier */
 #if 0
@@ -976,8 +1119,11 @@ register int fd;
     restlevelstate(stuckid, steedid);
     program_state.something_worth_saving = 1; /* useful data now exists */
 
-    if (!wizard && !discover)
-        (void) delete_savefile();
+    /* Do NOT delete the on-disk save yet — wait until the in-memory
+       state has been fully initialized and the UI/timers have run.  If
+       a crash occurs after deleting the file, the player would lose
+       their only copy.  The savefile will be removed just before the
+       successful return below. */
     if (Is_rogue_level(&u.uz))
         assign_graphics(ROGUESET);
 #ifdef USE_TILES
@@ -1021,6 +1167,13 @@ register int fd;
     /* Success! */
     welcome(FALSE);
     check_special_room(FALSE);
+
+    /* Now that the restored game is fully initialized and rendered,
+       remove the on-disk save so the player doesn't accidentally
+       restore the same (already-restored) game again. */
+    if (!wizard && !discover)
+        (void) delete_savefile();
+
     return 1;
 }
 
@@ -1302,18 +1455,76 @@ register int fd;
 {
     int msgsize, msgcount = 0;
     char msg[BUFSZ];
+    int old_mread_flags = restoreprocs.mread_flags; /* preserve caller state */
+
+    /* Allow short/partial reads here so a truncated msghistory in an
+       otherwise-restorable savefile doesn't abort the entire restore.
+       def_mread() will set restoreprocs.mread_flags to -1 on a short
+       read when this is enabled; we check for that and stop reading
+       messages gracefully. */
+    restoreprocs.mread_flags = 1;
 
     while (1) {
         mread(fd, (genericptr_t) &msgsize, sizeof(msgsize));
+        if (restoreprocs.mread_flags == -1) /* truncated read */
+            break;
         if (msgsize == -1)
             break;
-        if (msgsize > (BUFSZ - 1))
-            panic("restore_msghistory: msg too big (%d)", msgsize);
+        if (msgsize > (BUFSZ - 1)) {
+            /* defensive: message length in savefile is larger than our
+               buffer.  Read up to BUFSZ-1 bytes into `msg`, discard the
+               remainder so file pointer stays aligned, and record a
+               truncated message instead of panicking.  If the size is
+               unreasonably large, abort msghistory restore. */
+            const int MAX_ALLOWED = 65536; /* 64KB - arbitrary safety cap */
+            if (msgsize < 0 || msgsize > MAX_ALLOWED) {
+                debugpline1("restore_msghistory: unreasonable msg size (%d); stopping read", msgsize);
+                /* stop reading messages to avoid mis-aligning the rest
+                   of the savefile; leave msghistory empty for safety */
+                break;
+            }
+            /* read and keep up to BUFSZ-1 bytes, discard the rest */
+            if (msgsize <= (BUFSZ - 1)) {
+                mread(fd, (genericptr_t) msg, msgsize);
+                if (restoreprocs.mread_flags == -1)
+                    break; /* truncated */
+                msg[msgsize] = '\0';
+            } else {
+                /* read initial portion into msg */
+                mread(fd, (genericptr_t) msg, (BUFSZ - 1));
+                if (restoreprocs.mread_flags == -1)
+                    break; /* truncated */
+                msg[BUFSZ - 1] = '\0';
+                /* discard remaining bytes in chunks */
+                {
+                    int todiscard = msgsize - (BUFSZ - 1);
+                    char discardbuf[1024];
+                    while (todiscard > 0) {
+                        int chunk = (todiscard > (int)sizeof(discardbuf)) ? sizeof(discardbuf) : todiscard;
+                        mread(fd, (genericptr_t) discardbuf, chunk);
+                        if (restoreprocs.mread_flags == -1)
+                            break; /* truncated while discarding */
+                        todiscard -= chunk;
+                    }
+                    if (restoreprocs.mread_flags == -1)
+                        break;
+                }
+            }
+            putmsghistory(msg, TRUE); /* truncated message */
+            ++msgcount;
+            continue;
+        }
         mread(fd, (genericptr_t) msg, msgsize);
+        if (restoreprocs.mread_flags == -1)
+            break; /* truncated */
         msg[msgsize] = '\0';
         putmsghistory(msg, TRUE);
         ++msgcount;
     }
+
+    /* restore previous mread flag state */
+    restoreprocs.mread_flags = old_mread_flags;
+
     if (msgcount)
         putmsghistory((char *) 0, TRUE);
     debugpline1("Read %d messages from savefile.", msgcount);
@@ -1541,6 +1752,12 @@ const char *name;
         sfrestinfo.sfi1 |= SFI1_NOTES;
     else
         sfrestinfo.sfi1 &= ~SFI1_NOTES;
+
+    /* quiver-order persisted in newer savefiles */
+    if ((sfi.sfi1 & SFI1_QUIVERORDER) == SFI1_QUIVERORDER)
+        sfrestinfo.sfi1 |= SFI1_QUIVERORDER;
+    else
+        sfrestinfo.sfi1 &= ~SFI1_QUIVERORDER;
 
     if ((sfi.sfi1 & SFI1_ZEROCOMP) == SFI1_ZEROCOMP) {
         if ((compatible & SFI1_ZEROCOMP) != SFI1_ZEROCOMP) {

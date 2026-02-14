@@ -385,6 +385,8 @@ struct instance_flags {
     boolean cmdassist;       /* provide detailed assistance for some comnds */
     boolean time_botl;       /* context.botl for 'time' (moves) only */
     boolean wizweight;       /* display weight of everything in wizard mode */
+    /* show per-item/stack weights in inventory (toggled via inventory UI) */
+    boolean invweight;
     /*
      * Window capability support.
      */

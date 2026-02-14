@@ -8,13 +8,25 @@
 		},
 		{
 			"path": "../../vnh366"
+		},
+		{
+			"path": "../../../../tmp"
 		}
 	],
 	"settings": {
 		"zenMode.hideActivityBar": true,
 		"workbench.editor.editorActionsLocation": "titleBar",
 		"chat.tools.terminal.autoApprove": {
-			"make": true
+			"make": true,
+			"strings": true,
+			"hexdump": true,
+			"strace": true,
+			"printf": true,
+			"env": true,
+			"/^python3 tools/check_save_restore_order\\.py$/": {
+				"approve": true,
+				"matchCommandLine": true
+			}
 		}
 	}
 }

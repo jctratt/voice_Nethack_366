@@ -290,6 +290,11 @@ curses_multiline_input_dialog(const char *prompt, char *buf, int bufsize)
     mvwaddstr(bwin, height + 3, 1, "                                                                     ");
     wrefresh(bwin);
 
+    /* Debug: record that the multiline editor has been opened so automated
+       tests can detect the editor popup without relying on fragile screen
+       scraping. */
+    curses_debug_log("curses_multiline_input_dialog: editor opened");
+
     /* initialize buffer with existing content */
     if (buf[0] != '\0') {
         /* buf already contains initial content */
@@ -312,6 +317,7 @@ curses_multiline_input_dialog(const char *prompt, char *buf, int bufsize)
     wtimeout(twin, 500);
 
     /* editor loop with cursor movement and simple editing */
+    curses_debug_log("curses_multiline_input_dialog: entering editor loop");
     while (1) {
         /* render buffer into twin window with wrapping and explicit newlines */
         werase(twin);
@@ -372,6 +378,9 @@ curses_multiline_input_dialog(const char *prompt, char *buf, int bufsize)
         }
 
         if (ch == KEY_F(1)) {
+            /* Debug: F1 pressed in editor */
+            curses_debug_log("curses_multiline_input_dialog: F1 pressed");
+
             /* Show help popup */
             const char *help_lines[] = {
                 "Help (this window)                                    F1",
@@ -417,6 +426,8 @@ curses_multiline_input_dialog(const char *prompt, char *buf, int bufsize)
             wrefresh(twin);
             continue;
         } else if (ch == KEY_F(2)) {
+            /* Debug: F2 pressed in editor */
+            curses_debug_log("curses_multiline_input_dialog: F2 pressed (saving)");
             /* Save and exit */
             break;
         } else if (ch == 27) {
@@ -424,11 +435,130 @@ curses_multiline_input_dialog(const char *prompt, char *buf, int bufsize)
             wtimeout(twin, 50); /* short timeout to detect escape sequences */
             int next_ch = wgetch(twin);
             wtimeout(twin, 200); /* restore normal timeout */
-            
+
+            /* Some terminals (xterm-like) send function keys as ESC O P / ESC O Q
+               when keypad() translation isn't available.  Handle those here so
+               F1/F2 still work even if KEY_F() isn't delivered. */
+            if (next_ch == 'O') {
+                int fx = wgetch(twin);
+                if (fx == 'P') { /* ESC O P -> F1 */
+                    /* Show help popup (same as KEY_F(1) handler) */
+                    const char *help_lines[] = {
+                        "Help (this window)                                    F1",
+                        "Save and exit                                         F2",
+                        "Move cursor                                       Arrows",
+                        "Move left/right                              Ctrl+B / ^F",
+                        "Line start/end                                  Home/End",
+                        "Buffer start/end                             Ctrl+A / ^E",
+                        "Jump by word                             Ctrl+Left/Right",
+                        "Delete at cursor                               Del / ^D",
+                        "Delete word backward                                 ^W",
+                        "Delete word forward                            ^Delete",
+                        "Delete from cursor to end of line                    ^K",
+                        "Delete current line                                   ^U"
+                    };
+                    int hl = sizeof(help_lines) / sizeof(help_lines[0]);
+                    int maxw = 0;
+                    int ii;
+                    for (ii = 0; ii < hl; ii++) {
+                        int l = (int) strlen(help_lines[ii]);
+                        if (l > maxw) maxw = l;
+                    }
+                    int h = min(hl + 4, term_rows - 4);
+                    int w = min(maxw + 6, term_cols - 4); /* increased padding */
+                    int wy = (term_rows - h) / 2;
+                    int wx = (term_cols - w) / 2;
+                    WINDOW *hwin = newwin(h, w, wy, wx);
+                    box(hwin, 0, 0);
+                    for (ii = 0; ii < hl && ii < h - 3; ii++) {
+                        mvwprintw(hwin, ii + 1, 3, "%s", help_lines[ii]);
+                    }
+                    mvwprintw(hwin, h - 2, 3, "Press any key to continue");
+                    wrefresh(hwin);
+                    wgetch(hwin);
+                    delwin(hwin);
+                    if (iflags.window_inited)
+                        curses_refresh_nethack_windows();
+                    touchwin(bwin);
+                    wrefresh(bwin);
+                    touchwin(twin);
+                    wrefresh(twin);
+                    continue;
+                } else if (fx == 'Q') { /* ESC O Q -> F2 */
+                    break; /* Save and exit */
+                } else {
+                    /* unknown OSC-style sequence: ignore */
+                    continue;
+                }
+            }
+
             if (next_ch == '[') {
                 /* Escape sequence ESC [ ... */
                 int seq_ch = wgetch(twin);
-                
+
+                /* Treat ESC[11~ / ESC[12~ (common F1/F2 sequences) as F1/F2 */
+                if (seq_ch == '1') {
+                    int c2 = wgetch(twin);
+                    if (c2 == '1' || c2 == '2') {
+                        int c3 = wgetch(twin);
+                        if (c3 == '~') {
+                            if (c2 == '1') {
+                                /* ESC[11~ -> F1 (show help) */
+                                const char *help_lines[] = {
+                                    "Help (this window)                                    F1",
+                                    "Save and exit                                         F2",
+                                    "Move cursor                                       Arrows",
+                                    "Move left/right                              Ctrl+B / ^F",
+                                    "Line start/end                                  Home/End",
+                                    "Buffer start/end                             Ctrl+A / ^E",
+                                    "Jump by word                             Ctrl+Left/Right",
+                                    "Delete at cursor                               Del / ^D",
+                                    "Delete word backward                                 ^W",
+                                    "Delete word forward                            ^Delete",
+                                    "Delete from cursor to end of line                    ^K",
+                                    "Delete current line                                   ^U"
+                                };
+                                int hl = sizeof(help_lines) / sizeof(help_lines[0]);
+                                int maxw = 0;
+                                int ii;
+                                for (ii = 0; ii < hl; ii++) {
+                                    int l = (int) strlen(help_lines[ii]);
+                                    if (l > maxw) maxw = l;
+                                }
+                                int h = min(hl + 4, term_rows - 4);
+                                int w = min(maxw + 6, term_cols - 4);
+                                int wy = (term_rows - h) / 2;
+                                int wx = (term_cols - w) / 2;
+                                WINDOW *hwin = newwin(h, w, wy, wx);
+                                box(hwin, 0, 0);
+                                for (ii = 0; ii < hl && ii < h - 3; ii++) {
+                                    mvwprintw(hwin, ii + 1, 3, "%s", help_lines[ii]);
+                                }
+                                mvwprintw(hwin, h - 2, 3, "Press any key to continue");
+                                wrefresh(hwin);
+                                wgetch(hwin);
+                                delwin(hwin);
+                                if (iflags.window_inited)
+                                    curses_refresh_nethack_windows();
+                                touchwin(bwin);
+                                wrefresh(bwin);
+                                touchwin(twin);
+                                wrefresh(twin);
+                                continue;
+                            } else if (c2 == '2') {
+                                /* ESC[12~ -> F2 (save and exit) */
+                                break;
+                            }
+                        }
+                        /* not an F-key sequence: push chars back into input queue */
+                        ungetch(c3);
+                        ungetch(c2);
+                    } else {
+                        /* not a multi-digit sequence; push back and fall through */
+                        ungetch(c2);
+                    }
+                }
+
                 /* Check for modifier sequences like ESC[1;5C (Ctrl+Right) - EXACT COPY from working #name code */
                 if (seq_ch == '1' || seq_ch == '5') {
                     int modifier_ch = wgetch(twin);

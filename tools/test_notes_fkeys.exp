@@ -1,0 +1,242 @@
+#!/usr/bin/expect -f
+# Automated test: verify F1 (help) and F2 (save) work in the curses notes editor
+set timeout 30
+set nethack_bin "/home/neon/vnh366/install/games/nethack"
+set player "f1f2test"
+
+# ensure old debug file removed
+exec rm -f /tmp/nethack_keys.txt
+
+spawn env TERM=xterm $nethack_bin -u $player
+expect {
+    -re {Shall I call you|shall I call you} {
+        send "$player\r"
+        exp_continue
+    }
+    -re {pick the role of|pick the role} {
+        send "a\r"
+        exp_continue
+    }
+    -re {Are you.*\?} {
+        send "y\r"
+        exp_continue
+    }
+    -re {@} {
+        # we're in-game
+    }
+    timeout {
+        puts "ERROR: timed out creating char"
+        exit 2
+    }
+}
+
+# open notes menu, choose Add
+# ensure the game is fully initialised (wait for welcome/status) before sending commands
+expect {
+    -re "welcome to NetHack|HP:" { }
+    timeout { puts "ERROR: game not ready for commands"; exit 2 }
+}
+send "#notes\r"
+# wait up to 15s for the Notes menu to appear (terminal OR debug-log fallback).
+# Also detect child crash/EOF so we fail fast with useful logs.
+set debug_log "/home/neon/vnh366/install/games/lib/nethackdir/nethack_debug.log"
+set deadline [expr {[clock seconds] + 15}]
+set got_notes 0
+while {![expr $got_notes] && [clock seconds] < $deadline} {
+    expect {
+        -re "Notes" {
+            puts "Notes menu detected (terminal)"; set got_notes 1
+        }
+        -re "Extended Command:|=>" {
+            # server shows the extended-command chooser; select 'notes' by pressing 'n'
+            puts "Extended Command prompt shown; sending 'n' to choose notes"; send "n\r"; exp_continue
+        }
+        -re "Segmentation fault|Program received signal SIGSEGV|core dumped" {
+            puts "ERROR: child crashed while opening Notes";
+            puts "--- tail of debug log ---";
+            exec tail -n 200 $debug_log
+            exit 3
+        }
+        eof {
+            puts "ERROR: child exited unexpectedly (EOF)";
+            puts "--- tail of debug log ---";
+            exec tail -n 200 $debug_log
+            exit 3
+        }
+        timeout {
+            # try the debug-log fallback before retrying
+            if {[catch {exec grep -m1 "prompt line 1: 'Notes'" $debug_log} err]} {
+                sleep 1
+            } else {
+                puts "Notes menu detected via debug log"; set got_notes 1
+            }
+        }
+    }
+}
+if {!$got_notes} { puts "ERROR: notes menu not shown (terminal & debug log)"; exit 4 }
+# choose Add — guard send() in case the spawn closed unexpectedly
+if {[catch {send "a\r"} err]} {
+    puts "ERROR: unable to send Add selection (spawn closed): $err"; exit 4
+}
+# try to match the on-screen editor prompt, but fall back to debug-log / raw-key only when available.
+set debug_log "/home/neon/vnh366/install/games/lib/nethackdir/nethack_debug.log"
+# detect whether this runtime actually emits the new editor debug markers
+set have_editor_debug 0
+if {[catch {exec grep -m1 "curses_multiline_input_dialog" $debug_log} _]} {
+    puts "WARN: debug-log has no 'curses_multiline_input_dialog' entries — skipping debug-log fallbacks"
+} else {
+    set have_editor_debug 1
+}
+# give the editor a bit more time on slow CI hosts
+set deadline [expr {[clock seconds] + 15}]
+set editor_open 0
+while {![expr $editor_open] && [clock seconds] < $deadline} {
+    expect {
+        -re "New note" { set editor_open 1 }
+        -re "Segmentation fault|Program received signal SIGSEGV|core dumped" {
+            puts "ERROR: child crashed inside editor open";
+            puts "--- tail of debug log ---"; exec tail -n 200 $debug_log; exit 3
+        }
+        eof {
+            puts "ERROR: child exited unexpectedly (EOF) while waiting for editor";
+            puts "--- tail of debug log ---"; exec tail -n 200 $debug_log; exit 3
+        }
+        timeout {
+            if {$have_editor_debug} {
+                if {[catch {exec grep -m1 "curses_multiline_input_dialog: editor opened" $debug_log}]} {
+                    sleep 1
+                } else {
+                    puts "editor opened (from debug log)"; set editor_open 1
+                }
+            } else {
+                /* No debug-log support in this binary — wait a bit and retry. */
+                sleep 1
+            }
+        }
+    }
+}
+if {!$editor_open} { puts "ERROR: add-note prompt not shown (terminal) and no debug-log entry available"; exit 4 }
+
+# Send F1 as ESC O P and expect the help popup text (terminal or debug-log fallback)
+send "\033OP"
+set tried_f1_alt 0
+# give F1 a little longer on slower CI machines
+set deadline [expr {[clock seconds] + 10}]
+set f1_ok 0
+while {![expr $f1_ok] && [clock seconds] < $deadline} {
+    expect {
+        -re "Help \(this window\)" { puts "F1 help shown"; set f1_ok 1 }
+        -re "Segmentation fault|Program received signal SIGSEGV|core dumped" {
+            puts "ERROR: child crashed after F1"; puts "--- tail of debug log ---"; exec tail -n 200 $debug_log; exit 3
+        }
+        eof {
+            puts "ERROR: child exited unexpectedly (EOF) after F1"; puts "--- tail of debug log ---"; exec tail -n 200 $debug_log; exit 3
+        }
+        timeout {
+            if {!$tried_f1_alt} {
+                puts "F1 not detected — sending alternate sequence (CSI 11~)";
+                send "\033[11~"; set tried_f1_alt 1
+            } elseif {$have_editor_debug} {
+                if {[catch {exec grep -m1 "curses_multiline_input_dialog: F1 pressed" $debug_log}]} {
+                    sleep 1
+                } else {
+                    puts "F1 help detected via debug log"; set f1_ok 1
+                }
+            } else {
+                /* no debug-log available for this runtime; give the terminal match more time */
+                sleep 1
+            }
+        }
+    }
+}
+if {!$f1_ok} { puts "ERROR: F1 help not detected (terminal & debug log)"; exit 5 }
+# quick raw-key check for F1
+if {[file exists "/tmp/nethack_keys.txt"]} {
+    if {[catch {exec tail -n 20 /tmp/nethack_keys.txt | grep -m1 "RAW KEY: ch="} err]} {
+        puts "WARN: no RAW KEY lines found in /tmp/nethack_keys.txt"
+    } else {
+        puts "Raw key(s) recorded (tail):"; exec tail -n 8 /tmp/nethack_keys.txt
+    }
+}
+# dismiss help
+send "x"
+set deadline [expr {[clock seconds] + 6}]
+set editor_back 0
+while {![expr $editor_back] && [clock seconds] < $deadline} {
+    expect {
+        -re "New note \(F1=Help, F2=Save\)" { set editor_back 1 }
+        -re "Segmentation fault|Program received signal SIGSEGV|core dumped" {
+            puts "ERROR: child crashed while dismissing help"; puts "--- tail of debug log ---"; exec tail -n 200 $debug_log; exit 3
+        }
+        eof {
+            puts "ERROR: child exited unexpectedly (EOF) while dismissing help"; puts "--- tail of debug log ---"; exec tail -n 200 $debug_log; exit 3
+        }
+        timeout {
+            if {[catch {exec grep -m1 "curses_multiline_input_dialog: editor opened" $debug_log}]} {
+                sleep 1
+            } else {
+                puts "editor still open (confirmed in debug log)"; set editor_back 1
+            }
+        }
+    }
+}
+if {!$editor_back} { puts "ERROR: editor prompt not visible after dismissing help (terminal & debug)"; exit 5 }
+
+# Send F2 as ESC O Q (should save and exit editor)
+send "\033OQ"
+set tried_f2_alt 0
+# slightly longer timeout for save+exit
+set deadline [expr {[clock seconds] + 12}]
+set f2_ok 0
+while {![expr $f2_ok] && [clock seconds] < $deadline} {
+    expect {
+        -re "@" { puts "F2 saved and exited editor"; set f2_ok 1 }
+        -re "Segmentation fault|Program received signal SIGSEGV|core dumped" {
+            puts "ERROR: child crashed after F2"; puts "--- tail of debug log ---"; exec tail -n 200 $debug_log; exit 3
+        }
+        eof {
+            puts "ERROR: child exited unexpectedly (EOF) after F2"; puts "--- tail of debug log ---"; exec tail -n 200 $debug_log; exit 3
+        }
+        timeout {
+            if {!$tried_f2_alt} {
+                puts "F2 not detected — sending alternate sequence (CSI 12~)";
+                send "\033[12~"; set tried_f2_alt 1
+            } elseif {$have_editor_debug} {
+                if {[catch {exec grep -m1 "curses_multiline_input_dialog: F2 pressed" $debug_log}]} {
+                    sleep 1
+                } else {
+                    puts "F2 detected via debug log"; set f2_ok 1
+                }
+            } else {
+                /* No debug-log available; wait a bit for terminal screen update */
+                sleep 1
+            }
+        }
+    }
+}
+if {!$f2_ok} { puts "ERROR: F2 did not exit editor (terminal & debug log)"; exit 6 }
+# quick raw-key check for F2
+if {[file exists "/tmp/nethack_keys.txt"]} {
+    if {[catch {exec tail -n 20 /tmp/nethack_keys.txt | grep -m1 "RAW KEY: ch="} err]} {
+        puts "WARN: no RAW KEY lines found in /tmp/nethack_keys.txt"
+    } else {
+        puts "Raw key(s) recorded (tail):"; exec tail -n 8 /tmp/nethack_keys.txt
+    }
+}
+
+# quit game cleanly
+send "#quit\r"
+expect {
+    -re "Really quit\?" { send "y\r" }
+    timeout { }
+}
+expect eof
+
+# show keys captured for debugging
+if {[file exists "/tmp/nethack_keys.txt"]} {
+    puts "--- /tmp/nethack_keys.txt (tail) ---"
+    exec tail -n 80 /tmp/nethack_keys.txt
+}
+
+puts "OK: notes F1/F2 test completed"
+exit 0

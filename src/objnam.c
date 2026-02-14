@@ -424,6 +424,16 @@ unsigned cxn_flags; /* bitmask of CXN_xxx values */
 {
     register char *buf;
     register int typ = obj->otyp;
+
+    /* Guard against corrupted or out-of-range object types read from save
+       files; return a safe diagnostic name instead of dereferencing
+       objects[typ] which could crash. */
+    if (typ < STRANGE_OBJECT || typ >= NUM_OBJECTS) {
+        impossible("xname_flags: object has invalid otyp %d (obj=%p)", typ,
+                   (genericptr_t) obj);
+        return safe_typename(typ);
+    }
+
     register struct objclass *ocl = &objects[typ];
     int nn = ocl->oc_name_known, omndx = obj->corpsenm;
     const char *actualn = OBJ_NAME(*ocl);

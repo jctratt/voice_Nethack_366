@@ -6499,16 +6499,16 @@ doshowlines(VOID_ARGS)
                         int bg_ch, bg_color; unsigned bg_spec;
                         mapglyph(bg_glyph, &bg_ch, &bg_color, &bg_spec, sx, sy, 0);
                         if (bg_ch == ' ') {
-                            /* Draw yellow beam in place of red and continue */
+                            /* Draw muted/darker beam in place of red and continue */
                             int zg = zapdir_to_glyph(dxs[i], dys[i], 0);
                             int ch_tmp, tmpcolor;
                             unsigned spec_tmp;
                             mapglyph(zg, &ch_tmp, &tmpcolor, &spec_tmp, sx, sy, 0);
                             if (ch_tmp == '?') {
                                 int rch = (dxs[i] == 0) ? '|' : (dys[i] == 0 ? '-' : (dxs[i] == dys[i] ? '\\' : '/'));
-                                curses_highlight_tile_colored(sx, sy, rch, CLR_YELLOW, A_BOLD);
+                                curses_highlight_tile_colored(sx, sy, rch, CLR_BROWN, A_DIM);
                             } else {
-                                curses_draw_glyph_colored(MAP_WIN, sx, sy, zg, CLR_YELLOW, A_BOLD);
+                                curses_draw_glyph_colored(MAP_WIN, sx, sy, zg, CLR_BROWN, A_DIM);
                             }
                             showlines_hits[showlines_hcnt].x = sx;
                             showlines_hits[showlines_hcnt].y = sy;
@@ -6526,9 +6526,9 @@ doshowlines(VOID_ARGS)
                             mapglyph(zg, &ch_tmp, &tmpcolor, &spec_tmp, sx, sy, 0);
                             if (ch_tmp == '?') {
                                 int rch = (dxs[i] == 0) ? '|' : (dys[i] == 0 ? '-' : (dxs[i] == dys[i] ? '\\' : '/'));
-                                curses_highlight_tile_colored(sx, sy, rch, CLR_RED, A_BOLD);
+                                curses_highlight_tile_colored(sx, sy, rch, CLR_RED, A_DIM);
                             } else {
-                                curses_draw_glyph_colored(MAP_WIN, sx, sy, zg, CLR_RED, A_BOLD);
+                                curses_draw_glyph_colored(MAP_WIN, sx, sy, zg, CLR_RED, A_DIM);
                             }
                             showlines_hits[showlines_hcnt].x = sx;
                             showlines_hits[showlines_hcnt].y = sy;
@@ -6549,9 +6549,9 @@ doshowlines(VOID_ARGS)
                     mapglyph(zg, &ch_tmp, &tmpcolor, &spec_tmp, sx, sy, 0);
                     if (ch_tmp == '?') {
                         int rch = (dxs[i] == 0) ? '|' : (dys[i] == 0 ? '-' : (dxs[i] == dys[i] ? '\\' : '/'));
-                        curses_highlight_tile_colored(sx, sy, rch, CLR_YELLOW, A_BOLD);
+                        curses_highlight_tile_colored(sx, sy, rch, CLR_BROWN, A_DIM);
                     } else {
-                        curses_draw_glyph_colored(MAP_WIN, sx, sy, zg, CLR_YELLOW, A_BOLD);
+                        curses_draw_glyph_colored(MAP_WIN, sx, sy, zg, CLR_BROWN, A_DIM);
                     }
                     showlines_hits[showlines_hcnt].x = sx;
                     showlines_hits[showlines_hcnt].y = sy;

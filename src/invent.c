@@ -77,6 +77,21 @@ struct obj *obj;
     static char armcat[8];
     const char *classorder;
     char *p;
+
+    /* Defensive check: detect corrupted object type in inventory and
+       sanitize to avoid out-of-bounds indexing into `objects[]`.  This
+       mirrors restore-side sanitization and helps triage intermittent
+       corruption by logging when it occurs. */
+    if (obj->otyp < 1 || obj->otyp >= NUM_OBJECTS) {
+        char dbg[256];
+        Sprintf(dbg, "INVENT: corrupt obj@%p o_id=%u otyp=%d invlet=%c quan=%ld; sanitizing to ROCK",
+                (void *) obj, (unsigned) obj->o_id, obj->otyp,
+                obj->invlet ? obj->invlet : '?', (long) obj->quan);
+        curses_debug_log(dbg);
+        obj->otyp = ROCK;
+        obj->oartifact = 0;
+    }
+
     int k, otyp = obj->otyp, oclass = obj->oclass;
     boolean seen, discovered = objects[otyp].oc_name_known ? TRUE : FALSE;
 
@@ -2703,41 +2718,43 @@ long *out_cnt;
     sortedinvent = sortloot(&invent, sortflags, FALSE,
                             (boolean FDECL((*), (OBJ_P))) 0);
 
-    start_menu(win);
-    any = zeroany;
-    if (wizard && iflags.override_ID) {
-        int unid_cnt;
-        char prompt[QBUFSZ];
+    for (;;) {
+        start_menu(win);
+        any = zeroany;
+        if (wizard && iflags.override_ID) {
+            int unid_cnt;
+            char prompt[QBUFSZ];
 
-        unid_cnt = count_unidentified(invent);
-        Sprintf(prompt, "Debug Identify"); /* 'title' rather than 'prompt' */
-        if (unid_cnt)
-            Sprintf(eos(prompt),
-                    " -- unidentified or partially identified item%s",
-                    plur(unid_cnt));
-        add_menu(win, NO_GLYPH, &any, 0, 0, ATR_NONE, prompt, MENU_UNSELECTED);
-        if (!unid_cnt) {
-            add_menu(win, NO_GLYPH, &any, 0, 0, ATR_NONE,
-                     "(all items are permanently identified already)",
-                     MENU_UNSELECTED);
-            gotsomething = TRUE;
-        } else {
-            any.a_obj = &wizid_fakeobj;
-            Sprintf(prompt, "select %s to permanently identify",
-                    (unid_cnt == 1) ? "it": "any or all of them");
-            /* wiz_identify stuffed the wiz_identify command character (^I)
-               into iflags.override_ID for our use as an accelerator;
-               it could be ambiguous if player has assigned a letter to
-               the #wizidentify command, so include it as a group accelator
-               but use '_' as the primary selector */
-            if (unid_cnt > 1)
-                Sprintf(eos(prompt), " (%s for all)",
-                        visctrl(iflags.override_ID));
-            add_menu(win, NO_GLYPH, &any, '_', iflags.override_ID, ATR_NONE,
-                     prompt, MENU_UNSELECTED);
-            gotsomething = TRUE;
-        }
-   } else if (xtra_choice) {
+            unid_cnt = count_unidentified(invent);
+            Sprintf(prompt, "Debug Identify"); /* 'title' rather than 'prompt' */
+            if (unid_cnt)
+                Sprintf(eos(prompt),
+                        " -- unidentified or partially identified item%s",
+                        plur(unid_cnt));
+            add_menu(win, NO_GLYPH, &any, 0, 0, ATR_NONE, prompt, MENU_UNSELECTED);
+            if (!unid_cnt) {
+                add_menu(win, NO_GLYPH, &any, 0, 0, ATR_NONE,
+                         "(all items are permanently identified already)",
+                         MENU_UNSELECTED);
+                gotsomething = TRUE;
+            } else {
+                any.a_obj = &wizid_fakeobj;
+                Sprintf(prompt, "select %s to permanently identify",
+                        (unid_cnt == 1) ? "it": "any or all of them");
+                /* wiz_identify stuffed the wiz_identify command character (^I)
+                   into iflags.override_ID for our use as an accelerator;
+                   it could be ambiguous if player has assigned a letter to
+                   the #wizidentify command, so include it as a group accelator
+                   but use '_' as the primary selector */
+                if (unid_cnt > 1)
+                    Sprintf(eos(prompt), " (%s for all)",
+                            visctrl(iflags.override_ID));
+                add_menu(win, NO_GLYPH, &any, '_', iflags.override_ID, ATR_NONE,
+                         prompt, MENU_UNSELECTED);
+                gotsomething = TRUE;
+            }
+       } else if (xtra_choice) {
+
         /* wizard override ID and xtra_choice are mutually exclusive */
         if (flags.sortpack)
             add_menu(win, NO_GLYPH, &any, 0, 0, iflags.menu_headings,
@@ -2785,6 +2802,12 @@ long *out_cnt;
             to_let, \
             u.uluck);
     add_menu(win, NO_GLYPH, &any, 0, 0, ATR_BOLD, invheading, MENU_UNSELECTED);
+
+    /* (removed) per-line inventory-weight toggle from the inventory menu.
+       Use the `invweight` option (options menu or .nethackrc / NETHACKOPTIONS)
+       to control per-line weight display. */
+    (void) want_reply;
+
  nextclass:
     classcount = 0;
     for (srtinv = sortedinvent; (otmp = srtinv->obj) != 0; ++srtinv) {
@@ -2831,6 +2854,22 @@ long *out_cnt;
                 if (qpos >= 0) {
                     Sprintf(eos(lab), " [q%d]", qpos + 1);
                 }
+                /* append per-line/stack weight when requested
+                 * For stacks (>1) show total x per-item (e.g. "[60x20]")
+                 * Otherwise show single weight like "[20]" */
+                if (iflags.invweight) {
+                    /* `otmp->owt' already holds the object's weight as stored
+                       by weight() which returns the total weight for stacks.
+                       Use that as `totalwt' and compute per-item weight from
+                       the quantity to avoid doubling the multiplier. */
+                    long totalwt = (long) otmp->owt;
+                    if (otmp->quan > 1L) {
+                        long peritem = totalwt / (long) otmp->quan;
+                        Sprintf(eos(lab), " [%ldx%ld]", totalwt, peritem);
+                    } else {
+                        Sprintf(eos(lab), " [%ld]", totalwt);
+                    }
+                }
                 add_menu(win, obj_to_glyph(otmp, rn2_on_display_rng), &any,
                          ilet, wizid ? def_oc_syms[(int) otmp->oclass].sym : 0,
                          ATR_NONE, lab, MENU_UNSELECTED);
@@ -2871,37 +2910,42 @@ long *out_cnt;
     }
     end_menu(win, query && *query ? query : (char *) 0);
 
-    n = select_menu(win,
-                    wizid ? PICK_ANY : want_reply ? PICK_ONE : PICK_NONE,
-                    &selected);
-    if (n > 0) {
-        if (wizid) {
-            int i;
+        n = select_menu(win,
+                        wizid ? PICK_ANY : want_reply ? PICK_ONE : PICK_NONE,
+                        &selected);
+        if (n > 0) {
+            if (wizid) {
+                int i;
 
-            /* identifying items will update perm_invent, calling this
-               routine recursively, and we don't want the nested call
-               to filter on unID'd items */
-            iflags.override_ID = 0;
-            ret = '\0';
-            for (i = 0; i < n; ++i) {
-                otmp = selected[i].item.a_obj;
-                if (otmp == &wizid_fakeobj) {
-                    identify_pack(0, FALSE);
-                } else {
-                    if (not_fully_identified(otmp))
-                        (void) identify(otmp);
+                /* identifying items will update perm_invent, calling this
+                   routine recursively, and we don't want the nested call
+                   to filter on unID'd items */
+                iflags.override_ID = 0;
+                ret = '\0';
+                for (i = 0; i < n; ++i) {
+                    otmp = selected[i].item.a_obj;
+                    if (otmp == &wizid_fakeobj) {
+                        identify_pack(0, FALSE);
+                    } else {
+                        if (not_fully_identified(otmp))
+                            (void) identify(otmp);
+                    }
                 }
+            } else {
+                ret = selected[0].item.a_char;
+                if (out_cnt)
+                    *out_cnt = selected[0].count;
             }
-        } else {
-            ret = selected[0].item.a_char;
-            if (out_cnt)
-                *out_cnt = selected[0].count;
-        }
-        free((genericptr_t) selected);
-    } else
-        ret = !n ? '\0' : '\033'; /* cancelled */
+            free((genericptr_t) selected);
+        } else
+            ret = !n ? '\0' : '\033'; /* cancelled */
 
-    return ret;
+        /* cleanup and return */
+        unsortloot(&sortedinvent);
+        return ret;
+    }
+    /* unreachable */
+    return '\0';
 }
 
 /*

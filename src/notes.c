@@ -184,7 +184,25 @@ restore_notes(int fd)
         for (i = 0; i < u.note_count; i++) {
             mread(fd, (genericptr_t) &len, sizeof(len));
             { char dbg[256]; Sprintf(dbg, "restore_notes: [%d] read len=%d", i, len); curses_debug_log(dbg); }
+            /* Validate note length before allocating */
             if (len > 0) {
+                const int MAX_NOTE_LEN = 8192;
+                if (len > MAX_NOTE_LEN) {
+                    char dbg2[256];
+                    Sprintf(dbg2, "RESTORE: suspicious note length=%d (max=%d); discarding note", len, MAX_NOTE_LEN);
+                    curses_debug_log(dbg2);
+                    /* consume the bytes to keep stream alignment */
+                    char discard[256];
+                    unsigned remaining = (unsigned) (len + 1);
+                    while (remaining) {
+                        unsigned chunk = (remaining > sizeof(discard)) ? sizeof(discard) : remaining;
+                        mread(fd, (genericptr_t) discard, chunk);
+                        remaining -= chunk;
+                    }
+                    u.note_list[i] = dupstr("");
+                    continue;
+                }
+
                 char *buf = (char *) alloc(len + 1);
                 curses_debug_log("restore_notes: about to mread note text");
                 mread(fd, (genericptr_t) buf, len + 1);

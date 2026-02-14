@@ -102,6 +102,8 @@ When you change the save format, you typically need to:
 5. **Handle pointers carefully** - Save what they point to, not addresses
 6. **Check return values** from mread/bwrite
 7. **Document your changes** in comments
+8. **Validate on restore** - check lengths/counts (buflen, list counts, record sizes) before allocating or reading; log and sanitize or abort gracefully on suspicious values to avoid crashes and data corruption
+9. **Add regression tests** that create saves, intentionally mutate edge cases (corrupt lengths/fields) and verify restore either corrects, rejects, or logs the condition (prevents silent UB)
 
 ### ✗ **DON'T:**
 1. **Don't save pointers directly** - they're meaningless across sessions

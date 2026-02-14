@@ -28,6 +28,8 @@ herecmd_menu   show menu of some possible commands when clicking
                on yourself or next to you with mouse              [FALSE]
 ignintr        ignore interrupt signal, including breaks          [FALSE]
 implicit_uncursed  omit "uncursed" from inventory, if possible    [TRUE]
+invweight       show per-item/stack weight in inventory menus when
+                requested (toggleable in inventory; default off)    [FALSE]
 legacy         print introductory message                         [TRUE]
 lit_corridor   show a dark corridor as lit if in sight            [FALSE]
 lootabc        use a/b/c rather than o/i/b when looting           [FALSE]

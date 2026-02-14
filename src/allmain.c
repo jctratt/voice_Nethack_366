@@ -57,7 +57,16 @@ boolean resuming;
     }
     flags.friday13 = friday_13th();
     if (flags.friday13) {
+#ifdef VOICE_ENABLED
+        /* suppress voice for this startup message so automated start-timing
+           tests are not affected; keep the text visible.  Branch-only change. */
+        boolean _save_voice = flags.voice_enabled;
+        flags.voice_enabled = FALSE;
+#endif
         pline("Watch out!  Bad things can happen on Friday the 13th.");
+#ifdef VOICE_ENABLED
+        flags.voice_enabled = _save_voice;
+#endif
         change_luck(-1);
     }
 

@@ -301,8 +301,11 @@ register int fd, mode;
     count_only = (mode & COUNT_SAVE);
 #endif
     uid = (unsigned long) getuid();
+    curses_debug_log("SAVE-FIELD: uid");
     bwrite(fd, (genericptr_t) &uid, sizeof uid);
+    curses_debug_log("SAVE-FIELD: context");
     bwrite(fd, (genericptr_t) &context, sizeof context);
+    curses_debug_log("SAVE-FIELD: flags");
     bwrite(fd, (genericptr_t) &flags, sizeof flags);
 #ifdef SYSFLAGS
     bwrite(fd, (genericptr_t) &sysflags, sysflags);
@@ -310,6 +313,7 @@ register int fd, mode;
     urealtime.finish_time = getnow();
     urealtime.realtime += (long) (urealtime.finish_time
                                   - urealtime.start_timing);
+    curses_debug_log("SAVE-FIELD: u(struct you)");
     bwrite(fd, (genericptr_t) &u, sizeof u);
     { char dbg[256]; Sprintf(dbg, "SAVE: wrote u struct, note_count=%d, note_list=%p", u.note_count, (void*)u.note_list); curses_debug_log(dbg); }
 
@@ -317,20 +321,28 @@ register int fd, mode;
     if ((sfsaveinfo.sfi1 & SFI1_INTRINSICS_TRACKED) == SFI1_INTRINSICS_TRACKED) {
         int intr_len = u.intrinsics_tracked ? (LAST_PROP + 1) : 0;
         { char dbg[256]; Sprintf(dbg, "SAVE: writing intr_len=%d", intr_len); curses_debug_log(dbg); }
+        curses_debug_log("SAVE-FIELD: intr_len");
         bwrite(fd, (genericptr_t) &intr_len, sizeof intr_len);
-        if (intr_len > 0)
+        if (intr_len > 0) {
+            curses_debug_log("SAVE-FIELD: intrinsics_tracked_bytes");
             bwrite(fd, (genericptr_t) u.intrinsics_tracked, intr_len);
+        }
     }
 
     /* save notes data (variable-length) */
     curses_debug_log("SAVE: calling save_notes");
+    curses_debug_log("SAVE-FIELD: notes_start");
     save_notes(fd);
+    curses_debug_log("SAVE-FIELD: notes_end");
     curses_debug_log("SAVE: save_notes done");
 
+    curses_debug_log("SAVE-FIELD: ubirthday");
     curses_debug_log("SAVE: about to write ubirthday");
     bwrite(fd, yyyymmddhhmmss(ubirthday), 14);
+    curses_debug_log("SAVE-FIELD: urealtime.realtime");
     curses_debug_log("SAVE: wrote ubirthday, about to write urealtime.realtime");
     bwrite(fd, (genericptr_t) &urealtime.realtime, sizeof urealtime.realtime);
+    curses_debug_log("SAVE-FIELD: urealtime.start_timing");
     curses_debug_log("SAVE: wrote urealtime.realtime, about to write urealtime.start_timing");
     bwrite(fd, yyyymmddhhmmss(urealtime.start_timing), 14);  /** Why? **/
     curses_debug_log("SAVE: wrote urealtime.start_timing timestamp");
@@ -342,7 +354,9 @@ register int fd, mode;
     save_timers(fd, mode, RANGE_GLOBAL);
     save_light_sources(fd, mode, RANGE_GLOBAL);
 
+    curses_debug_log("SAVE-FIELD: invent_objchain_start");
     saveobjchn(fd, invent, mode);
+    curses_debug_log("SAVE-FIELD: invent_objchain_end");
 
     /* save ball and chain if they are currently dangling free (i.e. not on
        floor or in inventory) */
@@ -354,21 +368,32 @@ register int fd, mode;
         uball->nobj = bc_objs;
         bc_objs = uball;
     }
+    curses_debug_log("SAVE-FIELD: bc_objchain_start");
     saveobjchn(fd, bc_objs, mode);
+    curses_debug_log("SAVE-FIELD: bc_objchain_end");
 
+    curses_debug_log("SAVE-FIELD: migrating_objs_start");
     saveobjchn(fd, migrating_objs, mode);
+    curses_debug_log("SAVE-FIELD: migrating_objs_end");
+    curses_debug_log("SAVE-FIELD: migrating_mons_start");
     savemonchn(fd, migrating_mons, mode);
+    curses_debug_log("SAVE-FIELD: migrating_mons_end");
     if (release_data(mode)) {
         invent = 0;
         migrating_objs = 0;
         migrating_mons = 0;
     }
+    curses_debug_log("SAVE-FIELD: mvitals");
     bwrite(fd, (genericptr_t) mvitals, sizeof mvitals);
 
+    curses_debug_log("SAVE-FIELD: dungeon_state");
     save_dungeon(fd, (boolean) !!perform_bwrite(mode),
                  (boolean) !!release_data(mode));
+    curses_debug_log("SAVE-FIELD: levchn");
     savelevchn(fd, mode);
+    curses_debug_log("SAVE-FIELD: moves");
     bwrite(fd, (genericptr_t) &moves, sizeof moves);
+    curses_debug_log("SAVE-FIELD: monstermoves");
     bwrite(fd, (genericptr_t) &monstermoves, sizeof monstermoves);
     bwrite(fd, (genericptr_t) &quest_status, sizeof quest_status);
     bwrite(fd, (genericptr_t) spl_book,
@@ -380,17 +405,26 @@ register int fd, mode;
         bwrite(fd, (genericptr_t) quiver_orderindx,
                quiver_ordercnt * sizeof(*quiver_orderindx));
 
+    /* persist whether per-line inventory weights are enabled */
+    bwrite(fd, (genericptr_t) &iflags.invweight, sizeof iflags.invweight);
+
     save_artifacts(fd);
     save_oracles(fd, mode);
     if (ustuck_id)
         bwrite(fd, (genericptr_t) &ustuck_id, sizeof ustuck_id);
     if (usteed_id)
         bwrite(fd, (genericptr_t) &usteed_id, sizeof usteed_id);
+    curses_debug_log("SAVE-FIELD: pl_character");
     bwrite(fd, (genericptr_t) pl_character, sizeof pl_character);
+    curses_debug_log("SAVE-FIELD: pl_fruit");
     bwrite(fd, (genericptr_t) pl_fruit, sizeof pl_fruit);
+    curses_debug_log("SAVE-FIELD: fruitchn");
     savefruitchn(fd, mode);
+    curses_debug_log("SAVE-FIELD: savenames");
     savenames(fd, mode);
+    curses_debug_log("SAVE-FIELD: waterlevel");
     save_waterlevel(fd, mode);
+    curses_debug_log("SAVE-FIELD: msghistory");
     save_msghistory(fd, mode);
     curses_debug_log("SAVE: about to bflush and complete");
     bflush(fd);
@@ -1050,6 +1084,7 @@ struct obj *otmp;
 
     buflen = (int) sizeof (struct obj);
     bwrite(fd, (genericptr_t) &buflen, sizeof buflen);
+    { char dbg[128]; Sprintf(dbg, "SAVE-FIELD: obj o_id=%u otyp=%d invlet=%c where=%d quan=%ld", (unsigned)otmp->o_id, (int)otmp->otyp, otmp->invlet ? otmp->invlet : '?', (int)otmp->where, (long)otmp->quan); curses_debug_log(dbg); }
     bwrite(fd, (genericptr_t) otmp, buflen);
     if (otmp->oextra) {
         buflen = ONAME(otmp) ? (int) strlen(ONAME(otmp)) + 1 : 0;

@@ -1,0 +1,32 @@
+#!/usr/bin/expect -f
+# Auto-restore script for 1000neon.gz (used by CI/triage)
+# Logs to /tmp/restore-1000neon.log
+
+set timeout 120
+log_file -a /tmp/restore-1000neon.log
+
+# Adjust these if your install/save dirs differ
+set nethack_bin "/home/neon/source/voice_Nethack_366/src/nethack"
+set savedir "/home/neon/vnh366/install/games/lib/nethackdir"
+set player "neon"
+
+spawn $nethack_bin -u $player -D $savedir
+# give curses time to initialize
+sleep 1
+# request restore
+send "r\r"
+sleep 1
+# supply player name to restore
+send "$player\r"
+# allow the game to perform restore; then save-and-exit
+# (capital S = save & exit command)
+sleep 2
+send "S\r"
+# wait for process to finish
+expect {
+    eof { }
+    timeout { }
+}
+
+close
+exit 0
