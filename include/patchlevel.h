@@ -16,7 +16,7 @@
  *
  * NOTE: increased because `struct flag` layout changed (added `invweight`).
  */
-#define EDITLEVEL 1
+#define EDITLEVEL 2
 
 #define COPYRIGHT_BANNER_A "NetHack, Copyright 1985-2020"
 #define COPYRIGHT_BANNER_B \

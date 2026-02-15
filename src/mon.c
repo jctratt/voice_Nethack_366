@@ -1727,6 +1727,11 @@ struct monst **monst_list; /* &migrating_mons or &mydogs or null */
         /* insert into mydogs or migrating_mons */
         mon->nmon = *monst_list;
         *monst_list = mon;
+
+        /* If this was a pet leaving the level, update the current level's
+           mapseen so we don't leave stale pet entries in #overview. */
+        if (mon->mtame && !mon->isminion)
+            recalc_mapseen();
     } else {
         /* orphan has no next monster */
         mon->nmon = 0;
