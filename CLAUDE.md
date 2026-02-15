@@ -15,14 +15,6 @@ Hi, AI, I'm user Jeff!
 - To enable voice features at build time, define `VOICE_ENABLED` (for example add `-DVOICE_ENABLED` to `CFLAGS` or the Makefile).
 - Key files are listed in `file_list.txt`: flag.h, decl.h, pline.c, files.c, decl.c, options.c
 
-### Recent change — `invweight` (2026-02-14)
-- Added runtime option `OPTIONS=invweight` (persistent) to show per-item inventory weight in the inventory display in the format `[TOTALxITEM]` (e.g. `[60x20]`).
-- Files changed: `include/flag.h`, `src/options.c`, `src/invent.c`, `dat/opthelp`, `include/patchlevel.h`.
-- Savefile impact: `EDITLEVEL` incremented due to `struct flag` layout change; older savefiles/bones will be invalidated.
-- Tests: removed an expect-based test and prepared for a compliant unit-style replacement.
-- Usage: `#set invweight` or add `OPTIONS=invweight` to your `.nethackrc`.
-
-
 ## Code Style
 - Follow existing NetHack coding conventions
 - Use K&R style with 4-space indentation

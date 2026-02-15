@@ -246,6 +246,13 @@ typedef struct mapseen {
     /* custom naming */
     char *custom;
     unsigned custom_lth;
+
+    /* persistent short pet-name summary for #overview (named or species)
+       - stored same style as `custom`
+       - length does NOT include terminating NUL (matches custom_lth semantics) */
+    char *petnames;
+    unsigned petnames_lth;
+
     struct mapseen_rooms {
         Bitfield(seen, 1);
         Bitfield(untended, 1);         /* flag for shop without shk */

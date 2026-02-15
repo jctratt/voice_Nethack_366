@@ -15,6 +15,10 @@
 #define X_LOCATE "x-loca"
 #define X_GOAL "x-goal"
 
+/* Maximum bytes to store pet summary in `mapseen->petnames` (does not
+   include terminating NUL when persisted) */
+#define PETNAMES_MAX 256
+
 struct proto_dungeon {
     struct tmpdungeon tmpdungeon[MAXDUNGEON];
     struct tmplevel tmplevel[LEV_LIMIT];
@@ -2205,6 +2209,8 @@ int ledger_num;
 
     if (mptr->custom)
         free((genericptr_t) mptr->custom);
+    if (mptr->petnames)
+        free((genericptr_t) mptr->petnames);
 
     bp = mptr->final_resting_place;
     while (bp) {
@@ -2241,6 +2247,12 @@ mapseen *mptr;
     bwrite(fd, (genericptr_t) &mptr->custom_lth, sizeof mptr->custom_lth);
     if (mptr->custom_lth)
         bwrite(fd, (genericptr_t) mptr->custom, mptr->custom_lth);
+
+    /* petnames (variable-length, length does NOT include terminator) */
+    bwrite(fd, (genericptr_t) &mptr->petnames_lth, sizeof mptr->petnames_lth);
+    if (mptr->petnames_lth)
+        bwrite(fd, (genericptr_t) mptr->petnames, mptr->petnames_lth);
+
     bwrite(fd, (genericptr_t) mptr->msrooms, sizeof mptr->msrooms);
     savecemetery(fd, WRITE_SAVE, &mptr->final_resting_place);
 }
@@ -2272,6 +2284,15 @@ int fd;
         load->custom[load->custom_lth] = '\0';
     } else
         load->custom = 0;
+
+    /* petnames */
+    mread(fd, (genericptr_t) &load->petnames_lth, sizeof load->petnames_lth);
+    if (load->petnames_lth) {
+        load->petnames = (char *) alloc(load->petnames_lth + 1);
+        mread(fd, (genericptr_t) load->petnames, load->petnames_lth);
+        load->petnames[load->petnames_lth] = '\0';
+    } else
+        load->petnames = 0;
     mread(fd, (genericptr_t) load->msrooms, sizeof load->msrooms);
     restcemetery(fd, &load->final_resting_place);
 
@@ -2366,6 +2387,7 @@ d_level *lev;
     /* memset is fine for feature bits, flags, and rooms array;
        explicitly initialize pointers to null */
     init->next = 0, init->br = 0, init->custom = 0;
+    init->petnames = 0; init->petnames_lth = 0;
     init->final_resting_place = 0;
     /* lastseentyp[][] is reused for each level, so get rid of
        previous level's data */
@@ -2667,6 +2689,57 @@ recalc_mapseen()
             default:
                 break;
             }
+        }
+    }
+
+    /* collect short pet-name summary for #overview from monsters on map */
+    if (mptr->petnames) {
+        free((genericptr_t) mptr->petnames);
+        mptr->petnames = 0;
+        mptr->petnames_lth = 0;
+    }
+    {
+        char petbuf[PETNAMES_MAX + 1];
+        char tmpname[BUFSZ];
+        int plen = 0;
+
+        petbuf[0] = '\0';
+        for (mtmp = fmon; mtmp; mtmp = mtmp->nmon) {
+            if (DEADMONSTER(mtmp))
+                continue;
+            if (!mtmp->mtame || mtmp->isminion)
+                continue;
+            /* use m_monnam() to get either custom name or species */
+            (void) strncpy(tmpname, m_monnam(mtmp), sizeof tmpname - 1);
+            tmpname[sizeof tmpname - 1] = '\0';
+            if (!plen) {
+                (void) strncpy(petbuf, tmpname, PETNAMES_MAX);
+                petbuf[PETNAMES_MAX] = '\0';
+                plen = strlen(petbuf);
+                if (plen >= PETNAMES_MAX)
+                    break;
+            } else {
+                int need = plen + 2 + (int) strlen(tmpname); /* ", " + name */
+                if (need > PETNAMES_MAX) {
+                    /* truncate with ellipsis */
+                    if (plen + 5 <= PETNAMES_MAX) {
+                        Strcat(petbuf, ", ...");
+                        plen = strlen(petbuf);
+                    }
+                    break;
+                }
+                Strcat(petbuf, ", ");
+                Strcat(petbuf, tmpname);
+                plen = strlen(petbuf);
+            }
+        }
+        if (plen) {
+            mptr->petnames = (char *) alloc((unsigned) plen + 1);
+            Strcpy(mptr->petnames, petbuf);
+            mptr->petnames_lth = (unsigned) plen;
+        } else {
+            mptr->petnames = 0;
+            mptr->petnames_lth = 0;
         }
     }
 
@@ -3102,6 +3175,12 @@ boolean printdun;
         if (mptr->br->end1_up && !In_endgame(&(mptr->br->end2)))
             Sprintf(eos(buf), ", level %d", depth(&(mptr->br->end2)));
         Strcat(buf, ".");
+        putstr(win, 0, buf);
+    }
+
+    /* show pets summary, if any */
+    if (mptr->petnames) {
+        Sprintf(buf, "%spets: %s.", PREFIX, mptr->petnames);
         putstr(win, 0, buf);
     }
 

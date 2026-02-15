@@ -2,6 +2,9 @@
 
 Commits since `README.md` was last updated (commit c012979 — 2025-03-05):
 
+- ADD: 2026-02-15 Jeff Tratt — Feature: `#overview` pet locator (feature/pet_locator)
+  - Persist per-level short pet-name summary in `mapseen->petnames` and show `pets: ...` in `#overview` for levels that contain any of the player's tamed pets. Unnamed pets display by species. Ensures pets that follow the player are removed from the previous level's overview. Savefile `EDITLEVEL` incremented due to `mapseen` layout change; old saves/bones will be incompatible.
+
 - bbe76a5 / b550dea0 2026-02-14 Jeff Tratt — Feature: `OPTIONS=invweight` — add persistent per-item inventory weight display (format: `[TOTALxITEM]`, e.g. `[60x20]` for 3 items of 20 each). Implemented persistent `flags.invweight`, added inventory display, documented option in `dat/opthelp`, and updated save/restore handling. NOTE: `EDITLEVEL` was incremented because `struct flag` layout changed (old savefiles/bones invalidated). Replaced an expect-based test with in-source changes; see tests for follow-up unit-style coverage.
 
 
