@@ -975,6 +975,7 @@ int after; /* this is extra fast monster movement */
     xchar otyp;
     boolean has_edog, cursemsg[9], do_eat = FALSE;
     boolean better_with_displacing = FALSE;
+    boolean did_interpose = FALSE; /* set when pet explicitly interposes */
     xchar nix, niy;      /* position mtmp is (considering) moving to */
     register int nx, ny; /* temporary coordinates */
     xchar cnt, uncursedcnt, chcnt;
@@ -1094,6 +1095,12 @@ int after; /* this is extra fast monster movement */
                 /* only force interpose if the square is legal/safe */
                 if (isok(interx, intery) && goodpos(interx, intery, mtmp, 0)
                     && distmin(interx, intery, u.ux, u.uy) <= MAX_PET_DISTANCE) {
+                    /* announce interpose when visible */
+                    if (pursue_mon && pursue_mon != &youmonst
+                        && (canseemon(mtmp) || canspotmon(pursue_mon))) {
+                        pline("%s growls at %s.", Monnam(mtmp), mon_nam(pursue_mon));
+                    }
+                    did_interpose = TRUE;
                     /* set immediate move target and skip normal navigation */
                     nix = interx;
                     niy = intery;
@@ -1489,6 +1496,19 @@ int after; /* this is extra fast monster movement */
         wasseen = canseemon(mtmp);
         remove_monster(omx, omy);
         place_monster(mtmp, nix, niy);
+
+        /* announce interpose if not already announced by the urgent case */
+        if (!did_interpose && pursue_mon && pursue_mon != &youmonst
+            && abs(nix - u.ux) <= 1 && abs(niy - u.uy) <= 1) {
+            int vx = pursue_mon->mx - u.ux;
+            int vy = pursue_mon->my - u.uy;
+            int uxv = nix - u.ux;
+            int uyv = niy - u.uy;
+            if (vx * uxv + vy * uyv > 0
+                && (canseemon(mtmp) || canspotmon(pursue_mon))) {
+                pline("%s growls at %s.", Monnam(mtmp), mon_nam(pursue_mon));
+            }
+        }
         /* leash feedback is handled once-per-player-input in check_leash_end_of_turn() */
         if (cursemsg[chi] && (wasseen || canseemon(mtmp))) {
             /* describe top item of pile, not necessarily cursed item itself;
