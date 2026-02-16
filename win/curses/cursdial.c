@@ -233,9 +233,9 @@ curses_name_input_dialog(const char *prompt, char *answer, int buffer)
 
 /* Multiline input dialog: full-featured text editor with cursor navigation.
    Supported keys:
-   - F1: Show help (this dialog)
-   - F2: Save and exit
-   - ESC: Ignored (does not cancel; use F2 to save)
+    - Ctrl+?: Show help (this dialog)
+    - Ctrl+S: Save and exit
+    - ESC: Ignored (does not cancel; use Ctrl+S to save)
    - Enter: Insert newline
    - Backspace/Delete: Delete character
    - Arrow keys: Move cursor (up/down/left/right)
@@ -286,7 +286,7 @@ curses_multiline_input_dialog(const char *prompt, char *buf, int bufsize)
 
     /* draw prompt and help - show available editing keys (2 lines, compact) */
     mvwaddstr(bwin, 0, 1, prompt);
-    mvwaddstr(bwin, height + 2, 1, "F1=Help  Arrows ^B/^F  Home/End ^A/^E  Del/^D  ^K=EOL ^W=word ^U=line");
+    mvwaddstr(bwin, height + 2, 1, "Ctrl+?=Help  Ctrl+S=Save  Arrows ^B/^F  Home/End ^A/^E  Del/^D  ^K=EOL ^W=word ^U=line");
     mvwaddstr(bwin, height + 3, 1, "                                                                     ");
     wrefresh(bwin);
 
@@ -347,13 +347,6 @@ curses_multiline_input_dialog(const char *prompt, char *buf, int bufsize)
         wrefresh(twin);
 
         ch = wgetch(twin);
-        
-        /* Debug ALL keys received */
-        FILE *dbg = fopen("/tmp/nethack_keys.txt", "a");
-        if (dbg) {
-            fprintf(dbg, "RAW KEY: ch=%d (0x%x) '%c'\n", ch, ch, (ch >= 32 && ch < 127) ? (char)ch : '?');
-            fclose(dbg);
-        }
 
         /* Handle special Ctrl+arrow KEY codes that ncurses returns with keypad(TRUE) */
         if (ch == 569) {
@@ -371,37 +364,64 @@ curses_multiline_input_dialog(const char *prompt, char *buf, int bufsize)
             continue;
         }
 
-        if (ch == KEY_F(1)) {
+        if (ch == 127 /* ^? (DEL) */ || ch == C('?')) {
             /* Show help popup */
-            const char *help_lines[] = {
-                "Help (this window)                                    F1",
-                "Save and exit                                         F2",
-                "Move cursor                                       Arrows",
-                "Move left/right                              Ctrl+B / ^F",
-                "Line start/end                                  Home/End",
-                "Buffer start/end                             Ctrl+A / ^E",
-                "Jump by word                             Ctrl+Left/Right",
-                "Delete at cursor                               Del / ^D",
-                "Delete word backward                                 ^W",
-                "Delete word forward                            ^Delete",
-                "Delete from cursor to end of line                    ^K",
-                "Delete current line                                   ^U"
+            struct help_item {
+                const char *action;
+                const char *keys;
             };
-            int hl = sizeof(help_lines) / sizeof(help_lines[0]);
-            int maxw = 0;
+                /* Keep help text aligned by rendering two computed columns
+                    (action on the left, key binding right-aligned), rather
+                    than relying on fragile space-padded literal strings. */
+                const struct help_item help_items[] = {
+                { "Help (this window)", "Ctrl+?" },
+                { "Save and exit", "Ctrl+S" },
+                { "Move cursor", "Arrows" },
+                { "Move left/right", "Ctrl+B / ^F" },
+                { "Line start/end", "Home/End" },
+                { "Buffer start/end", "Ctrl+A / ^E" },
+                { "Jump by word", "Ctrl+Left/Right" },
+                { "Delete at cursor", "Del / ^D" },
+                { "Delete word backward", "^W" },
+                { "Delete word forward", "^Delete" },
+                { "Delete from cursor to end of line", "^K" },
+                { "Delete current line", "^U" }
+            };
+            int hl = (int) (sizeof(help_items) / sizeof(help_items[0]));
+            int max_action = 0, max_keys = 0;
             int ii;
+            int h, w, wy, wx;
+            int action_col, key_col, action_room;
+            WINDOW *hwin;
+
             for (ii = 0; ii < hl; ii++) {
-                int l = (int) strlen(help_lines[ii]);
-                if (l > maxw) maxw = l;
+                int action_len = (int) strlen(help_items[ii].action);
+                int keys_len = (int) strlen(help_items[ii].keys);
+                if (action_len > max_action)
+                    max_action = action_len;
+                if (keys_len > max_keys)
+                    max_keys = keys_len;
             }
-            int h = min(hl + 4, term_rows - 4);
-            int w = min(maxw + 6, term_cols - 4); /* increased padding */
-            int wy = (term_rows - h) / 2;
-            int wx = (term_cols - w) / 2;
-            WINDOW *hwin = newwin(h, w, wy, wx);
+
+            h = min(hl + 4, term_rows - 4);
+            w = min(max_action + max_keys + 10, term_cols - 4);
+            wy = (term_rows - h) / 2;
+            wx = (term_cols - w) / 2;
+            action_col = 3;
+            key_col = w - 3 - max_keys;
+            if (key_col <= action_col + 2)
+                key_col = action_col + 3;
+            action_room = key_col - action_col - 1;
+            if (action_room < 1)
+                action_room = 1;
+
+            hwin = newwin(h, w, wy, wx);
             box(hwin, 0, 0);
             for (ii = 0; ii < hl && ii < h - 3; ii++) {
-                mvwprintw(hwin, ii + 1, 3, "%s", help_lines[ii]);
+                mvwprintw(hwin, ii + 1, action_col, "%-*.*s",
+                          action_room, action_room, help_items[ii].action);
+                mvwprintw(hwin, ii + 1, key_col, "%*.*s",
+                          max_keys, max_keys, help_items[ii].keys);
             }
             mvwprintw(hwin, h - 2, 3, "Press any key to continue");
             wrefresh(hwin);
@@ -416,19 +436,21 @@ curses_multiline_input_dialog(const char *prompt, char *buf, int bufsize)
             touchwin(twin);
             wrefresh(twin);
             continue;
-        } else if (ch == KEY_F(2)) {
+        } else if (ch == 19 /* Ctrl+S */) {
+            /* Debug: Ctrl+S pressed in editor */
+            curses_debug_log("curses_multiline_input_dialog: Ctrl+S pressed (saving)");
             /* Save and exit */
             break;
         } else if (ch == 27) {
             /* ESC - could be standalone or start of escape sequence */
-            wtimeout(twin, 50); /* short timeout to detect escape sequences */
+            wtimeout(twin, 250); /* allow more time for multi-byte function-key sequences */
             int next_ch = wgetch(twin);
-            wtimeout(twin, 200); /* restore normal timeout */
-            
+            wtimeout(twin, 500); /* restore normal editor timeout */
+
             if (next_ch == '[') {
                 /* Escape sequence ESC [ ... */
                 int seq_ch = wgetch(twin);
-                
+
                 /* Check for modifier sequences like ESC[1;5C (Ctrl+Right) - EXACT COPY from working #name code */
                 if (seq_ch == '1' || seq_ch == '5') {
                     int modifier_ch = wgetch(twin);
@@ -436,15 +458,7 @@ curses_multiline_input_dialog(const char *prompt, char *buf, int bufsize)
                         /* Format: ESC[1;5C or ESC[5;5C */
                         int mod_val = wgetch(twin);
                         int final_ch = wgetch(twin);
-                        
-                        /* Debug to file */
-                        FILE *dbg = fopen("/tmp/nethack_keys.txt", "a");
-                        if (dbg) {
-                            fprintf(dbg, "Ctrl seq: seq_ch=%d modifier_ch=%c mod_val=%c final_ch=%c pos=%d len=%d\n", 
-                                    seq_ch, modifier_ch, mod_val, final_ch, pos, len);
-                            fclose(dbg);
-                        }
-                        
+
                         if (final_ch == 'C') {
                             /* Ctrl+Right - jump word forward */
                             while (pos < len && buf[pos] == ' ') pos++;
@@ -523,6 +537,10 @@ curses_multiline_input_dialog(const char *prompt, char *buf, int bufsize)
                     /* ESC[D - Left arrow (already handled by KEY_LEFT) */
                     if (pos > 0) pos--;
                 }
+            } else if (next_ch == 'O') {
+                /* ESC O sequences not used by this editor; ignore safely */
+                int seq_ch = wgetch(twin);
+                if (seq_ch != ERR) ungetch(seq_ch);
             } else {
                 /* Standalone ESC or ESC+other -> ignore */
                 if (next_ch != ERR) {
@@ -671,13 +689,6 @@ curses_multiline_input_dialog(const char *prompt, char *buf, int bufsize)
                 buf[len] = '\0';
             }
         } else if (ch >= 32 && ch < 127) {
-            /* Debug character insertion */
-            FILE *dbg = fopen("/tmp/nethack_keys.txt", "a");
-            if (dbg) {
-                fprintf(dbg, "Inserting char: ch=%d '%c' at pos=%d len=%d\\n", ch, (char)ch, pos, len);
-                fclose(dbg);
-            }
-            
             if (len + 1 < bufsize) {
                 int i;
                 for (i = len; i >= pos; i--) buf[i + 1] = buf[i];
@@ -701,6 +712,42 @@ curses_multiline_input_dialog(const char *prompt, char *buf, int bufsize)
     if (iflags.window_inited)
         curses_refresh_nethack_windows();
 }
+
+/* Small, testable translator for escape sequences (characters AFTER initial ESC).
+ * Exposed (non-static) so unit tests can validate terminal sequences such as
+ * ESC O P / ESC O Q (F1/F2) and prevent regressions.  Returns KEY_F(n) for
+ * recognized function-key sequences, or 0 for "no mapping".
+ */
+int
+curses_translate_escape_sequence_for_test(const char *seq, int len)
+{
+    if (!seq || len <= 0)
+        return 0;
+
+    /* F1/F2: ESC O P / ESC O Q (common on many terminals) */
+    if (len >= 2 && seq[0] == 'O') {
+        if (seq[1] == 'P')
+            return KEY_F(1);
+        if (seq[1] == 'Q')
+            return KEY_F(2);
+    }
+
+    /* Common CSI sequences that include modifiers (we only expose F-key
+       mapping here; other sequences remain runtime-handled). */
+    if (len >= 4 && seq[0] == '[') {
+        /* Map common numeric CSI F-key encodings used by many Linux terminals. */
+        if (len >= 4 && seq[1] == '1' && seq[2] == '1' && seq[3] == '~')
+            return KEY_F(1); /* ESC[11~ */
+        if (len >= 4 && seq[1] == '1' && seq[2] == '2' && seq[3] == '~')
+            return KEY_F(2); /* ESC[12~ */
+
+        /* ESC[5C or ESC[1;5C -> Ctrl+Right; not translated to a KEY_F() here */
+        /* Keep placeholder for future mappings if needed. */
+    }
+
+    return 0;
+}
+
 
 /* Helper function to calculate cursor position from character position */
 STATIC_OVL void
