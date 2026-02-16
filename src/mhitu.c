@@ -416,6 +416,14 @@ register struct monst *mtmp;
         }
     }
 
+    /* Safety: a tame monster must not attack the hero via mattacku();
+       if this happens it indicates a bug elsewhere in decision logic. */
+    if (mtmp->mtame) {
+        if (canseemon(mtmp))
+            pline("%s hesitates.", Monnam(mtmp));
+        return 0;
+    }
+
     if (u.uundetected && !range2 && foundyou && !u.uswallow) {
         if (!canspotmon(mtmp))
             map_invisible(mtmp->mx, mtmp->my);
