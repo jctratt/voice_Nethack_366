@@ -1193,6 +1193,13 @@ int after; /* this is extra fast monster movement */
         ny = poss[i].y;
         cursemsg[i] = FALSE;
 
+        /* Never consider moving onto the player's square; that results in
+           the pet 'attacking' the player (mattacku).  Allow only when the
+           movement flags explicitly permit (e.g. ALLOW_U under Conflict).
+        */
+        if (nx == u.ux && ny == u.uy && !(allowflags & ALLOW_U))
+            continue;
+
         /* Do not step onto stairs unless the player is standing on them. */
         if (On_stairs(nx, ny) && (nx != u.ux || ny != u.uy))
             continue;
