@@ -3183,9 +3183,15 @@ boolean tinitial, tfrom_file;
         return retval;
     }
 
-    /* quiverorder: sequence of inventory letters (a-zA-Z) referring to
-       quiver candidates; letters that don't match current inventory are
-       ignored.  Stored internally as an array of `otyp' values. */
+    /* quiverorder: extended form supports object-type names (comma
+       separated) and a legacy-invlet suffix separated by ';'.  Examples:
+         - legacy:    OPTIONS=quiverorder:defij
+         - types only: OPTIONS=quiverorder:arrows,darts,dagger
+         - mixed:      OPTIONS=quiverorder:arrows,darts;defij
+       When both are present the `;invlet` list takes precedence (its
+       otypes are placed first), and the resulting ordering is stored
+       as an array of `otyp` values in `quiver_orderindx` (no savefile
+       format change). */
     fullname = "quiverorder";
     if (match_optname(opts, fullname, 6, TRUE)) {
         if (duplicate)
@@ -3198,42 +3204,103 @@ boolean tinitial, tfrom_file;
         if (op == empty_optstr)
             return FALSE;
 
-        /* map inv-letters -> otyp list */
+        /* Parse extended form: optional "name1,name2,...[;letters]".
+           invlet (letters after ';') take precedence over name tokens. */
         {
             int tmpcnt = 0;
             int *tmpindx = (int *) 0;
-            char *p;
+            char *param = dupstr(op);
+            char *semi = index(param, ';');
+            char *names_part = (char *) 0;
+            char *letters_part = (char *) 0;
+            char *tok;
+            int i, j;
 
-            for (p = op; *p; ++p) {
-                char c = *p;
-                struct obj *otmp;
+            if (semi) {
+                *semi = '\0';
+                names_part = (*param) ? param : (char *)0;
+                letters_part = (*(semi + 1)) ? (semi + 1) : (char *)0;
+            } else {
+                /* no semicolon: if there is a comma treat as name-list,
+                   otherwise preserve legacy behaviour and treat as
+                   inv-letter sequence */
+                if (strchr(param, ',') != (char *)0)
+                    names_part = param;
+                else
+                    letters_part = param;
+            }
 
-                if (!isalpha((uchar) c))
-                    continue;
-                for (otmp = invent; otmp; otmp = otmp->nobj) {
-                    if (otmp->invlet == c) {
-                        if (is_ammo(otmp) || is_missile(otmp)
-                            || (otmp->oclass == WEAPON_CLASS && throwing_weapon(otmp))
-                            || otmp->otyp == ROCK || otmp->otyp == FLINT) {
-                            int j, found = 0;
-                            for (j = 0; j < tmpcnt; ++j)
-                                if (tmpindx[j] == otmp->otyp) {
-                                    found = 1;
-                                    break;
+            /* 1) letters_part: parse inv-letters first (these take
+                   precedence and are added in the order specified). */
+            if (letters_part) {
+                char *p;
+                for (p = letters_part; *p; ++p) {
+                    char c = *p;
+                    struct obj *otmp;
+
+                    if (!isalpha((uchar)c))
+                        continue;
+                    for (otmp = invent; otmp; otmp = otmp->nobj) {
+                        if (otmp->invlet == c) {
+                            if (is_ammo(otmp) || is_missile(otmp)
+                                || (otmp->oclass == WEAPON_CLASS && throwing_weapon(otmp))
+                                || otmp->otyp == ROCK || otmp->otyp == FLINT) {
+                                int found = 0;
+                                for (j = 0; j < tmpcnt; ++j)
+                                    if (tmpindx[j] == otmp->otyp) { found = 1; break; }
+                                if (!found) {
+                                    tmpindx = (int *) realloc(tmpindx, (tmpcnt + 1) * sizeof(int));
+                                    tmpindx[tmpcnt++] = otmp->otyp;
                                 }
-                            if (!found) {
-                                tmpindx = (int *) realloc(tmpindx, (tmpcnt + 1) * sizeof(int));
-                                tmpindx[tmpcnt++] = otmp->otyp;
                             }
+                            break;
                         }
-                        break;
                     }
                 }
             }
+
+            /* 2) names_part: append matching otypes that aren't already
+                   in the list.  Matching is case-insensitive and allows
+                   substring matches against `obj_typename()` */
+            if (names_part) {
+                for (tok = strtok(names_part, ","); tok; tok = strtok((char *)0, ",")) {
+                    char *s = tok;
+                    while (*s && isspace((uchar)*s)) ++s;
+                    if (!*s) continue;
+                    {
+                        char *e = s + strlen(s) - 1;
+                        while (e >= s && isspace((uchar)*e)) *e-- = '\0';
+                    }
+                    /* find a matching otype by scanning known object names */
+                    int matched = 0;
+                    for (i = 1; i < NUM_OBJECTS; ++i) {
+                        const char *nm = obj_typename(i);
+                        if (!nm) continue;
+                        if (!strcmpi(nm, s) || strstri(nm, s) || strstri(s, nm)) {
+                            /* append matched otype (no strict filtering here) */
+                            {
+                                int found = 0;
+                                for (j = 0; j < tmpcnt; ++j)
+                                    if (tmpindx[j] == i) { found = 1; break; }
+                                if (!found) {
+                                    tmpindx = (int *) realloc(tmpindx, (tmpcnt + 1) * sizeof(int));
+                                    tmpindx[tmpcnt++] = i;
+                                }
+                            }
+                            matched = 1;
+                            break;
+                        }
+                    }
+                    if (!matched)
+                        config_error_add("Unknown quiverorder token '%s'", s);
+                }
+            }
+
             if (quiver_orderindx)
                 free((genericptr_t) quiver_orderindx);
             quiver_orderindx = tmpindx;
             quiver_ordercnt = tmpcnt;
+            free(param);
         }
         return retval;
     }

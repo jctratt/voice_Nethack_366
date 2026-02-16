@@ -124,6 +124,14 @@ static NEARDATA const char nofetch[] = { BALL_CLASS, CHAIN_CLASS, ROCK_CLASS,
 
 STATIC_VAR xchar gtyp, gx, gy; /* type and position of dog's current goal */
 
+/* Pet AI tuning */
+#define PET_TARGET_RADIUS 14 /* tiles around player to search for hostile targets (increased from 7) */
+#define MAX_PET_DISTANCE 5  /* max allowed distance (tiles) pet may move away from player */
+
+/* Player-centered search helpers (prefer player-origin targets first) */
+STATIC_DCL struct monst *FDECL(best_target_from_origin, (struct monst *, int, int, int));
+STATIC_DCL struct monst *FDECL(find_targ_from_origin, (struct monst *, int, int, int, int, int));
+
 STATIC_PTR void FDECL(wantdoor, (int, int, genericptr_t));
 
 boolean
@@ -543,11 +551,26 @@ int after, udist, whappr;
                            && !dog_has_minvent
                            && (!levl[omx][omy].lit || levl[u.ux][u.uy].lit)
                            && (otyp == MANFOOD || m_cansee(mtmp, nx, ny))
-                           && edog->apport > rn2(8)
                            && can_carry(mtmp, obj) > 0) {
-                    gx = nx;
-                    gy = ny;
-                    gtyp = APPORT;
+                    /* De-prioritise objects that are far from the player so
+                       the pet prefers to follow/assist the player first.
+                       Also: don't let stair tiles ('<'/'>' ground) act as
+                       fetch goals unless the player is standing on them. */
+                    int pdist = distmin(nx, ny, u.ux, u.uy);
+                    int extra = (pdist > MAX_PET_DISTANCE) ? (pdist - MAX_PET_DISTANCE) : 0;
+                    int apport_thresh = 8 + extra; /* farther objects are harder */
+                    if (edog->apport > rn2(apport_thresh)) {
+                        /* avoid stair tiles unless player is on them */
+                        if (On_stairs(nx, ny) && (nx != u.ux || ny != u.uy))
+                            continue;
+                        /* If the player can see a hostile within PET_TARGET_RADIUS,
+                           don't let APPORT beat that hostile. */
+                        if (best_target_from_origin(mtmp, u.ux, u.uy, PET_TARGET_RADIUS))
+                            continue;
+                        gx = nx;
+                        gy = ny;
+                        gtyp = APPORT;
+                    }
                 }
             }
         }
@@ -583,6 +606,9 @@ int after, udist, whappr;
         register coord *cp;
 
         cp = gettrack(omx, omy);
+        /* ignore track points that are stair tiles unless player is on them */
+        if (cp && On_stairs(cp->x, cp->y) && (cp->x != u.ux || cp->y != u.uy))
+            cp = (coord *) 0;
         if (cp) {
             gx = cp->x;
             gy = cp->y;
@@ -657,6 +683,84 @@ int maxdist;
         }
     }
     return targ;
+}
+
+/* like find_targ() but starts scanning from an arbitrary origin (ox,oy)
+   while using the pet's visibility (m_cansee) to determine whether the
+   pet would detect a monster along that line */
+STATIC_OVL struct monst *
+find_targ_from_origin(mtmp, ox, oy, dx, dy, maxdist)
+struct monst *mtmp;
+int ox, oy, dx, dy, maxdist;
+{
+    struct monst *targ = 0;
+    int curx = ox, cury = oy;
+    int dist = 0;
+
+    for ( ; dist < maxdist; ++dist) {
+        curx += dx;
+        cury += dy;
+        if (!isok(curx, cury))
+            break;
+
+        /* allow the player's vision to extend the scan: continue
+           scanning if either the pet or the player can see this square */
+        if (!m_cansee(mtmp, curx, cury) && !cansee(curx, cury))
+            break;
+
+        if (curx == mtmp->mux && cury == mtmp->muy)
+            return &youmonst;
+
+        if ((targ = m_at(curx, cury)) != 0) {
+            /* accept the monster if either the pet or the player can see it */
+            boolean pet_sees_mon = ((!targ->minvis || perceives(mtmp->data))
+                                    && !targ->mundetected);
+            boolean player_sees_mon = canspotmon(targ);
+            if (pet_sees_mon || player_sees_mon)
+                break;
+            targ = 0;
+        }
+    }
+    return targ;
+}
+
+/* best_target_from_origin: same scoring as best_target() but scan lines
+   starting from (ox,oy) instead of the pet's square (useful to prefer
+   player-centered targets). */
+STATIC_OVL struct monst *
+best_target_from_origin(mtmp, ox, oy, radius)
+struct monst *mtmp;
+int ox, oy, radius;
+{
+    int dx, dy;
+    long bestscore = -40000L, currscore;
+    struct monst *best_targ = 0, *temp_targ = 0;
+
+    if (!mtmp)
+        return 0;
+
+    if (!mtmp->mcansee)
+        return 0;
+
+    for (dy = -1; dy < 2; ++dy) {
+        for (dx = -1; dx < 2; ++dx) {
+            if (!dx && !dy)
+                continue;
+            temp_targ = find_targ_from_origin(mtmp, ox, oy, dx, dy, radius);
+            if (!temp_targ)
+                continue;
+
+            currscore = score_targ(mtmp, temp_targ);
+            if (currscore > bestscore) {
+                bestscore = currscore;
+                best_targ = temp_targ;
+            }
+        }
+    }
+
+    if (bestscore < 0L)
+        return 0;
+    return best_targ;
 }
 
 STATIC_OVL int
@@ -877,6 +981,7 @@ int after; /* this is extra fast monster movement */
     int chi = -1, nidist, ndist;
     coord poss[9];
     long info[9], allowflags;
+    struct monst *pursue_mon = (struct monst *) 0; /* player-centered pursuit candidate */
 #define GDIST(x, y) (dist2(x, y, gx, gy))
 
     /*
@@ -921,10 +1026,106 @@ int after; /* this is extra fast monster movement */
     } else
         whappr = 0;
 
+    /* choose a monster to pursue (player-centered preferred)
+       - prefer straight-line player-origin targets (existing behavior)
+       - if none found on those lines, search radially around the player
+         (within PET_TARGET_RADIUS) for any player-visible hostile and pick
+         the best-scoring one so pets don't ignore nearby threats that are
+         off-axis relative to the player. */
+    pursue_mon = best_target_from_origin(mtmp, u.ux, u.uy, PET_TARGET_RADIUS);
+
+    if (!pursue_mon) {
+        long bestscore = -40000L;
+        struct monst *bestm = (struct monst *)0;
+        int rx, ry, r2 = PET_TARGET_RADIUS * PET_TARGET_RADIUS;
+
+        for (rx = u.ux - PET_TARGET_RADIUS; rx <= u.ux + PET_TARGET_RADIUS; ++rx) {
+            for (ry = u.uy - PET_TARGET_RADIUS; ry <= u.uy + PET_TARGET_RADIUS; ++ry) {
+                if (!isok(rx, ry))
+                    continue;
+                int dx = rx - u.ux, dy = ry - u.uy;
+                if (dx * dx + dy * dy > r2)
+                    continue;
+                if (!(cansee(rx, ry) || m_cansee(mtmp, rx, ry)))
+                    continue; /* neither player nor pet can see this square */
+                {
+                    struct monst *mt = m_at(rx, ry);
+                    if (!mt)
+                        continue;
+                    long sc = score_targ(mtmp, mt);
+                    if (sc > bestscore) {
+                        bestscore = sc;
+                        bestm = mt;
+                    }
+                }
+            }
+        }
+        if (bestscore >= 0L)
+            pursue_mon = bestm;
+    }
+
+    if (!pursue_mon)
+        pursue_mon = best_target(mtmp); /* fallback to pet-local target */
+
     appr = dog_goal(mtmp, has_edog ? edog : (struct edog *) 0, after, udist,
                     whappr);
     if (appr == -2)
         return 0;
+
+    /* If we have a player-centered monster target, make the movement goal
+       point toward that monster (clamped to MAX_PET_DISTANCE from the player)
+       so the pet positions between the player and the hostile instead of
+       lingering on the opposite side.  Also: if the hostile is very close
+       to the player, attempt an immediate safe interpose square next to the
+       player on the target side (urgent override to help the player). */
+    if (pursue_mon) {
+        int pmx = pursue_mon->mx, pmy = pursue_mon->my;
+        int maxd2 = MAX_PET_DISTANCE * MAX_PET_DISTANCE;
+
+        /* urgent interpose: if target is near player, prefer an adjacent
+           square beside the player on the target side and move there now */
+        {
+            int tpdist2 = dist2(pursue_mon->mx, pursue_mon->my, u.ux, u.uy);
+            if (tpdist2 <= (PET_TARGET_RADIUS * PET_TARGET_RADIUS)) {
+                int vx = sgn(pursue_mon->mx - u.ux);
+                int vy = sgn(pursue_mon->my - u.uy);
+                int interx = u.ux + vx;
+                int intery = u.uy + vy;
+                /* only force interpose if the square is legal/safe */
+                if (isok(interx, intery) && goodpos(interx, intery, mtmp, 0)
+                    && distmin(interx, intery, u.ux, u.uy) <= MAX_PET_DISTANCE) {
+                    /* set immediate move target and skip normal navigation */
+                    nix = interx;
+                    niy = intery;
+                    goto newdogpos;
+                }
+            }
+        }
+
+        if (distu(pmx, pmy) <= maxd2) {
+            gx = pmx;
+            gy = pmy;
+        } else {
+            /* Step from player toward monster up to MAX_PET_DISTANCE cells
+               using an integer Bresenham-like advance so we avoid floating
+               math and macro collisions with the platform math headers. */
+            int x0 = u.ux, y0 = u.uy, x1 = pmx, y1 = pmy;
+            int tx = x0, ty = y0;
+            int dx = abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+            int dy = -abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+            int err = dx + dy;
+            int steps = MAX_PET_DISTANCE;
+            int i;
+            for (i = 0; i < steps; ++i) {
+                int e2 = 2 * err;
+                if (e2 >= dy) { err += dy; tx += sx; }
+                if (e2 <= dx) { err += dx; ty += sy; }
+                if (!isok(tx, ty)) { tx = x0; ty = y0; break; }
+            }
+            gx = tx; gy = ty;
+        }
+    }
+    gtyp = UNDEF; /* treat as transient navigation goal */
 
     allowflags = ALLOW_M | ALLOW_TRAPS | ALLOW_SSM | ALLOW_SANCT;
     if (passes_walls(mtmp->data))
@@ -992,9 +1193,26 @@ int after; /* this is extra fast monster movement */
         ny = poss[i].y;
         cursemsg[i] = FALSE;
 
+        /* Do not step onto stairs unless the player is standing on them. */
+        if (On_stairs(nx, ny) && (nx != u.ux || ny != u.uy))
+            continue;
+
         /* if leashed, we drag him along. */
         if (mtmp->mleashed && distu(nx, ny) > 4)
             continue;
+
+        /* never allow an un-leashed pet to move so far from the player that
+           it exceeds MAX_PET_DISTANCE -- but relax this by one tile when
+           pursuing a player-centered hostile so the pet will cross around
+           the player when necessary. */
+        if (!mtmp->mleashed) {
+            int allowed_dist_sq = MAX_PET_DISTANCE * MAX_PET_DISTANCE;
+            if (pursue_mon && dist2(pursue_mon->mx, pursue_mon->my, u.ux, u.uy)
+                <= PET_TARGET_RADIUS * PET_TARGET_RADIUS)
+                allowed_dist_sq = (MAX_PET_DISTANCE + 1) * (MAX_PET_DISTANCE + 1);
+            if (distu(nx, ny) > allowed_dist_sq)
+                continue;
+        }
 
         /* if a guardian, try to stay close by choice */
         if (!has_edog && (j = distu(nx, ny)) > 16 && j >= udist)
@@ -1110,7 +1328,65 @@ int after; /* this is extra fast monster movement */
                         goto nxti;
         }
 
-        j = ((ndist = GDIST(nx, ny)) - nidist) * appr;
+        ndist = GDIST(nx, ny);
+        /* base goal delta (relative to gx,gy from dog_goal) */
+        int goalDelta = ndist - nidist; /* squared-distance delta */
+        int jtmp = goalDelta * appr;
+
+        /* if pursuing a monster, bias moves toward that monster and
+           also avoid moving away from the player.  When the target is
+           player-centered (within PET_TARGET_RADIUS) be more aggressive
+           about closing on the monster and *allow* temporary movement
+           away from the player so the pet can position between you and
+           the hostile. */
+        if (pursue_mon) {
+            int old_mon_dist = dist2(omx, omy, pursue_mon->mx, pursue_mon->my);
+            int new_mon_dist = dist2(nx, ny, pursue_mon->mx, pursue_mon->my);
+            int monDelta = new_mon_dist - old_mon_dist; /* >0 means moving away */
+
+            /* stronger bias toward closing on a player-centered target */
+            int MON_WEIGHT = 4; /* default moderately aggressive */
+            int tpdist2 = dist2(pursue_mon->mx, pursue_mon->my, u.ux, u.uy);
+            if (tpdist2 <= PET_TARGET_RADIUS * PET_TARGET_RADIUS)
+                MON_WEIGHT = 12; /* much stronger when target is near player */
+            jtmp -= monDelta * MON_WEIGHT;
+
+            /* prefer candidate squares that are on the same side of the player
+               as the target (encourages the pet to position between @ and x) */
+            int vx = pursue_mon->mx - u.ux;
+            int vy = pursue_mon->my - u.uy;
+            int uxv = nx - u.ux;
+            int uyv = ny - u.uy;
+            int dot = vx * uxv + vy * uyv;
+            const int SAME_SIDE_BONUS = 12;   /* stronger encouragement */
+            const int OPP_SIDE_PENALTY = 6;   /* larger penalty for wrong side */
+            if (dot > 0)
+                jtmp += SAME_SIDE_BONUS;
+            else
+                jtmp -= OPP_SIDE_PENALTY;
+
+            /* if the hostile is very close to the player, prefer squares
+               adjacent to the player on the target side so the pet will
+               interpose quickly */
+            if (tpdist2 <= 4) { /* target adjacent or nearly adjacent to player */
+                if (abs(nx - u.ux) <= 1 && abs(ny - u.uy) <= 1 && dot > 0)
+                    jtmp += 20; /* strong preference for interposing */
+            }
+
+            /* penalize moves that increase distance to the player, but
+               relax that penalty for player-centered targets so the pet
+               can cross to the player's side when needed */
+            int old_player_dist = udist; /* squared */
+            int new_player_dist = distu(nx, ny);
+            int playerDelta = new_player_dist - old_player_dist; /* >0 moving away */
+            int PLAYER_WEIGHT = 1;
+            if (tpdist2 <= PET_TARGET_RADIUS * PET_TARGET_RADIUS)
+                PLAYER_WEIGHT = 0; /* ignore small temporary moves away */
+            jtmp -= playerDelta * PLAYER_WEIGHT;
+        }
+
+        j = jtmp;
+
         if ((j == 0 && !rn2(++chcnt)) || j < 0
             || (j > 0 && !whappr
                 && ((omx == nix && omy == niy && !rn2(3)) || !rn2(12)))) {
@@ -1144,7 +1420,9 @@ int after; /* this is extra fast monster movement */
          * if there is such a target, we'll let the pet attempt an
          * attack.
          */
-        mtarg = best_target(mtmp);
+        mtarg = best_target_from_origin(mtmp, u.ux, u.uy, PET_TARGET_RADIUS);
+        if (!mtarg)
+            mtarg = best_target(mtmp);
 
         /* Hungry pets are unlikely to use breath/spit attacks */
         if (mtarg && (!hungry || !rn2(5))) {
@@ -1329,6 +1607,9 @@ genericptr_t distance;
 {
     int ndist, *dist_ptr = (int *) distance;
 
+    /* don't target stairs unless the player is standing on them */
+    if (On_stairs(x, y) && (x != u.ux || y != u.uy))
+        return;
     if (*dist_ptr > (ndist = distu(x, y))) {
         gx = x;
         gy = y;

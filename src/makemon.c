@@ -1988,6 +1988,7 @@ struct monst *mtmp, *victim;
     int oldtype, newtype, max_increase, cur_increase, lev_limit, hp_threshold;
     unsigned fem;
     struct permonst *ptr = mtmp->data;
+    int old_lev = mtmp->m_lev; /* remember previous level for pet messages */
 
     /* monster died after killing enemy but before calling this function */
     /* currently possible if killing a gas spore */
@@ -2098,6 +2099,10 @@ struct monst *mtmp, *victim;
         mtmp->mhpmax = 50 * 8; /* absolute limit */
     if (mtmp->mhp > mtmp->mhpmax)
         mtmp->mhp = mtmp->mhpmax;
+
+    /* Inform player when their tame pet actually gains a level */
+    if (mtmp->mtame && canspotmon(mtmp) && mtmp->m_lev > old_lev)
+        pline("Pet: level %d", mtmp->m_lev);
 
     return ptr;
 }

@@ -1,0 +1,72 @@
+
+This GDB supports auto-downloading debuginfo from the following URLs:
+  <https://debuginfod.neon.kde.org/>
+  <https://debuginfod.ubuntu.com/>
+Enable debuginfod for this session? (y or [n]) [answered N; input not from terminal]
+Debuginfod has been disabled.
+To make this setting permanent, add 'set debuginfod enabled off' to .gdbinit.
+warning: could not find '.gnu_debugaltlink' file for /lib/x86_64-linux-gnu/libtinfo.so.6
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+
+OPTIONS=quiverorder:elven dagger, dagger, crude dagger, darts, arrows, stones;defij
+ * Line 115: Unknown option 'stones;defij'.
+ * Line 115: Unknown option 'arrows'.
+ * Line 115: Unknown option 'darts'.
+ * Line 115: Unknown option 'crude dagger'.
+ * Line 115: Unknown option 'dagger'.
+
+5 errors in /home/neon/.nethackrc.
+
+DBG: dungeon vers: incarnation=0x3060602 feature_set=0xe0040 entity_count=0x211c617e struct_sizes1=0x160c24980 struct_sizes2=0xa8000
+
+DBG: vers bytes: 
+02 
+06 
+06 
+03 
+00 
+00 
+00 
+00 
+40 
+00 
+0e 
+00 
+00 
+00 
+00 
+00 
+7e 
+61 
+1c 
+21 
+00 
+00 
+00 
+00 
+80 
+49 
+c2 
+60 
+01 
+00 
+00 
+00 
+00 
+80 
+0a 
+00 
+00 
+00 
+00 
+00 
+
+
+DBG: expected: VERSION_NUMBER=0x3060602 VERSION_FEATURES=0xe0040 VERSION_SANITY1=0x211c617e VERSION_SANITY2=0x160c24980 VERSION_SANITY3=0xa8000
+
+
+Cannot find any current entries for /home/neon/vnh366/install/games/lib/nethackdir/save/1000neon.gz
+Usage: /home/neon/source/voice_Nethack_366/src/nethack -s [-v] <playertypes> [maxrank] [playernames]
+Player types are: [-p role] [-r race]
+[Inferior 1 (process 221874) exited normally]

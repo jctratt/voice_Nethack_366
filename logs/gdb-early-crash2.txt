@@ -1,0 +1,153 @@
+
+This GDB supports auto-downloading debuginfo from the following URLs:
+  <https://debuginfod.neon.kde.org/>
+  <https://debuginfod.ubuntu.com/>
+Enable debuginfod for this session? (y or [n]) [answered N; input not from terminal]
+Debuginfod has been disabled.
+To make this setting permanent, add 'set debuginfod enabled off' to .gdbinit.
+warning: could not find '.gnu_debugaltlink' file for /lib/x86_64-linux-gnu/libtinfo.so.6
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+
+OPTIONS=quiverorder:elven dagger, dagger, crude dagger, darts, arrows, stones;defij
+ * Line 115: Unknown option 'stones;defij'.
+ * Line 115: Unknown option 'arrows'.
+ * Line 115: Unknown option 'darts'.
+ * Line 115: Unknown option 'crude dagger'.
+ * Line 115: Unknown option 'dagger'.
+[Detaching after vfork from child process 222094]
+
+5 errors in /home/neon/.nethackrc.
+
+[?1049h[22;0;0t[1;58r(B[m[4l[?7h[39;49m]4;3;rgb:7F/4C/00\]4;7;rgb:99/99/99\]4;9;rgb:FF/7F/00\]4;10;rgb:00/FF/00\]4;11;rgb:FF/FF/00\]4;12;rgb:00/00/FF\]4;13;rgb:FF/00/FF\]4;14;rgb:00/FF/FF\]4;15;rgb:FF/FF/FF\]4;17;rgb:4C/4C/4C\[?1034h[?25l[?1h=[39;49m(B[m[H[2J[97m _   _ [7b_    _    _[15X[1;41H_    [2d| \ | |      | |  | |  | | [12b| |   [3d|  \| |  ___ | |_ | |__| |  __ _   ___ | | __[4d| . ` | / _ \| __||  __  | / _` | / __|| |/ /[5d| |\  ||  __/| |_ | |  | || (_| || (__ |   < [6d|_| \_| \___| \__||_|  |_| \__,_| \___||_|\_\[8d[39m(B[mNetHack, Copyright 1985-2020[9;10HBy Stichting Mathematisch Centrum and M. Stephenson.[10;10HVersion 3.6.6 Unix, built Feb 15 18:46:57 2026.[11;10HSee license for details.[54d(0[0mlq[79bk(B[55d(0[0mx(B[55;82H(0[0mx(B[56d(0[0mx(B[56;82H(0[0mx(B[57d(0[0mx(B[57;82H(0[0mx(B[58d(0[0mmq[79bj(B[54d(0[0m(B[24d(0[0mlq[79bk(B[25d(0[0mx(B[25;82H(0[0mx(B[26d(0[0mx(B[26;82H(0[0mx(B[27d(0[0mx(B[27;82H(0[0mx(B[28d(0[0mx(B[28;82H(0[0mx(B[29d(0[0mx(B[29;82H(0[0mx(B[30d(0[0mx(B[30;82H(0[0mx(B[31d(0[0mx(B[31;82H(0[0mx(B[32d(0[0mx(B[32;82H(0[0mx(B[33d(0[0mx(B[33;82H(0[0mx(B[34d(0[0mx(B[34;82H(0[0mx(B[35d(0[0mx(B[35;82H(0[0mx(B[36d(0[0mx(B[36;82H(0[0mx(B[37d(0[0mx(B[37;82H(0[0mx(B[38d(0[0mx(B[38;82H(0[0mx(B[39d(0[0mx(B[39;82H(0[0mx(B[40d(0[0mx(B[40;82H(0[0mx(B[41d(0[0mx(B[41;82H(0[0mx(B[42d(0[0mx(B[42;82H(0[0mx(B[43d(0[0mx(B[43;82H(0[0mx(B[44d(0[0mx(B[44;82H(0[0mx(B[45d(0[0mx(B[45;82H(0[0mx(B[46d(0[0mx(B[46;82H(0[0mx(B[47d(0[0mx(B[47;82H(0[0mx(B[48d(0[0mx(B[48;82H(0[0mx(B[49d(0[0mx(B[49;82H(0[0mx(B[50d(0[0mx(B[50;82H(0[0mx(B[51d(0[0mx(B[51;82H(0[0mx(B[52d(0[0mx(B[52;82H(0[0mx(B[53d(0[0mmq[79bj(B[24d(0[0m(B[H[2J[1;83H(0[0mlq[60bk(B[2;83H(0[0mx(B[0;1m1/52 slots Wt:20(200)=180 Spd:0 Exr:599 "_ =_ =_ )_ LK:0(B[m     (0[0mx(B[3;83H(0[0mx(B[0;7mWeapons[145G(0[0mx(B[4;83H(0[0mx(B-a [32mblessed +2 bullwhip [20][145G[39m(0[0mx(B[5;83H(0[0mx(B[145G(0[0mx(B[6;83H(0[0mx(B[145G(0[0mx(B[7;83H(0[0mx(B[145G(0[0mx(B[8;83H(0[0mx(B[145G(0[0mx(B[9;83H(0[0mx(B[145G(0[0mx(B[10;83H(0[0mx(B[145G(0[0mx(B[11;83H(0[0mx(B[145G(0[0mx(B[12;83H(0[0mx(B[145G(0[0mx(B[13;83H(0[0mx(B[145G(0[0mx(B[14;83H(0[0mx(B[145G(0[0mx(B[15;83H(0[0mx(B[145G(0[0mx(B[16;83H(0[0mx(B[145G(0[0mx(B[17;83H(0[0mx(B[145G(0[0mx(B[18;83H(0[0mx(B[145G(0[0mx(B[19;83H(0[0mx(B[145G(0[0mx(B[20;83H(0[0mx(B[145G(0[0mx(B[21;83H(0[0mx(B[145G(0[0mx(B[22;83H(0[0mx(B[145G(0[0mx(B[23;83H(0[0mx(B[145G(0[0mx(B[24;83H(0[0mx(B[145G(0[0mx(B[25;83H(0[0mx(B[145G(0[0mx(B[26;83H(0[0mx(B[145G(0[0mx(B[27;83H(0[0mx(B[145G(0[0mx(B[28;83H(0[0mx(B[145G(0[0mx(B[29;83H(0[0mx(B[145G(0[0mx(B[30;83H(0[0mx(B[145G(0[0mx(B[31;83H(0[0mx(B[145G(0[0mx(B[32;83H(0[0mx(B[145G(0[0mx(B[33;83H(0[0mx(B[145G(0[0mx(B[34;83H(0[0mx(B[145G(0[0mx(B[35;83H(0[0mx(B[145G(0[0mx(B[36;83H(0[0mx(B[145G(0[0mx(B[37;83H(0[0mx(B[145G(0[0mx(B[38;83H(0[0mx(B[145G(0[0mx(B[39;83H(0[0mx(B[145G(0[0mx(B[40;83H(0[0mx(B[145G(0[0mx(B[41;83H(0[0mx(B[145G(0[0mx(B[42;83H(0[0mx(B[145G(0[0mx(B[43;83H(0[0mx(B[145G(0[0mx(B[44;83H(0[0mx(B[145G(0[0mx(B[45;83H(0[0mx(B[145G(0[0mx(B[46;83H(0[0mx(B[145G(0[0mx(B[47;83H(0[0mx(B[145G(0[0mx(B[48;83H(0[0mx(B[145G(0[0mx(B[49;83H(0[0mx(B[145G(0[0mx(B[50;83H(0[0mx(B[145G(0[0mx(B[51;83H(0[0mx(B[145G(0[0mx(B[52;83H(0[0mx(B[145G(0[0mx(B[53;83H(0[0mx(B[145G(0[0mx(B[54;83H(0[0mx(B[145G(0[0mx(B[55;83H(0[0mx(B[145G(0[0mx(B[56;83H(0[0mx(B[145G(0[0mx(B[57;83H(0[0mx(B[145G(0[0mx(B[58;83H(0[0mmq[60b[?7lj[?7h(B[4;111H(0[0m(B[2;134H(B[0;1ma[4;87H(B[0;7m[92mblessed +2 bullwhip (weapon in hand) [20][39m(B[m[2;84H(B[0;1m2[2;98H5[2;107H5[5;84H(B[0;7mArmor[6;84H(B[m-b [32mblessed +1 leather jacket [30][39m(B[m[6;87H(B[0;7m[34mblessed +1 leather jacket (being worn) [30][39m(B[m7[6;57r8M[1;58r[2;84H(B[0;1m3[2;99H3[107G47[6;83H(0[0mx(B-c [32mblessed +1 fedora [3][145G[39m(0[0mx(B[7;130H(0[0m(B[6;87H(B[0;7m[34mblessed +1 fedora (being worn) [3][7;130H[39m(B[m[2;84H(B[0;1m4[2;98H7[2;107H2[8;84H(B[0;7mComestibles[9;84H(B[m-d [33muncursed food ration [20][39m(B[m[2;98H(B[0;1m113(200)=8[9;87H(B[0m[33m3 uncursed food rations [60x20][39m(B[m[2;99H(B[0;1m3[107G6[9;87H(B[0m[33m4[9;112H8[118G[39m(B[m[2;99H(B[0;1m5[107G4[9;87H(B[0m[33m5[9;112H100x20][39m(B[m[2;99H(B[0;1m7[107G2[9;87H(B[0m[33m6[9;113H2[119G[39m(B[m[8;57r[8;1H[2T[1;58r[2;84H(B[0;1m5[2;98H2[2;107H-73 Spd:0 Exr:599 "_ =_ =_ )a LK:0[8;83H(0[0mx(B[0;7mTools[145G(0[0mx(B[9;83H(0[0mx(B-e (B[0;7m[34mblessed +2 pick-axe [100][145G[39m(0[0mx(B[11;119H(0[0m(B[9;87H(B[0;7m[95mblessed +2 pick-axe (alternate weapon; not wielded) [100][11;119H[39m(B[m[10;57r[10;1HM[1;58r[2;84H(B[0;1m6[2;98H3[2;108H173 Spd:0 Exr:599 "_ =_ =_ )a LK:0[10;83H(0[0mx(B-f [36mblessed tinning kit (0:70) [100][145G[39m(0[0mx(B[12;119H(0[0m(Bfree(): double free detected in tcache 2
+
+Program received signal SIGABRT, Aborted.
+__pthread_kill_implementation (no_tid=0, signo=6, threadid=<optimized out>) at ./nptl/pthread_kill.c:44
+warning: 44	./nptl/pthread_kill.c: No such file or directory
+
+Thread 1 (Thread 0x7ffff7f3d080 (LWP 222091) "nethack"):
+#0  __pthread_kill_implementation (no_tid=0, signo=6, threadid=<optimized out>) at ./nptl/pthread_kill.c:44
+        tid = <optimized out>
+        ret = 0
+        pd = <optimized out>
+        old_mask = {__val = {140737488341312}}
+        ret = <optimized out>
+        pd = <optimized out>
+        old_mask = <optimized out>
+        ret = <optimized out>
+        tid = <optimized out>
+        ret = <optimized out>
+        resultvar = <optimized out>
+        resultvar = <optimized out>
+        __arg3 = <optimized out>
+        __arg2 = <optimized out>
+        __arg1 = <optimized out>
+        _a3 = <optimized out>
+        _a2 = <optimized out>
+        _a1 = <optimized out>
+        __futex = <optimized out>
+        resultvar = <optimized out>
+        __arg3 = <optimized out>
+        __arg2 = <optimized out>
+        __arg1 = <optimized out>
+        _a3 = <optimized out>
+        _a2 = <optimized out>
+        _a1 = <optimized out>
+        __futex = <optimized out>
+        __private = <optimized out>
+        __oldval = <optimized out>
+#1  __pthread_kill_internal (signo=6, threadid=<optimized out>) at ./nptl/pthread_kill.c:78
+No locals.
+#2  __GI___pthread_kill (threadid=<optimized out>, signo=signo@entry=6) at ./nptl/pthread_kill.c:89
+No locals.
+#3  0x00007ffff7c4527e in __GI_raise (sig=sig@entry=6) at ../sysdeps/posix/raise.c:26
+        ret = <optimized out>
+#4  0x00007ffff7c288ff in __GI_abort () at ./stdlib/abort.c:79
+        save_stage = 1
+        act = {__sigaction_handler = {sa_handler = 0x20, sa_sigaction = 0x20}, sa_mask = {__val = {4853502999527113563, 93824995375456, 8589934592, 8589934592, 12, 119, 0, 0, 16779937390539477504, 0, 140737488341328, 140737488341392, 140737353660420, 206158430240, 140737351165905, 4294953456}}, sa_flags = 476484096, sa_restorer = 0x7fffffffc9c0}
+#5  0x00007ffff7c297b6 in __libc_message_impl (fmt=fmt@entry=0x7ffff7dce8d7 "%s\n") at ../sysdeps/posix/libc_fatal.c:134
+        ap = {{gp_offset = 16, fp_offset = 0, overflow_arg_area = 0x7fffffffcac0, reg_save_area = 0x7fffffffca50}}
+        fd = 2
+        iov = {{iov_base = 0x7ffff7dd1bf0, iov_len = 40}, {iov_base = 0x7ffff7dce8d9, iov_len = 1}, {iov_base = 0x7fffffffccb0, iov_len = 0}, {iov_base = 0x3d, iov_len = 140737488342064}, {iov_base = 0x38, iov_len = 2097152}, {iov_base = 0x7fffffffcb00, iov_len = 140737351220895}, {iov_base = 0x3000000030, iov_len = 140737488341848}}
+        iovcnt = <optimized out>
+        total = <optimized out>
+        cp = <optimized out>
+#6  0x00007ffff7ca8ff5 in malloc_printerr (str=str@entry=0x7ffff7dd1bf0 "free(): double free detected in tcache 2") at ./malloc/malloc.c:5775
+No locals.
+#7  0x00007ffff7cab55f in _int_free (av=0x7ffff7e03ac0 <main_arena>, p=<optimized out>, have_lock=0) at ./malloc/malloc.c:4541
+        tmp = <optimized out>
+        cnt = <optimized out>
+        e = <optimized out>
+        tc_idx = <optimized out>
+        size = <optimized out>
+        fb = <optimized out>
+#8  0x00007ffff7caddce in __GI___libc_free (mem=mem@entry=0x55555626fae0) at ./malloc/malloc.c:3398
+        ar_ptr = <optimized out>
+        p = 0x55555626fad0
+        err = 2
+#9  0x0000555555639d6c in display_pickinv (lets=<optimized out>, lets@entry=0x0, xtra_choice=xtra_choice@entry=0x0, query=query@entry=0x0, want_reply=want_reply@entry=0 '\000', out_cnt=out_cnt@entry=0x0) at invent.c:2915
+        not_carrying_anything = "Not carrying anything"
+        otmp = 0x0
+        wizid_fakeobj = {nobj = 0x0, v = {v_nexthere = 0x0, v_ocontainer = 0x0, v_ocarry = 0x0}, cobj = 0x0, o_id = 0, ox = 0 '\000', oy = 0 '\000', otyp = 0, owt = 1434795136, quan = 0, spe = 32 ' ', oclass = 16 '\020', invlet = -9 '\367', oartifact = -9 '\367', where = -1 '\377', timed = 127 '\177', cursed = 0, blessed = 0, unpaid = 0, no_charge = 0, known = 0, dknown = 0, bknown = 0, rknown = 0, oeroded = 0, oeroded2 = 0, oerodeproof = 0, olocked = 0, obroken = 0, otrapped = 0, recharged = 0, lamplit = 0, globby = 1, greased = 0, nomerge = 0, was_thrown = 0, in_use = 0, bypass = 1, cknown = 1, lknown = 0, sticky = 1, corpsenm = 32767, usecount = -13200, oeaten = 32767, age = 140737353655377, owornmask = 18014398509483777, oextra = 0x19200}
+        ilet = <optimized out>
+        ret = <optimized out>
+        invlet = 0x55555582fb2d <flags+589> "\v\002\003\006\004\b\t\n\a\f\r\017\020\016"
+        n = <optimized out>
+        classcount = <optimized out>
+        win = 20
+        qc_list = <optimized out>
+        qc_cnt = <optimized out>
+        any = {a_void = 0x0, a_obj = 0x0, a_monst = 0x0, a_int = 0, a_char = 0 '\000', a_schar = 0 '\000', a_uchar = 0 '\000', a_uint = 0, a_long = 0, a_ulong = 0, a_iptr = 0x0, a_lptr = 0x0, a_ulptr = 0x0, a_uptr = 0x0, a_string = 0x0, a_nfunc = 0x0, a_mask32 = 0}
+        selected = 0x555555853c80
+        sortflags = <optimized out>
+        sortedinvent = 0x5555560ab530
+        srtinv = 0x5555560ab5d8
+        wizid = <optimized out>
+        gotsomething = 0 '\000'
+        invheading = "7/52 slots Wt:383(200)=-183 Spd:0 Exr:599 \"_ =_ =_ )a LK:0\000\000\000\000\000\000\220\315\377\377\377\177\000\000\000\000\000\000\000\000\000\000\200<\205UUU\000\000\000\000\000\000\000\000\000\000 \020\367\367\377\177\000\000\020\026\367\367\377\177\000\000\300\315\377\377\377\177\000\000\274\243\370\367\377\177\000"
+        wcap = <optimized out>
+        am_let = <optimized out>
+        rl_let = <optimized out>
+        rr_let = <optimized out>
+        to_let = 97 'a'
+        nextclass = <optimized out>
+#10 0x000055555563a21f in display_inventory (lets=lets@entry=0x0, want_reply=want_reply@entry=0 '\000') at invent.c:2991
+No locals.
+#11 0x000055555577b3a9 in curses_update_inv () at ../win/curses/cursinvt.c:48
+        win = 0x555555d844e0
+        border = 1 '\001'
+        x = 1
+        y = 1
+#12 0x000055555576d735 in curses_update_inventory () at ../win/curses/cursmain.c:614
+No locals.
+#13 0x0000555555636b02 in update_inventory () at invent.c:2492
+No locals.
+#14 0x0000555555638093 in addinv (obj=<optimized out>, obj@entry=0x555556264a80) at invent.c:1018
+        otmp = 0x0
+        prev = <optimized out>
+        otmp2 = <optimized out>
+        save_invlet = <optimized out>
+        saved_otyp = 445
+        obj_was_thrown = 0 '\000'
+#15 0x000055555572f924 in ini_inv (trop=0x555555811190 <Archeologist+48>, trop@entry=0x555555811160 <Archeologist>) at u_init.c:1120
+        obj = 0x555556264a80
+        otyp = 445
+        i = <optimized out>
+#16 0x000055555572fbb9 in u_init () at u_init.c:682
+        i = <optimized out>
+        tmpuroleplay = <optimized out>
+#17 0x000055555559af4b in newgame () at allmain.c:637
+        i = <optimized out>
+#18 0x0000555555761a61 in main (argc=<optimized out>, argv=0x7fffffffd098) at ../sys/unix/unixmain.c:350
+        neednewlock = 0 '\000'
+        fd = <optimized out>
+        dir = <optimized out>
+        exact_username = 0 '\000'
+        resuming = 0 '\000'
+        plsel_once = <optimized out>
+        attempt_restore = <optimized out>
+A debugging session is active.
+
+	Inferior 1 [process 222091] will be killed.
+
+Quit anyway? (y or n) [answered Y; input not from terminal]

@@ -11,6 +11,7 @@
  */
 
 #include "hack.h"
+#include <ctype.h>
 
 /* Persistent ordering for quiver preference.
    - `quiver_orderindx` is a per-savelist ordering of `otyp` values.
@@ -84,19 +85,50 @@ dosetquiver(VOID_ARGS)
     lets[i] = '\0';
 
     for (;;) {
-        /* Show current ordered preference list */
+        /* Show current ordered preference list (also show a representative
+           inventory letter if that otype is present). */
         Sprintf(qbuf, "Quiver priority: [%s] swap which entry? (ESC to finish)", lets);
         for (i = 0; i < cnt; ++i) {
             const char *oname = obj_typename(quiver_orderindx[i]);
-            pline("%c: %s", 'a' + i, oname ? oname : "(unknown)");
+            char repinv = 0;
+            struct obj *ot;
+            for (ot = invent; ot; ot = ot->nobj)
+                if (ot->otyp == quiver_orderindx[i]) { repinv = ot->invlet; break; }
+            if (repinv)
+                pline("%c: %s [%c]", 'a' + i, oname ? oname : "(unknown)", repinv);
+            else
+                pline("%c: %s", 'a' + i, oname ? oname : "(unknown)");
         }
 
         chidx = yn_function(qbuf, (char *) 0, '\0');
         if (chidx == '\0' || index(quitchars, chidx))
             break; /* finish */
+
+        /* Accept inventory-letter input as an alternative to the menu
+           letter; map invlet -> menu index if it represents one of the
+           otypes shown. */
         if (chidx < 'a' || chidx >= 'a' + cnt) {
-            You("don't have that entry.");
-            continue;
+            if (isalpha((uchar) chidx) && !index(lets, chidx)) {
+                int mapped = -1, j;
+                for (j = 0; j < cnt; ++j) {
+                    struct obj *otmp;
+                    for (otmp = invent; otmp; otmp = otmp->nobj)
+                        if (otmp->invlet == chidx && otmp->otyp == quiver_orderindx[j]) {
+                            mapped = j;
+                            break;
+                        }
+                    if (mapped >= 0) break;
+                }
+                if (mapped >= 0)
+                    chidx = 'a' + mapped; /* remap to menu-letter */
+                else {
+                    You("don't have that entry.");
+                    continue;
+                }
+            } else {
+                You("don't have that entry.");
+                continue;
+            }
         }
 
         /* ask for swap target */
@@ -107,9 +139,29 @@ dosetquiver(VOID_ARGS)
             dst = yn_function(qbuf, (char *) 0, '\0');
             if (dst == '\0' || index(quitchars, dst))
                 continue;
+            /* allow invlet here too */
             if (dst < 'a' || dst >= 'a' + cnt) {
-                You("don't have that entry.");
-                continue;
+                if (isalpha((uchar) dst) && !index(lets, dst)) {
+                    int mapped = -1, j;
+                    for (j = 0; j < cnt; ++j) {
+                        struct obj *otmp;
+                        for (otmp = invent; otmp; otmp = otmp->nobj)
+                            if (otmp->invlet == dst && otmp->otyp == quiver_orderindx[j]) {
+                                mapped = j;
+                                break;
+                            }
+                        if (mapped >= 0) break;
+                    }
+                    if (mapped >= 0)
+                        dst = 'a' + mapped;
+                    else {
+                        You("don't have that entry.");
+                        continue;
+                    }
+                } else {
+                    You("don't have that entry.");
+                    continue;
+                }
             }
             /* perform swap in the order array */
             {

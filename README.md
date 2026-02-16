@@ -24,9 +24,8 @@ A modified version of NetHack 3.6.6 with text-to-speech capabilities using espea
   - Sticky items show with `=` instead of `-` in inventory listings
 
 - **Quiver ordering & autoswap**: `#setquiver` to reorder quiver priority; persistent
-  `OPTIONS=quiverorder:<letters>` (e.g. `quiverorder:DejL`); enable
-  `quiver_autoswap` to automatically switch your quivered item to a
-  higher-priority candidate when picked up.
+  `OPTIONS=quiverorder:<type-list>;<letters>` — supports object-type names (comma-separated) and/or legacy inventory letters. Example:
+  `OPTIONS=quiverorder:elven dagger, dagger, darts;defij`  (when both provided, the `;invlet` list takes precedence). `quiver_autoswap` will automatically switch your quivered item to a higher-priority candidate when picked up.
 
 - **Showlines (sight-lines helper)** 🟡
   - Adds an extended command `#showlines` (also bound by default to a Ctrl key) that draws transient sight/ray lines out from the player to help judge line-of-sight and zap direction.

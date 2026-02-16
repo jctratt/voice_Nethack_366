@@ -2447,12 +2447,23 @@ mapseen *mptr;
     /* level is of interest if it has non-zero feature count or known bones
        or user annotation or known connection to another dungeon branch
        or is the furthest level reached in its branch */
+    /* Also consider levels that have pet summaries — ensure pets left on a
+       different dungeon level are shown in #overview. */
     return (boolean) (INTEREST(mptr->feat)
                       || (mptr->final_resting_place
                           && (mptr->flags.knownbones || wizard))
                       || mptr->custom || mptr->br
                       || (mptr->lev.dlevel
-                          == dungeons[mptr->lev.dnum].dunlev_ureached));
+                          == dungeons[mptr->lev.dnum].dunlev_ureached)
+                      || (mptr->petnames && mptr->petnames_lth));
+}
+
+/* exported wrapper for tests/modules */
+boolean
+mapseen_is_interesting(mptr)
+mapseen *mptr;
+{
+    return interest_mapseen(mptr);
 }
 
 /* recalculate mapseen for the current level */
@@ -2712,6 +2723,16 @@ recalc_mapseen()
             /* use m_monnam() to get either custom name or species */
             (void) strncpy(tmpname, m_monnam(mtmp), sizeof tmpname - 1);
             tmpname[sizeof tmpname - 1] = '\0';
+            /* append visible level for current pet so #overview shows "Name (Lv N)" */
+            if (mtmp->m_lev > 0) {
+                /* ensure we don't overflow tmpname */
+                (void) strncat(tmpname, " (Lv ", sizeof tmpname - strlen(tmpname) - 1);
+                {
+                    char lvlbuf[16];
+                    Sprintf(lvlbuf, "%d)", (int) mtmp->m_lev);
+                    (void) strncat(tmpname, lvlbuf, sizeof tmpname - strlen(tmpname) - 1);
+                }
+            }
             if (!plen) {
                 (void) strncpy(petbuf, tmpname, PETNAMES_MAX);
                 petbuf[PETNAMES_MAX] = '\0';
@@ -2764,6 +2785,62 @@ recalc_mapseen()
             bp->bonesknown = TRUE;
             mptr->flags.knownbones = 1;
         }
+}
+
+/* Add a pet name to an existing mapseen entry (used for migrating/mydogs pets).
+   This appends `Name (Lv N)` while avoiding duplicates and respecting the
+   PETNAMES_MAX truncation/ellipsis rules used by recalc_mapseen(). */
+void
+add_pet_to_mapseen(lev, mtmp)
+d_level *lev;
+struct monst *mtmp;
+{
+    mapseen *mptr;
+    char tmpname[PETNAMES_MAX + 1];
+    char lvlbuf[16];
+    int need, plen;
+
+    if (!mtmp || !mtmp->mtame || mtmp->isminion)
+        return;
+    if (!(mptr = find_mapseen(lev)))
+        return;
+
+    /* compose name + optional level */
+    (void) strncpy(tmpname, m_monnam(mtmp), sizeof tmpname - 1);
+    tmpname[sizeof tmpname - 1] = '\0';
+    if (mtmp->m_lev > 0) {
+        Sprintf(lvlbuf, " (Lv %d)", (int) mtmp->m_lev);
+        (void) strncat(tmpname, lvlbuf, sizeof tmpname - strlen(tmpname) - 1);
+    }
+
+    /* avoid duplicate entries */
+    if (mptr->petnames && strstr(mptr->petnames, tmpname))
+        return;
+
+    if (!mptr->petnames) {
+        mptr->petnames = dupstr(tmpname);
+        mptr->petnames_lth = strlen(mptr->petnames);
+        return;
+    }
+
+    plen = mptr->petnames_lth;
+    need = plen + 2 + (int) strlen(tmpname); /* ", " + name */
+    if (need > PETNAMES_MAX) {
+        if (plen + 5 <= PETNAMES_MAX) {
+            Strcat(mptr->petnames, ", ...");
+            mptr->petnames_lth = strlen(mptr->petnames);
+        }
+        return;
+    }
+    {
+        char *newbuf = (char *) alloc((unsigned) need + 1);
+        Strcpy(newbuf, mptr->petnames);
+        Strcat(newbuf, ", ");
+        Strcat(newbuf, tmpname);
+        free((genericptr_t) mptr->petnames);
+        mptr->petnames = newbuf;
+        mptr->petnames_lth = (unsigned) strlen(newbuf);
+    }
 }
 
 /*ARGUSED*/

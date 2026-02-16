@@ -725,6 +725,12 @@ coord *cc;   /* optional destination coordinates */
     mtmp->mtrack[0].y = xyflags;
     mtmp->mux = new_lev.dnum;
     mtmp->muy = new_lev.dlevel;
+
+    /* Annotate destination mapseen (if present) so #overview can show pets
+       that are currently on other levels.  Avoids stale/missing entries when
+       pets migrate between levels. */
+    add_pet_to_mapseen(&new_lev, mtmp);
+
     mtmp->mx = mtmp->my = 0; /* this implies migration */
     if (mtmp == context.polearm.hitmon)
         context.polearm.hitmon = (struct monst *) 0;

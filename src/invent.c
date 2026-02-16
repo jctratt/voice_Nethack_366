@@ -33,6 +33,7 @@ STATIC_PTR int FDECL(ckvalidcat, (struct obj *));
 STATIC_PTR int FDECL(ckunpaid, (struct obj *));
 STATIC_PTR char *FDECL(safeq_xprname, (struct obj *));
 STATIC_PTR char *FDECL(safeq_shortxprname, (struct obj *));
+STATIC_PTR int FDECL(qc_cmp, (const genericptr, const genericptr));
 STATIC_DCL char FDECL(display_pickinv, (const char *, const char *,
                                         const char *, BOOLEAN_P, long *));
 STATIC_DCL char FDECL(display_used_invlets, (CHAR_P));
@@ -440,6 +441,33 @@ const genericptr vptr2;
        to force a deterministic order, and do so by producing a
        stable sort: maintain the original order of equal items. */
     return (sli1->indx - sli2->indx);
+}
+
+/* comparator for quiver-candidate ordering */
+STATIC_OVL int
+qc_cmp(a, b)
+const genericptr a;
+const genericptr b;
+{
+    struct obj *oa = *(struct obj **) a;
+    struct obj *ob = *(struct obj **) b;
+    int i, posa = -1, posb = -1;
+
+    /* prefer types appearing earlier in quiver_orderindx; otherwise sort by invlet */
+    if (quiver_ordercnt > 0 && quiver_orderindx) {
+        for (i = 0; i < quiver_ordercnt; ++i) {
+            if (quiver_orderindx[i] == oa->otyp) { posa = i; break; }
+        }
+        for (i = 0; i < quiver_ordercnt; ++i) {
+            if (quiver_orderindx[i] == ob->otyp) { posb = i; break; }
+        }
+    }
+    if (posa < 0) posa = quiver_ordercnt + 1000;
+    if (posb < 0) posb = quiver_ordercnt + 1000;
+    if (posa != posb) return posa < posb ? -1 : 1;
+    if (oa->invlet < ob->invlet) return -1;
+    if (oa->invlet > ob->invlet) return 1;
+    return 0;
 }
 
 /*
@@ -2619,6 +2647,9 @@ long *out_cnt;
     char *invlet = flags.inv_order;
     int n, classcount;
     winid win;                        /* windows being used */
+    /* temporary quiver-candidate list for unique [qN] inventory tags */
+    struct obj **qc_list = (struct obj **)0;
+    int qc_cnt = 0;
     anything any;
     menu_item *selected;
     unsigned sortflags;
@@ -2702,6 +2733,28 @@ long *out_cnt;
         sortflags |= SORTLOOT_PACK;
     sortedinvent = sortloot(&invent, sortflags, FALSE,
                             (boolean FDECL((*), (OBJ_P))) 0);
+
+    /* Build quiver-candidate ordering so inventory shows unique [q1..qN] tags */
+    qc_cnt = 0;
+    qc_list = (struct obj **) 0;
+    {
+        struct obj *qot;
+        for (qot = invent; qot; qot = qot->nobj) {
+            /* same candidate criteria used by quiver selection */
+            if (qot->owornmask || qot->oartifact || !qot->dknown)
+                continue;
+            if (!is_ammo(qot) && !is_missile(qot)
+                && !(qot->oclass == WEAPON_CLASS && throwing_weapon(qot))
+                && qot->otyp != ROCK && qot->otyp != FLINT)
+                continue;
+            qc_list = (struct obj **) realloc(qc_list, (qc_cnt + 1) * sizeof(struct obj *));
+            qc_list[qc_cnt++] = qot;
+        }
+        if (qc_cnt > 1) {
+            /* sort by user quiver-order otype position (if present), then invlet */
+            qsort((genericptr_t) qc_list, qc_cnt, sizeof(struct obj *), qc_cmp);
+        }
+    }
 
     start_menu(win);
     any = zeroany;
@@ -2830,7 +2883,13 @@ long *out_cnt;
                     else if (total_wt > 0)
                         Sprintf(eos(lab), " [%ld]", total_wt);
                 }
-                if (quiver_ordercnt > 0 && quiver_orderindx) {
+                /* map object to unique quiver-candidate rank (if any) */
+                if (qc_cnt > 0) {
+                    for (qi = 0; qi < qc_cnt; ++qi) {
+                        if (qc_list[qi] == otmp) { qpos = qi; break; }
+                    }
+                } else if (quiver_ordercnt > 0 && quiver_orderindx) {
+                    /* fallback: label by otype position (legacy) */
                     for (qi = 0; qi < quiver_ordercnt; ++qi) {
                         if (quiver_orderindx[qi] == otmp->otyp) {
                             qpos = qi;
@@ -2868,6 +2927,10 @@ long *out_cnt;
                  "(list everything)", MENU_UNSELECTED);
         gotsomething = TRUE;
     }
+    /* clean up temporary quiver-candidate list (must happen after possible
+       `goto nextclass` re-entry so `qc_list` remains valid while used) */
+    if (qc_list)
+        free((genericptr_t) qc_list);
     unsortloot(&sortedinvent);
     /* for permanent inventory where we intend to show everything but
        nothing has been listed (because there isn't anyhing to list;

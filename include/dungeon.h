@@ -252,7 +252,9 @@ typedef struct mapseen {
        - length does NOT include terminating NUL (matches custom_lth semantics) */
     char *petnames;
     unsigned petnames_lth;
-
+    /* persistent helper so tests and other modules can determine whether a
+       mapseen entry will be printed by #overview */
+    /* (prototype moved below the typedef) */
     struct mapseen_rooms {
         Bitfield(seen, 1);
         Bitfield(untended, 1);         /* flag for shop without shk */
@@ -260,5 +262,16 @@ typedef struct mapseen {
     /* dead heroes; might not have graves or ghosts */
     struct cemetery *final_resting_place; /* same as level.bonesinfo */
 } mapseen;
+
+/* forward-declare to keep header self-contained */
+struct monst;
+
+/* Add pet summary to an existing mapseen entry (used by migration code)
+   - appends `Name (Lv N)` while respecting PETNAMES_MAX and avoiding dups */
+void add_pet_to_mapseen(d_level *, struct monst *);
+
+/* exported helper so tests and other modules can determine whether a
+   mapseen entry will be printed by #overview */
+boolean mapseen_is_interesting(mapseen *);
 
 #endif /* DUNGEON_H */
