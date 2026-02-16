@@ -1534,6 +1534,16 @@ int after; /* this is extra fast monster movement */
     if (nix != omx || niy != omy) {
         boolean wasseen;
 
+        /* EXTRA SAFETY: never move a pet onto the hero's square by mistake.
+           This duplicates the candidate filtering earlier and prevents any
+           remaining code-paths from producing an illegal swap/jump. */
+        if (nix == u.ux && niy == u.uy && !(info[chi] & ALLOW_U)) {
+            /* shouldn't happen; treat as 'no move' for this turn */
+            impossible("pet tried to move onto the hero's square and was blocked");
+            nix = omx;
+            niy = omy;
+        }
+
         if (info[chi] & ALLOW_U) {
             if (mtmp->mleashed) { /* play it safe */
                 pline("%s breaks loose of %s leash!", Monnam(mtmp),
