@@ -3,6 +3,15 @@
 # directory so generated .lev files are written into 'dat/' rather than the repo root.
 set -euo pipefail
 
+ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# Avoid build failures when /tmp is full by defaulting to a workspace-local
+# temporary directory. Respect caller-provided TMPDIR if already set.
+if [ -z "${TMPDIR:-}" ]; then
+    export TMPDIR="$ROOT_DIR/tmp"
+fi
+mkdir -p "$TMPDIR"
+
 make clean
 
 # Generate .des files

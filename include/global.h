@@ -321,6 +321,9 @@ struct savefile_info {
 /* Savefile feature: this binary writes per-player notes data */
 #define SFI1_NOTES (1UL << 4)
 
+/* Savefile feature: this binary writes split quiver option channels */
+#define SFI1_QUIVER_SPLIT (1UL << 5)
+
 /*
  * Configurable internal parameters.
  *

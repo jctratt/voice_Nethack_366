@@ -2482,6 +2482,8 @@ update_inventory()
     if (restoring)
         return;
 
+    (void) quiver_sync_readied_slot();
+
     /*
      * Ought to check (windowprocs.wincap2 & WC2_PERM_INVENT) here....
      *
@@ -2743,6 +2745,8 @@ long *out_cnt;
             /* same candidate criteria used by quiver selection */
             if (qot->owornmask || qot->oartifact || !qot->dknown)
                 continue;
+            if (quiver_obj_is_excluded(qot))
+                continue;
             if (!is_ammo(qot) && !is_missile(qot)
                 && !(qot->oclass == WEAPON_CLASS && throwing_weapon(qot))
                 && qot->otyp != ROCK && qot->otyp != FLINT)
@@ -2888,7 +2892,8 @@ long *out_cnt;
                     for (qi = 0; qi < qc_cnt; ++qi) {
                         if (qc_list[qi] == otmp) { qpos = qi; break; }
                     }
-                } else if (quiver_ordercnt > 0 && quiver_orderindx) {
+                } else if (!quiver_obj_is_excluded(otmp)
+                           && quiver_ordercnt > 0 && quiver_orderindx) {
                     /* fallback: label by otype position (legacy) */
                     for (qi = 0; qi < quiver_ordercnt; ++qi) {
                         if (quiver_orderindx[qi] == otmp->otyp) {
@@ -2989,6 +2994,7 @@ display_inventory(lets, want_reply)
 const char *lets;
 boolean want_reply;
 {
+    (void) quiver_sync_readied_slot();
     return display_pickinv(lets, (char *) 0, (char *) 0,
                            want_reply, (long *) 0);
 }

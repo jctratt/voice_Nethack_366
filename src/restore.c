@@ -8,6 +8,12 @@
 /* quiver ordering persistence (defined in quiver.c) */
 extern int *quiver_orderindx;
 extern int quiver_ordercnt;
+extern int *quiver_ignoreindx;
+extern int quiver_ignorecnt;
+extern char *quiverorder_otypes;
+extern char *quiverorder_invlet;
+extern char *quiverorder_ignore_type;
+extern char *quiverorder_ignore_invlet;
 #include "lev.h"
 #include "tcap.h" /* for TERMLIB and ASCIIGRAPH */
 
@@ -39,6 +45,7 @@ STATIC_DCL struct monst *FDECL(restmonchn, (int, BOOLEAN_P));
 STATIC_DCL struct fruit *FDECL(loadfruitchn, (int));
 STATIC_DCL void FDECL(freefruitchn, (struct fruit *));
 STATIC_DCL void FDECL(ghostfruit, (struct obj *));
+STATIC_OVL char *FDECL(load_optstring, (int));
 STATIC_DCL boolean FDECL(restgamestate, (int, unsigned int *, unsigned int *));
 STATIC_DCL void FDECL(restlevelstate, (unsigned int, unsigned int));
 STATIC_DCL int FDECL(restlevelfile, (int, XCHAR_P));
@@ -748,6 +755,40 @@ unsigned int *stuckid, *steedid;
               quiver_ordercnt * sizeof(*quiver_orderindx));
     } else
         quiver_orderindx = (int *) 0;
+
+    if ((sfrestinfo.sfi1 & SFI1_QUIVER_SPLIT) == SFI1_QUIVER_SPLIT) {
+        if (quiver_ignoreindx) {
+            free((genericptr_t) quiver_ignoreindx);
+            quiver_ignoreindx = (int *) 0;
+        }
+        quiver_ignorecnt = 0;
+        mread(fd, (genericptr_t) &quiver_ignorecnt, sizeof quiver_ignorecnt);
+        if (quiver_ignorecnt > 0) {
+            quiver_ignoreindx = (int *) alloc((unsigned) quiver_ignorecnt
+                                              * sizeof(*quiver_ignoreindx));
+            mread(fd, (genericptr_t) quiver_ignoreindx,
+                  quiver_ignorecnt * sizeof(*quiver_ignoreindx));
+        }
+
+        if (quiverorder_otypes)
+            free((genericptr_t) quiverorder_otypes);
+        if (quiverorder_invlet)
+            free((genericptr_t) quiverorder_invlet);
+        if (quiverorder_ignore_type)
+            free((genericptr_t) quiverorder_ignore_type);
+        if (quiverorder_ignore_invlet)
+            free((genericptr_t) quiverorder_ignore_invlet);
+        quiverorder_otypes = load_optstring(fd);
+        quiverorder_invlet = load_optstring(fd);
+        quiverorder_ignore_type = load_optstring(fd);
+        quiverorder_ignore_invlet = load_optstring(fd);
+    } else {
+        if (quiver_ignoreindx) {
+            free((genericptr_t) quiver_ignoreindx);
+            quiver_ignoreindx = (int *) 0;
+        }
+        quiver_ignorecnt = 0;
+    }
 
     restore_artifacts(fd);
     restore_oracles(fd);
@@ -1542,6 +1583,11 @@ const char *name;
     else
         sfrestinfo.sfi1 &= ~SFI1_NOTES;
 
+    if ((sfi.sfi1 & SFI1_QUIVER_SPLIT) == SFI1_QUIVER_SPLIT)
+        sfrestinfo.sfi1 |= SFI1_QUIVER_SPLIT;
+    else
+        sfrestinfo.sfi1 &= ~SFI1_QUIVER_SPLIT;
+
     if ((sfi.sfi1 & SFI1_ZEROCOMP) == SFI1_ZEROCOMP) {
         if ((compatible & SFI1_ZEROCOMP) != SFI1_ZEROCOMP) {
             if (verbose) {
@@ -1588,6 +1634,22 @@ const char *name;
         set_restpref("!rlecomp");
 
     return 0;
+}
+
+STATIC_OVL char *
+load_optstring(fd)
+int fd;
+{
+    int len;
+    char *out;
+
+    mread(fd, (genericptr_t) &len, sizeof len);
+    if (len <= 0)
+        return (char *) 0;
+    out = (char *) alloc((unsigned) len + 1);
+    mread(fd, (genericptr_t) out, (unsigned) len);
+    out[len] = '\0';
+    return out;
 }
 
 void

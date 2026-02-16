@@ -302,7 +302,7 @@ static NEARDATA const char drop_types[] = { ALLOW_COUNT, COIN_CLASS,
     //match = "Welcome";
 
 
-        //memcpy(txt2sp,"/usr/bin/pico2wave -w=/tmp/test.wav ", 255);
+        //memcpy(txt2sp,"/usr/bin/pico2wave -w=./tmp/test.wav ", 255);
         memcpy(txt2sp,"/usr/bin/espeak -s 170 -z ", 255);
         txt2sp[255] = '\0';
         memcpy(tosay, message, 255);

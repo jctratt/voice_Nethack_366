@@ -69,6 +69,34 @@ DONE
 
 ---
 
+7) **In-game `OPTIONS` editor + split quiver controls**
+
+- Type: Feature / UX
+- Status: Done — implemented and validated (startup + savefile + inventory display + invlet rules verified)
+
+  - Notes: quiver pre-draw sync removes stale `[qN]` markers; ignore/invlet rules are now authoritative at assignment time; sticky-inventory pickup-letter collisions fixed; case-sensitive invlet semantics preserved.
+  - Follow-up: add automated unit tests for `display_pickinv()` qc-list behavior and a pickup menu regression test (TODO).
+- Request:
+  - Use a shared `#name`-style text editor path for selected in-game `O` options.
+  - Prefill editor inputs with the current option value (not blank).
+  - Replace single quiver editor with split channels:
+    - `quiverorder_otypes`
+    - `quiverorder_invlet`
+    - `quiverorder_ignore_type`
+    - `quiverorder_ignore_invlet`
+- Rules:
+  - `quiverorder_invlet` precedence over `quiverorder_otypes`.
+  - Ignore lists always applied.
+  - Keep `/` as internal separator for object-type lists.
+  - Keep legacy `quiverorder` as compatibility alias.
+- Save/restore:
+  - Persist all four split fields independently via savefile feature bit.
+  - Keep backward compatibility; avoid `struct flag` changes and `EDITLEVEL` bump.
+- Suggested files: `src/options.c`, `src/do_name.c`, `src/quiver.c`, `src/save.c`, `src/restore.c`, `include/global.h`, `src/decl.c`.
+- Priority: P2
+
+---
+
 Notes
 - Prefer ephemeral (in-memory) solutions to avoid savefile `EDITLEVEL` bumps.
 - Keep pet search radius and performance impact conservative (≤7 tiles recommended).

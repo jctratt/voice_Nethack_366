@@ -50,6 +50,9 @@ STATIC_DCL boolean NDECL(reverse_loot);
 STATIC_DCL boolean FDECL(mon_beside, (int, int));
 STATIC_DCL int FDECL(do_loot_cont, (struct obj **, int, int));
 STATIC_DCL void FDECL(tipcontainer, (struct obj *));
+STATIC_DCL boolean FDECL(is_valid_menu_accel, (int));
+STATIC_DCL char FDECL(next_free_menu_accel, (boolean *));
+STATIC_DCL void FDECL(reserve_sticky_inventory_accels, (boolean *));
 
 /* define for query_objlist() and autopickup() */
 #define FOLLOW(curr, flags) \
@@ -73,6 +76,45 @@ static const char
         moderateloadmsg[] = "You have a little trouble lifting",
         nearloadmsg[] = "You have much trouble lifting",
         overloadmsg[] = "You have extreme difficulty lifting";
+
+STATIC_OVL boolean
+is_valid_menu_accel(ch)
+int ch;
+{
+    return (boolean) ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z'));
+}
+
+STATIC_OVL char
+next_free_menu_accel(used)
+boolean *used;
+{
+    int ch;
+
+    for (ch = 'a'; ch <= 'z'; ++ch)
+        if (!used[(uchar) ch]) {
+            used[(uchar) ch] = TRUE;
+            return (char) ch;
+        }
+    for (ch = 'A'; ch <= 'Z'; ++ch)
+        if (!used[(uchar) ch]) {
+            used[(uchar) ch] = TRUE;
+            return (char) ch;
+        }
+    return 0;
+}
+
+STATIC_OVL void
+reserve_sticky_inventory_accels(used)
+boolean *used;
+{
+#ifdef STICKY_OBJECTS
+    struct obj *otmp;
+
+    for (otmp = invent; otmp; otmp = otmp->nobj)
+        if (otmp->sticky && is_valid_menu_accel((uchar) otmp->invlet))
+            used[(uchar) otmp->invlet] = TRUE;
+#endif
+}
 
 /* BUG: this lets you look at cockatrice corpses while blind without
    touching them */
@@ -890,7 +932,9 @@ boolean FDECL((*allow), (OBJ_P)); /* allow function */
     boolean printed_type_name, first,
             sorted = (qflags & INVORDER_SORT) != 0,
             engulfer = (qflags & INCLUDE_HERO) != 0,
-            engulfer_minvent;
+            engulfer_minvent,
+            assign_pickup_accels = FALSE;
+        boolean used_menu_accel[256];
     unsigned sortflags;
     Loot *sortedolist, *srtoli;
 
@@ -939,6 +983,20 @@ boolean FDECL((*allow), (OBJ_P)); /* allow function */
     sortedolist = sortloot(&olist, sortflags,
                            (qflags & BY_NEXTHERE) ? TRUE : FALSE, allow);
 
+    if ((qflags & USE_INVLET) && (!olist || olist->where != OBJ_INVENT)
+        && !engulfer_minvent) {
+        struct obj *tmp;
+
+        assign_pickup_accels = TRUE;
+        for (i = 0; i < 256; ++i)
+            used_menu_accel[i] = FALSE;
+        reserve_sticky_inventory_accels(used_menu_accel);
+        for (tmp = olist; tmp; tmp = FOLLOW(tmp, qflags))
+            if ((*allow)(tmp) && tmp->sticky
+                && is_valid_menu_accel((uchar) tmp->invlet))
+                used_menu_accel[(uchar) tmp->invlet] = TRUE;
+    }
+
     win = create_nhwindow(NHW_MENU);
     start_menu(win);
     any = zeroany;
@@ -982,11 +1040,33 @@ boolean FDECL((*allow), (OBJ_P)); /* allow function */
             */
            sticky_inv_hack = curr->sticky;
 #endif
+                {
+                    char accelerator = 0;
+
+                    if (qflags & USE_INVLET) {
+                        if (assign_pickup_accels) {
+                            if (curr->sticky
+                                && is_valid_menu_accel((uchar) curr->invlet))
+                                accelerator = curr->invlet;
+                            else if (is_valid_menu_accel((uchar) curr->invlet)
+                                     && !used_menu_accel[(uchar) curr->invlet]) {
+                                used_menu_accel[(uchar) curr->invlet] = TRUE;
+                                accelerator = curr->invlet;
+                            } else {
+                                accelerator = next_free_menu_accel(used_menu_accel);
+                            }
+                        } else {
+                            accelerator = curr->invlet;
+                        }
+                    } else if (first && curr->oclass == COIN_CLASS) {
+                        accelerator = '$';
+                    }
+
                 add_menu(win, obj_to_glyph(curr, rn2_on_display_rng), &any,
-                         (qflags & USE_INVLET) ? curr->invlet
-                           : (first && curr->oclass == COIN_CLASS) ? '$' : 0,
+                         accelerator,
                          def_oc_syms[(int) objects[curr->otyp].oc_class].sym,
                          ATR_NONE, doname_with_price(curr), MENU_UNSELECTED);
+                }
 #ifdef STICKY_OBJECTS
            sticky_inv_hack = 0;
 #endif

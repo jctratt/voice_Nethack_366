@@ -35,7 +35,7 @@
 //    char rep[255]={0};
 //    //match = "Welcome";
 //
-//        //memcpy(txt2sp,"/usr/bin/pico2wave -w=/tmp/test.wav ", 255);
+//        //memcpy(txt2sp,"/usr/bin/pico2wave -w=./tmp/test.wav ", 255);
 //        //memcpy(txt2sp,"/usr/bin/espeak -a 90 -v en-us -g 1 -k 10 -s 250 -z ", 255);
 //        /* create batch file containing:'/usr/bin/espeak -a 90 -v en-us -g 1 -k 10 -s 250 -z "$1"' */
 //        memcpy(txt2sp,"~/bin/myespeak ", 255); /* requires trialing space */

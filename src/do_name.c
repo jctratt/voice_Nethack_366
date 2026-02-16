@@ -64,7 +64,7 @@ int otyp;
 }
 
 /* Helper function to get input with proper dialog handling */
-STATIC_OVL void
+void
 get_name_input(const char *prompt, char *answer, int buffer)
 {
 #ifdef CURSES_GRAPHICS

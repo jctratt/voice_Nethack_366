@@ -6,6 +6,12 @@
 # Root of source tree:
 NHSROOT=..
 
+# Keep compiler temporary files inside the build workspace by default.
+# This setting is in the template so it survives setup.sh regeneration.
+TMPDIR ?= $(abspath $(NHSROOT)/tmp)
+export TMPDIR
+$(shell mkdir -p $(TMPDIR))
+
 # newer makes predefine $(MAKE) to 'make' and do smarter processing of
 # recursive make calls if $(MAKE) is used
 # these makes allow $(MAKE) to be overridden by the environment if someone
@@ -690,6 +696,7 @@ tags: $(CSOURCES)
 
 clean:
 	-rm -f *.o $(HACK_H) $(CONFIG_H)
+	-rm -rf $(TMPDIR)
 
 spotless: clean
 	-rm -f a.out core $(GAME) Sys*

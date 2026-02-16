@@ -3,6 +3,17 @@
 #include "hack.h"
 #include <ctype.h>
 
+#ifdef CURSES_GRAPHICS
+extern void curses_debug_log(const char *msg);
+#else
+STATIC_DCL void curses_debug_log(const char *msg);
+STATIC_OVL void
+curses_debug_log(const char *msg)
+{
+    nhUse(msg);
+}
+#endif
+
 /* Sanitize text by removing non-printable control characters (except newline/tab).
    Returns an allocated string (caller must free). */
 static char *
@@ -342,7 +353,7 @@ donotes(void)
                 char buf[4096];
                 buf[0] = '\0';
 #ifdef CURSES_GRAPHICS
-                curses_multiline_input_dialog("New note (F1=Help, F2=Save)", buf, sizeof buf);
+                curses_multiline_input_dialog("New note (Ctrl+?=Help, Ctrl+S=Save)", buf, sizeof buf);
                 if (buf[0]) {
                     add_note(buf);
                     pline("Note added.");
@@ -377,7 +388,7 @@ donotes(void)
                 char buf[4096];
                 Strcpy(buf, get_note(note_idx));
 #ifdef CURSES_GRAPHICS
-                curses_multiline_input_dialog("Edit note (F1=Help, F2=Save)", buf, sizeof buf);
+                curses_multiline_input_dialog("Edit note (Ctrl+?=Help, Ctrl+S=Save)", buf, sizeof buf);
                 if (buf[0]) {
                     set_note(note_idx, buf);
                     pline("Note updated.");

@@ -362,6 +362,17 @@ static struct Comp_Opt {
     { "objects", "the symbols to use for objects", MAXOCLASSES, SET_IN_FILE },
     { "packorder", "the inventory order of the items in your pack",
       MAXOCLASSES, SET_IN_GAME },
+        { "quiverorder_otypes",
+            "quiver ordering by canonical object-type names ('/' separated)",
+            BUFSZ - 1, SET_IN_GAME },
+        { "quiverorder_invlet",
+            "quiver ordering by inventory letters (takes precedence)",
+            BUFSZ - 1, SET_IN_GAME },
+        { "quiverorder_ignore_type",
+            "quiver ignore list by canonical object-type names ('/' separated)",
+            BUFSZ - 1, SET_IN_GAME },
+        { "quiverorder_ignore_invlet",
+            "quiver ignore list by inventory letters", BUFSZ - 1, SET_IN_GAME },
 #ifdef CHANGE_COLOR
     { "palette",
 #ifndef WIN32
@@ -505,6 +516,12 @@ extern char ttycolors[CLR_MAX]; /* in sys/msdos/video.c */
 /* quiver ordering persistence (defined in quiver.c) */
 extern int *quiver_orderindx; /* array of otyp values, user preference order */
 extern int quiver_ordercnt;  /* number of entries in quiver_orderindx */
+extern int *quiver_ignoreindx; /* array of ignored otyp values */
+extern int quiver_ignorecnt;   /* number of entries in quiver_ignoreindx */
+extern char *quiverorder_otypes;
+extern char *quiverorder_invlet;
+extern char *quiverorder_ignore_type;
+extern char *quiverorder_ignore_invlet;
 
 static char def_inv_order[MAXOCLASSES] = {
     COIN_CLASS, AMULET_CLASS, WEAPON_CLASS, ARMOR_CLASS,
@@ -627,6 +644,495 @@ STATIC_DCL boolean FDECL(is_wc2_option, (const char *) );
 STATIC_DCL boolean FDECL(wc2_supported, (const char *) );
 STATIC_DCL void FDECL(wc_set_font_name, (int, char *) );
 STATIC_DCL int FDECL(wc_set_window_colors, (char *) );
+STATIC_DCL boolean FDECL(option_uses_name_editor, (const char *));
+STATIC_DCL void FDECL(set_quiver_string, (char **, const char *));
+STATIC_DCL char *FDECL(get_quiver_opt_param, (char *, boolean));
+STATIC_DCL int FDECL(find_otyp_by_canonical_name, (const char *));
+STATIC_DCL void FDECL(quiver_append_unique, (int **, int *, int));
+STATIC_DCL boolean FDECL(quiver_list_contains, (int *, int, int));
+STATIC_DCL void FDECL(parse_quiver_otypes_list,
+                      (const char *, int **, int *, const char *));
+STATIC_DCL void FDECL(parse_quiver_invlet_list,
+                      (const char *, int **, int *, boolean, const char *));
+STATIC_DCL void FDECL(build_quiver_type_hint, (char *, int));
+STATIC_DCL boolean FDECL(is_quiver_option_name, (const char *));
+STATIC_DCL boolean FDECL(quiver_invlet_list_has, (char, const char *));
+STATIC_DCL boolean FDECL(current_quiver_excluded, (void));
+STATIC_DCL void NDECL(sync_quiver_slot_with_rules);
+STATIC_DCL void NDECL(show_quiver_rc_block);
+STATIC_DCL void NDECL(rebuild_quiver_order_from_split);
+
+STATIC_OVL boolean
+option_uses_name_editor(optname)
+const char *optname;
+{
+    return (boolean) (!strcmp(optname, "disclose")
+                      || !strcmp(optname, "fruit")
+                      || !strcmp(optname, "packorder")
+                      || !strcmp(optname, "voice_command")
+                      || !strcmp(optname, "voice_engine")
+                      || !strcmp(optname, "quiverorder")
+                      || !strcmp(optname, "quiverorder_otypes")
+                      || !strcmp(optname, "quiverorder_invlet")
+                      || !strcmp(optname, "quiverorder_ignore_type")
+                      || !strcmp(optname, "quiverorder_ignore_invlet"));
+}
+
+STATIC_OVL boolean
+is_quiver_option_name(optname)
+const char *optname;
+{
+    return (boolean) (!strcmp(optname, "quiverorder")
+                      || !strcmp(optname, "quiverorder_otypes")
+                      || !strcmp(optname, "quiverorder_invlet")
+                      || !strcmp(optname, "quiverorder_ignore_type")
+                      || !strcmp(optname, "quiverorder_ignore_invlet"));
+}
+
+STATIC_OVL void
+set_quiver_string(dst, src)
+char **dst;
+const char *src;
+{
+    if (*dst) {
+        free((genericptr_t) *dst);
+        *dst = (char *) 0;
+    }
+    if (src && *src)
+        *dst = dupstr(src);
+}
+
+STATIC_OVL char *
+get_quiver_opt_param(opts, negated)
+char *opts;
+boolean negated;
+{
+    char *cp;
+
+    if (negated)
+        return empty_optstr;
+    cp = index(opts, ':');
+    if (cp)
+        return cp + 1; /* allow explicit empty value: opt: */
+    return string_for_opt(opts, negated);
+}
+
+STATIC_OVL boolean
+quiver_invlet_list_has(invlet, spec)
+char invlet;
+const char *spec;
+{
+    if (!spec || !*spec)
+        return FALSE;
+    for (; *spec; ++spec)
+        if (isalpha((uchar) *spec) && *spec == invlet)
+            return TRUE;
+    return FALSE;
+}
+
+STATIC_OVL boolean
+current_quiver_excluded()
+{
+    int i;
+
+    if (!uquiver)
+        return FALSE;
+    if (quiver_invlet_list_has(uquiver->invlet, quiverorder_ignore_invlet))
+        return TRUE;
+    if (quiver_ignoreindx && quiver_ignorecnt > 0)
+        for (i = 0; i < quiver_ignorecnt; ++i)
+            if (quiver_ignoreindx[i] == uquiver->otyp)
+                return TRUE;
+    return FALSE;
+}
+
+STATIC_OVL void
+sync_quiver_slot_with_rules()
+{
+    if (current_quiver_excluded())
+        setuqwep((struct obj *) 0);
+}
+
+STATIC_OVL int
+find_otyp_by_canonical_name(token)
+const char *token;
+{
+    int i;
+    char tokbuf[BUFSZ];
+    char tokshort[BUFSZ];
+    char tokcompact[BUFSZ];
+    char tokshortcompact[BUFSZ];
+    const char *t = token;
+
+    if (!token || !*token)
+        return 0;
+
+    while (*t && isspace((uchar) *t))
+        ++t;
+    if (!*t)
+        return 0;
+    (void) strncpy(tokbuf, t, sizeof tokbuf - 1);
+    tokbuf[sizeof tokbuf - 1] = '\0';
+    {
+        char *e = eos(tokbuf);
+
+        while (e > tokbuf && isspace((uchar) e[-1]))
+            *--e = '\0';
+    }
+    if (!*tokbuf)
+        return 0;
+
+    if (!strcmpi(tokbuf, "dagger"))
+        return DAGGER;
+    if (!strcmpi(tokbuf, "dart"))
+        return DART;
+    if (!strcmpi(tokbuf, "arrow") || !strcmpi(tokbuf, "arrows"))
+        return ARROW;
+    if (!strcmpi(tokbuf, "rock") || !strcmpi(tokbuf, "rocks")
+        || !strcmpi(tokbuf, "stone") || !strcmpi(tokbuf, "stones"))
+        return ROCK;
+
+    (void) Strcpy(tokshort, tokbuf);
+    {
+        int n = (int) strlen(tokshort);
+
+        if (n > 6 && !strcmpi(tokshort + (n - 6), " stone"))
+            tokshort[n - 6] = '\0';
+        else if (n > 5 && !strcmpi(tokshort + (n - 5), "stone"))
+            tokshort[n - 5] = '\0';
+        while (n > 0 && isspace((uchar) tokshort[n - 1]))
+            tokshort[--n] = '\0';
+    }
+
+    {
+        int j = 0;
+
+        for (i = 0; tokbuf[i] && j < (int) sizeof tokcompact - 1; ++i)
+            if (isalnum((uchar) tokbuf[i]))
+                tokcompact[j++] = tokbuf[i];
+        tokcompact[j] = '\0';
+
+        j = 0;
+        for (i = 0; tokshort[i] && j < (int) sizeof tokshortcompact - 1; ++i)
+            if (isalnum((uchar) tokshort[i]))
+                tokshortcompact[j++] = tokshort[i];
+        tokshortcompact[j] = '\0';
+    }
+
+    for (i = 1; i < NUM_OBJECTS; ++i) {
+        const char *nm = obj_typename(i);
+
+        if (nm && !strcmpi(nm, tokbuf))
+            return i;
+
+        if (nm) {
+            const char *lp = strrchr(nm, '(');
+            const char *rp = strrchr(nm, ')');
+
+            if (lp && rp && rp > lp) {
+                int baselen = (int) (lp - nm);
+                char aliasbuf[BUFSZ];
+                char *at;
+
+                while (baselen > 0 && isspace((uchar) nm[baselen - 1]))
+                    --baselen;
+                if (baselen > 0 && !strncmpi(nm, tokbuf, baselen)
+                    && tokbuf[baselen] == '\0')
+                    return i;
+
+                baselen = (int) (rp - lp - 1);
+                if (baselen > 0) {
+                    if (baselen >= (int) sizeof aliasbuf)
+                        baselen = (int) sizeof aliasbuf - 1;
+                    (void) memcpy((genericptr_t) aliasbuf,
+                                  (genericptr_t) (lp + 1),
+                                  (unsigned) baselen);
+                    aliasbuf[baselen] = '\0';
+
+                    if (!strcmpi(aliasbuf, tokbuf)
+                        || !strcmpi(aliasbuf, tokshort))
+                        return i;
+
+                    {
+                        char aliascompact[BUFSZ];
+                        int j = 0;
+
+                        for (baselen = 0;
+                             aliasbuf[baselen]
+                             && j < (int) sizeof aliascompact - 1;
+                             ++baselen)
+                            if (isalnum((uchar) aliasbuf[baselen]))
+                                aliascompact[j++] = aliasbuf[baselen];
+                        aliascompact[j] = '\0';
+
+                        if ((tokcompact[0]
+                             && !strcmpi(aliascompact, tokcompact))
+                            || (tokshortcompact[0]
+                                && !strcmpi(aliascompact,
+                                            tokshortcompact)))
+                            return i;
+                    }
+
+                    for (at = strtok(aliasbuf, " ,/"); at;
+                         at = strtok((char *) 0, " ,/"))
+                        if (!strcmpi(at, tokbuf))
+                            return i;
+                }
+            }
+        }
+    }
+    return 0;
+}
+
+STATIC_OVL void
+quiver_append_unique(arr, cnt, otyp)
+int **arr;
+int *cnt;
+int otyp;
+{
+    int i;
+
+    for (i = 0; i < *cnt; ++i)
+        if ((*arr)[i] == otyp)
+            return;
+    *arr = (int *) realloc(*arr, (*cnt + 1) * sizeof(**arr));
+    (*arr)[*cnt] = otyp;
+    ++*cnt;
+}
+
+STATIC_OVL boolean
+quiver_list_contains(arr, cnt, otyp)
+int *arr;
+int cnt;
+int otyp;
+{
+    int i;
+
+    for (i = 0; i < cnt; ++i)
+        if (arr[i] == otyp)
+            return TRUE;
+    return FALSE;
+}
+
+STATIC_OVL void
+parse_quiver_otypes_list(text, arr, cnt, optname)
+const char *text;
+int **arr;
+int *cnt;
+const char *optname;
+{
+    char *work, *tok;
+
+    if (!text || !*text)
+        return;
+    work = dupstr(text);
+    for (tok = strtok(work, "/,"); tok; tok = strtok((char *) 0, "/,")) {
+        char *s = tok;
+        int otyp;
+        int slen;
+
+        while (*s && isspace((uchar) *s))
+            ++s;
+        if (!*s)
+            continue;
+        {
+            char *e = eos(s) - 1;
+
+            while (e >= s && isspace((uchar) *e))
+                *e-- = '\0';
+        }
+        if (!*s)
+            continue;
+
+        /* tolerate common punctuation from user input */
+        slen = (int) strlen(s);
+        while (slen > 0
+               && (s[slen - 1] == ':' || s[slen - 1] == ';'
+                   || s[slen - 1] == '.')) {
+            s[--slen] = '\0';
+        }
+        if (!*s)
+            continue;
+
+        /* simple singularization for common ammo words */
+        if (!strcmpi(s, "arrows"))
+            Strcpy(s, "arrow");
+        else if (!strcmpi(s, "darts"))
+            Strcpy(s, "dart");
+        else if (!strcmpi(s, "rocks") || !strcmpi(s, "stones"))
+            Strcpy(s, "rock");
+        else if (!strcmpi(s, "flints"))
+            Strcpy(s, "flint");
+
+        /* allow broad ignore words without warning (they don't affect
+           quiver candidates directly but users may enter them) */
+        if (!strcmpi(s, "tool") || !strcmpi(s, "tools")
+            || !strcmpi(s, "bag") || !strcmpi(s, "bags")
+            || !strcmpi(s, "container") || !strcmpi(s, "containers"))
+            continue;
+
+        otyp = find_otyp_by_canonical_name(s);
+        if (!otyp)
+            config_error_add("Unknown %s token '%s'", optname, s);
+        else
+            quiver_append_unique(arr, cnt, otyp);
+    }
+    free((genericptr_t) work);
+}
+
+STATIC_OVL void
+parse_quiver_invlet_list(text, arr, cnt, for_ignore, optname)
+const char *text;
+int **arr;
+int *cnt;
+boolean for_ignore;
+const char *optname;
+{
+    const char *p;
+
+    if (!text || !*text)
+        return;
+    for (p = text; *p; ++p) {
+        char c = *p;
+        struct obj *otmp;
+        boolean matched = FALSE;
+
+        if (!isalpha((uchar) c))
+            continue;
+        for (otmp = invent; otmp; otmp = otmp->nobj) {
+            if (otmp->invlet != c)
+                continue;
+            matched = TRUE;
+            if (for_ignore
+                || is_ammo(otmp)
+                || is_missile(otmp)
+                || (otmp->oclass == WEAPON_CLASS && throwing_weapon(otmp))
+                || otmp->otyp == ROCK || otmp->otyp == FLINT)
+                quiver_append_unique(arr, cnt, otmp->otyp);
+            break;
+        }
+        if (!matched) {
+            /* Invlets are inventory-dependent and can legitimately be absent
+               at parse time; ignore quietly rather than warning. */
+        }
+    }
+}
+
+STATIC_OVL void
+build_quiver_type_hint(outbuf, outsz)
+char *outbuf;
+int outsz;
+{
+    struct obj *otmp;
+    boolean seen[NUM_OBJECTS];
+
+    if (!outbuf || outsz <= 0)
+        return;
+    outbuf[0] = '\0';
+    (void) memset((genericptr_t) seen, 0, sizeof seen);
+
+    for (otmp = invent; otmp; otmp = otmp->nobj) {
+        const char *nm;
+
+        if (!is_ammo(otmp) && !is_missile(otmp)
+            && !(otmp->oclass == WEAPON_CLASS && throwing_weapon(otmp))
+            && otmp->otyp != ROCK && otmp->otyp != FLINT)
+            continue;
+        if (otmp->otyp <= 0 || otmp->otyp >= NUM_OBJECTS)
+            continue;
+        if (seen[otmp->otyp])
+            continue;
+        seen[otmp->otyp] = TRUE;
+
+        nm = obj_typename(otmp->otyp);
+        if (!nm || !*nm)
+            continue;
+
+        if (*outbuf)
+            (void) strncat(outbuf, "/", outsz - 1 - strlen(outbuf));
+        (void) strncat(outbuf, nm, outsz - 1 - strlen(outbuf));
+        if ((int) strlen(outbuf) >= outsz - 2)
+            break;
+    }
+
+    if (!*outbuf)
+        (void) Strcpy(outbuf, "(no throwable types in inventory)");
+}
+
+STATIC_OVL void
+show_quiver_rc_block()
+{
+    winid datawin;
+    char line[BUFSZ];
+
+    datawin = create_nhwindow(NHW_TEXT);
+    putstr(datawin, 0, "Copy/paste into your .nethackrc to persist between new games:");
+    putstr(datawin, 0, "");
+
+    Sprintf(line, "OPTIONS=quiverorder_otypes:%s",
+            (quiverorder_otypes && *quiverorder_otypes)
+                ? quiverorder_otypes
+                : "");
+    putstr(datawin, 0, line);
+
+    Sprintf(line, "OPTIONS=quiverorder_invlet:%s",
+            (quiverorder_invlet && *quiverorder_invlet)
+                ? quiverorder_invlet
+                : "");
+    putstr(datawin, 0, line);
+
+    Sprintf(line, "OPTIONS=quiverorder_ignore_type:%s",
+            (quiverorder_ignore_type && *quiverorder_ignore_type)
+                ? quiverorder_ignore_type
+                : "");
+    putstr(datawin, 0, line);
+
+    Sprintf(line, "OPTIONS=quiverorder_ignore_invlet:%s",
+            (quiverorder_ignore_invlet && *quiverorder_ignore_invlet)
+                ? quiverorder_ignore_invlet
+                : "");
+    putstr(datawin, 0, line);
+
+    display_nhwindow(datawin, FALSE);
+    destroy_nhwindow(datawin);
+}
+
+STATIC_OVL void
+rebuild_quiver_order_from_split()
+{
+    int *ignored = (int *) 0, nignored = 0;
+    int *from_otypes = (int *) 0, notypes = 0;
+    int *merged = (int *) 0, nmerged = 0;
+    int i;
+
+    parse_quiver_otypes_list(quiverorder_ignore_type, &ignored, &nignored,
+                             "quiverorder_ignore_type");
+
+    parse_quiver_otypes_list(quiverorder_otypes, &from_otypes, &notypes,
+                             "quiverorder_otypes");
+    for (i = 0; i < notypes; ++i)
+        if (!quiver_list_contains(ignored, nignored, from_otypes[i]))
+            quiver_append_unique(&merged, &nmerged, from_otypes[i]);
+
+    if (quiver_orderindx)
+        free((genericptr_t) quiver_orderindx);
+    quiver_orderindx = merged;
+    quiver_ordercnt = nmerged;
+
+    if (quiver_ignoreindx)
+        free((genericptr_t) quiver_ignoreindx);
+    quiver_ignoreindx = ignored;
+    quiver_ignorecnt = nignored;
+    ignored = (int *) 0;
+    nignored = 0;
+
+    sync_quiver_slot_with_rules();
+
+    if (ignored)
+        free((genericptr_t) ignored);
+    if (from_otypes)
+        free((genericptr_t) from_otypes);
+}
 
 void
 reglyph_darkroom()
@@ -2026,6 +2532,31 @@ boolean tinitial, tfrom_file;
 
     initial = tinitial;
     from_file = tfrom_file;
+
+    /*
+     * .nethackrc uses comma as top-level option separator.  Legacy
+     * quiverorder accepts a type-list segment before ';'; normalize commas
+     * there into '/' for backward compatibility.
+     */
+    if (from_file && opts) {
+        char *p = opts;
+
+        while (*p) {
+            if ((p == opts || p[-1] == ',')
+                && !strncmpi(p, "quiverorder:", 12)) {
+                char *q = p + 12;
+                while (*q && *q != ';') {
+                    if (*q == ',')
+                        *q = '/';
+                    ++q;
+                }
+                p = q;
+            } else {
+                ++p;
+            }
+        }
+    }
+
     if ((op = index(opts, ',')) != 0) {
         *op++ = 0;
         if (!parseoptions(op, initial, from_file))
@@ -3183,15 +3714,68 @@ boolean tinitial, tfrom_file;
         return retval;
     }
 
-    /* quiverorder: extended form supports object-type names (comma
-       separated) and a legacy-invlet suffix separated by ';'.  Examples:
-         - legacy:    OPTIONS=quiverorder:defij
-         - types only: OPTIONS=quiverorder:arrows,darts,dagger
-         - mixed:      OPTIONS=quiverorder:arrows,darts;defij
-       When both are present the `;invlet` list takes precedence (its
-       otypes are placed first), and the resulting ordering is stored
-       as an array of `otyp` values in `quiver_orderindx` (no savefile
-       format change). */
+    /* split quiver ordering channels */
+    fullname = "quiverorder_otypes";
+    if (match_optname(opts, fullname, 16, TRUE)) {
+        if (duplicate)
+            complain_about_duplicate(opts, 1);
+        op = get_quiver_opt_param(opts, negated);
+        if (negated && op != empty_optstr) {
+            bad_negation(fullname, TRUE);
+            return FALSE;
+        }
+        set_quiver_string(&quiverorder_otypes,
+                          (negated || op == empty_optstr) ? "" : op);
+        rebuild_quiver_order_from_split();
+        return retval;
+    }
+
+    fullname = "quiverorder_invlet";
+    if (match_optname(opts, fullname, 17, TRUE)) {
+        if (duplicate)
+            complain_about_duplicate(opts, 1);
+        op = get_quiver_opt_param(opts, negated);
+        if (negated && op != empty_optstr) {
+            bad_negation(fullname, TRUE);
+            return FALSE;
+        }
+        set_quiver_string(&quiverorder_invlet,
+                          (negated || op == empty_optstr) ? "" : op);
+        rebuild_quiver_order_from_split();
+        return retval;
+    }
+
+    fullname = "quiverorder_ignore_type";
+    if (match_optname(opts, fullname, 18, TRUE)) {
+        if (duplicate)
+            complain_about_duplicate(opts, 1);
+        op = get_quiver_opt_param(opts, negated);
+        if (negated && op != empty_optstr) {
+            bad_negation(fullname, TRUE);
+            return FALSE;
+        }
+        set_quiver_string(&quiverorder_ignore_type,
+                          (negated || op == empty_optstr) ? "" : op);
+        rebuild_quiver_order_from_split();
+        return retval;
+    }
+
+    fullname = "quiverorder_ignore_invlet";
+    if (match_optname(opts, fullname, 19, TRUE)) {
+        if (duplicate)
+            complain_about_duplicate(opts, 1);
+        op = get_quiver_opt_param(opts, negated);
+        if (negated && op != empty_optstr) {
+            bad_negation(fullname, TRUE);
+            return FALSE;
+        }
+        set_quiver_string(&quiverorder_ignore_invlet,
+                          (negated || op == empty_optstr) ? "" : op);
+        rebuild_quiver_order_from_split();
+        return retval;
+    }
+
+    /* legacy alias: quiverorder[:otypes[;invlet]] */
     fullname = "quiverorder";
     if (match_optname(opts, fullname, 6, TRUE)) {
         if (duplicate)
@@ -3204,103 +3788,31 @@ boolean tinitial, tfrom_file;
         if (op == empty_optstr)
             return FALSE;
 
-        /* Parse extended form: optional "name1,name2,...[;letters]".
-           invlet (letters after ';') take precedence over name tokens. */
         {
-            int tmpcnt = 0;
-            int *tmpindx = (int *) 0;
             char *param = dupstr(op);
             char *semi = index(param, ';');
             char *names_part = (char *) 0;
             char *letters_part = (char *) 0;
-            char *tok;
-            int i, j;
 
             if (semi) {
                 *semi = '\0';
-                names_part = (*param) ? param : (char *)0;
-                letters_part = (*(semi + 1)) ? (semi + 1) : (char *)0;
+                names_part = (*param) ? param : (char *) 0;
+                letters_part = (*(semi + 1)) ? (semi + 1) : (char *) 0;
+            } else if (strchr(param, '/') != (char *) 0
+                       || strchr(param, ',') != (char *) 0) {
+                names_part = param;
             } else {
-                /* no semicolon: if there is a comma treat as name-list,
-                   otherwise preserve legacy behaviour and treat as
-                   inv-letter sequence */
-                if (strchr(param, ',') != (char *)0)
-                    names_part = param;
-                else
-                    letters_part = param;
+                letters_part = param;
             }
 
-            /* 1) letters_part: parse inv-letters first (these take
-                   precedence and are added in the order specified). */
-            if (letters_part) {
-                char *p;
-                for (p = letters_part; *p; ++p) {
-                    char c = *p;
-                    struct obj *otmp;
-
-                    if (!isalpha((uchar)c))
-                        continue;
-                    for (otmp = invent; otmp; otmp = otmp->nobj) {
-                        if (otmp->invlet == c) {
-                            if (is_ammo(otmp) || is_missile(otmp)
-                                || (otmp->oclass == WEAPON_CLASS && throwing_weapon(otmp))
-                                || otmp->otyp == ROCK || otmp->otyp == FLINT) {
-                                int found = 0;
-                                for (j = 0; j < tmpcnt; ++j)
-                                    if (tmpindx[j] == otmp->otyp) { found = 1; break; }
-                                if (!found) {
-                                    tmpindx = (int *) realloc(tmpindx, (tmpcnt + 1) * sizeof(int));
-                                    tmpindx[tmpcnt++] = otmp->otyp;
-                                }
-                            }
-                            break;
-                        }
-                    }
-                }
-            }
-
-            /* 2) names_part: append matching otypes that aren't already
-                   in the list.  Matching is case-insensitive and allows
-                   substring matches against `obj_typename()` */
-            if (names_part) {
-                for (tok = strtok(names_part, ","); tok; tok = strtok((char *)0, ",")) {
-                    char *s = tok;
-                    while (*s && isspace((uchar)*s)) ++s;
-                    if (!*s) continue;
-                    {
-                        char *e = s + strlen(s) - 1;
-                        while (e >= s && isspace((uchar)*e)) *e-- = '\0';
-                    }
-                    /* find a matching otype by scanning known object names */
-                    int matched = 0;
-                    for (i = 1; i < NUM_OBJECTS; ++i) {
-                        const char *nm = obj_typename(i);
-                        if (!nm) continue;
-                        if (!strcmpi(nm, s) || strstri(nm, s) || strstri(s, nm)) {
-                            /* append matched otype (no strict filtering here) */
-                            {
-                                int found = 0;
-                                for (j = 0; j < tmpcnt; ++j)
-                                    if (tmpindx[j] == i) { found = 1; break; }
-                                if (!found) {
-                                    tmpindx = (int *) realloc(tmpindx, (tmpcnt + 1) * sizeof(int));
-                                    tmpindx[tmpcnt++] = i;
-                                }
-                            }
-                            matched = 1;
-                            break;
-                        }
-                    }
-                    if (!matched)
-                        config_error_add("Unknown quiverorder token '%s'", s);
-                }
-            }
-
-            if (quiver_orderindx)
-                free((genericptr_t) quiver_orderindx);
-            quiver_orderindx = tmpindx;
-            quiver_ordercnt = tmpcnt;
-            free(param);
+            set_quiver_string(&quiverorder_otypes,
+                              names_part ? names_part : "");
+            set_quiver_string(&quiverorder_invlet,
+                              letters_part ? letters_part : "");
+            set_quiver_string(&quiverorder_ignore_type, "");
+            set_quiver_string(&quiverorder_ignore_invlet, "");
+            rebuild_quiver_order_from_split();
+            free((genericptr_t) param);
         }
         return retval;
     }
@@ -4914,8 +5426,39 @@ doset() /* changing options via menu by Per Liboriussen */
                 /* compound option */
                 opt_indx -= boolcount;
 
-                if (!special_handling(compopt[opt_indx].name, setinitial,
-                                      fromfile)) {
+                if (option_uses_name_editor(compopt[opt_indx].name)) {
+                    char abuf[BUFSZ];
+                    char hint[BUFSZ];
+
+                    Sprintf(buf, "Set %s to what?", compopt[opt_indx].name);
+                    if (!strcmp(compopt[opt_indx].name, "quiverorder_otypes")
+                        || !strcmp(compopt[opt_indx].name,
+                                   "quiverorder_ignore_type")
+                        || !strcmp(compopt[opt_indx].name, "quiverorder")) {
+                        build_quiver_type_hint(hint, (int) sizeof hint);
+                        if ((int) (strlen(buf) + strlen(" Types now: ")
+                                   + strlen(hint))
+                            < (int) sizeof buf) {
+                            (void) Strcat(buf, " Types now: ");
+                            (void) Strcat(buf, hint);
+                        }
+                    }
+                    (void) get_compopt_value(compopt[opt_indx].name, abuf);
+                    if (!strcmp(abuf, "none") || !strcmp(abuf, "default")
+                        || !strcmp(abuf, "(none)")
+                        || !strcmp(abuf, "(to be done)"))
+                        abuf[0] = '\0';
+                    get_name_input(buf, abuf, (int) sizeof abuf);
+                    if (abuf[0] == '\033')
+                        continue;
+                    Sprintf(buf, "%s:", compopt[opt_indx].name);
+                    (void) strncat(eos(buf), abuf,
+                                   (sizeof buf - 1 - strlen(buf)));
+                    (void) parseoptions(buf, setinitial, fromfile);
+                    if (is_quiver_option_name(compopt[opt_indx].name))
+                        show_quiver_rc_block();
+                } else if (!special_handling(compopt[opt_indx].name,
+                                             setinitial, fromfile)) {
                     char abuf[BUFSZ];
 
                     Sprintf(buf, "Set %s to what?", compopt[opt_indx].name);
@@ -6015,6 +6558,26 @@ char *buf;
     } else if (!strcmp(optname, "packorder")) {
         oc_to_str(flags.inv_order, ocl);
         Sprintf(buf, "%s", ocl);
+    } else if (!strcmp(optname, "quiverorder_otypes")) {
+        Sprintf(buf, "%s",
+                (quiverorder_otypes && *quiverorder_otypes)
+                    ? quiverorder_otypes
+                    : "none");
+    } else if (!strcmp(optname, "quiverorder_invlet")) {
+        Sprintf(buf, "%s",
+                (quiverorder_invlet && *quiverorder_invlet)
+                    ? quiverorder_invlet
+                    : "none");
+    } else if (!strcmp(optname, "quiverorder_ignore_type")) {
+        Sprintf(buf, "%s",
+                (quiverorder_ignore_type && *quiverorder_ignore_type)
+                    ? quiverorder_ignore_type
+                    : "none");
+    } else if (!strcmp(optname, "quiverorder_ignore_invlet")) {
+        Sprintf(buf, "%s",
+                (quiverorder_ignore_invlet && *quiverorder_ignore_invlet)
+                    ? quiverorder_ignore_invlet
+                    : "none");
     } else if (!strcmp(optname, "quiverorder")) {
         /* show as inventory letters (a-zA-Z) when possible */
         char qletters[BUFSZ];

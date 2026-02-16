@@ -228,6 +228,8 @@ void
 setuqwep(obj)
 register struct obj *obj;
 {
+    if (obj && quiver_obj_is_excluded(obj))
+        obj = (struct obj *) 0;
     setworn(obj, W_QUIVER);
     /* no extra handling needed; this used to include a call to
        update_inventory() but that's already performed by setworn() */

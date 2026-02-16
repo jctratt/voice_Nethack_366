@@ -86,7 +86,9 @@ STATIC_OVL boolean
 prompt_occ_interrupt(mtmp)
 struct monst *mtmp;
 {
-    char buf[BUFSZ], ans[BUFSZ];
+    char ans[BUFSZ];
+    char *endp;
+    long val;
     int choice;
 
     /* Remember this threat */
@@ -113,15 +115,15 @@ struct monst *mtmp;
 
     case 'a':
         /* Set action limit */
-        pline("How many more actions? ");
-        getlin(buf, ans);
+        getlin("How many more actions?", ans);
         if (ans[0] && ans[0] != '\033') {
-            int actions = atoi(ans);
-            if (actions > 0) {
-                context.occ_interrupt.actions_remaining = actions;
-                pline("Will stop after %d more actions.", actions);
+            val = strtol(ans, &endp, 10);
+            if (endp > ans && *endp == '\0' && val > 0L && val <= LARGEST_INT) {
+                context.occ_interrupt.actions_remaining = (int) val;
+                pline("Will stop after %d more actions.",
+                      context.occ_interrupt.actions_remaining);
                 return TRUE; /* continue */
-            } else if (actions <= 0) {
+            } else {
                 pline("That's not valid.");
                 return prompt_occ_interrupt(mtmp);
             }
@@ -130,15 +132,15 @@ struct monst *mtmp;
 
     case 'h':
         /* Set HP loss limit */
-        pline("Maximum HP loss allowed? ");
-        getlin(buf, ans);
+        getlin("Maximum HP loss allowed?", ans);
         if (ans[0] && ans[0] != '\033') {
-            int hp_limit = atoi(ans);
-            if (hp_limit > 0) {
-                context.occ_interrupt.hp_budget = hp_limit;
-                pline("Will stop if you lose more than %d HP.", hp_limit);
+            val = strtol(ans, &endp, 10);
+            if (endp > ans && *endp == '\0' && val > 0L && val <= LARGEST_INT) {
+                context.occ_interrupt.hp_budget = (int) val;
+                pline("Will stop if you lose more than %d HP.",
+                      context.occ_interrupt.hp_budget);
                 return TRUE; /* continue */
-            } else if (hp_limit <= 0) {
+            } else {
                 pline("That's not valid.");
                 return prompt_occ_interrupt(mtmp);
             }

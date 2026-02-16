@@ -1,7 +1,10 @@
 #!/bin/bash
 export NETHACK=/home/neon/vnh366/install/games/nethack
+SAVE_DIR=/home/neon/vnh366/install/games/lib/nethackdir/save
+DEBUG_LOG=/home/neon/vnh366/install/games/lib/nethackdir/nh_debug.log
+
 # Clean up first
-rm -f /home/neon/vnh366/install/games/lib/nethackdir/save/* /tmp/test_save.gz /tmp/nh_debug.log
+rm -f "$SAVE_DIR"/* "$DEBUG_LOG"
 # Create a simple test
 expect << 'TESTEOF'
 spawn $env(NETHACK) -D

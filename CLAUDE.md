@@ -4,6 +4,7 @@ Hi, AI, I'm user Jeff!
 ## Build Commands
 - A newer `compile-all.sh` is available to run setup + compile when more than `make` is required (e.g. changed options or updated documentation). Example: `cd sys/unix && sh setup.sh hints/linux && cd ../.. && make all`.
 - Clean build: `make clean && make all`
+- If `/tmp` is constrained, build with workspace temp dir: `mkdir -p tmp && TMPDIR=$PWD/tmp make -j6`.
 
 ## Tools
 - /tools contains various tools to help with development
@@ -24,7 +25,17 @@ Hi, AI, I'm user Jeff!
 - Do not run the game yourself, it uses curses and cannot see piped input, so prompt Jeff for the desired results you want from the game and Jeff will run it for you; he's very helpful. For example, "test save and restore" or "test the #notes by adding a note 'test note' and save and restore"
 - valgrind is installed and can be used to test for memory leaks and other issues
 - Use the `tools/run_valgrind.sh` script to run the game under valgrind and capture logs to the workspace
-- avoid using /tmp as it is outside the workspace; prefer the ~/vnh366/install/games/lib/nethackdir/save directory for saves and logs.
+- avoid using `/tmp` as it is outside the workspace.
+- temporary build/test artifacts must be written under `./tmp` (repository-local workspace path).
+- `./tmp` is transient scratch space only; it is safe to delete permanently at any time.
+- persistent game logs/saves should use `~/vnh366/install/games/lib/nethackdir/save` (in-workspace) and related files under `~/vnh366/install/games/lib/nethackdir/`.
+
+## AI Workspace Write Policy
+- Never create, modify, or delete files outside the current workspace.
+- Do not suggest or introduce new absolute external paths for output files.
+- Prefer repository-relative paths (`./tmp`, project subfolders) for transient files and logs.
+- Treat `./tmp` as disposable cache/scratch and recreate it on demand.
+- If an upstream default points to `/tmp`, override it to a workspace path before use.
 
 ## Housekeeping guidance
 - When conversation/context grows to >50% of a feature or bug, update this roadmap and consolidate relevant context here.

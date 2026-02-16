@@ -447,6 +447,7 @@ E void FDECL(new_mname, (struct monst *, int));
 E void FDECL(free_mname, (struct monst *));
 E void FDECL(new_oname, (struct obj *, int));
 E void FDECL(free_oname, (struct obj *));
+E void FDECL(get_name_input, (const char *, char *, int));
 E const char *FDECL(safe_oname, (struct obj *));
 E struct monst *FDECL(christen_monst, (struct monst *, const char *));
 E struct obj *FDECL(oname, (struct obj *, const char *));
@@ -2433,6 +2434,8 @@ E void NDECL(losespells);
 E int NDECL(dovspell);
 E int NDECL(dosetquiver);
 E struct obj *NDECL(select_quiver_candidate);
+E boolean FDECL(quiver_obj_is_excluded, (struct obj *));
+E boolean NDECL(quiver_sync_readied_slot);
 E void FDECL(initialspell, (struct obj *));
 
 /* ### steal.c ### */

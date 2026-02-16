@@ -6,6 +6,7 @@
 /* Contains code for 't' (throw) */
 
 #include "hack.h"
+#include <ctype.h>
 
 STATIC_DCL int FDECL(throw_obj, (struct obj *, int));
 extern int NDECL(doshowboomerang);
@@ -13,6 +14,8 @@ extern boolean NDECL(is_showboom_direction_set);
 extern boolean showboom_called_from_dofire;
 STATIC_DCL boolean FDECL(ok_to_throw, (int *));
 STATIC_DCL void NDECL(autoquiver);
+STATIC_DCL boolean FDECL(invlet_in_quiver_spec, (char, const char *));
+STATIC_DCL boolean FDECL(quiver_slot_excluded, (struct obj *));
 STATIC_DCL int FDECL(gem_accept, (struct monst *, struct obj *));
 STATIC_DCL void FDECL(tmiss, (struct obj *, struct monst *, BOOLEAN_P));
 STATIC_DCL int FDECL(throw_gold, (struct obj *));
@@ -40,6 +43,39 @@ static NEARDATA const char bullets[] = { ALLOW_COUNT, COIN_CLASS, ALL_CLASSES,
 /* thrownobj (decl.c) tracks an object until it lands */
 
 extern boolean notonhead; /* for long worms */
+extern int *quiver_ignoreindx;
+extern int quiver_ignorecnt;
+extern char *quiverorder_ignore_invlet;
+
+STATIC_OVL boolean
+invlet_in_quiver_spec(invlet, spec)
+char invlet;
+const char *spec;
+{
+    if (!spec || !*spec)
+        return FALSE;
+    for (; *spec; ++spec)
+        if (isalpha((uchar) *spec) && *spec == invlet)
+            return TRUE;
+    return FALSE;
+}
+
+STATIC_OVL boolean
+quiver_slot_excluded(obj)
+struct obj *obj;
+{
+    int i;
+
+    if (!obj)
+        return FALSE;
+    if (invlet_in_quiver_spec(obj->invlet, quiverorder_ignore_invlet))
+        return TRUE;
+    if (quiver_ignoreindx && quiver_ignorecnt > 0)
+        for (i = 0; i < quiver_ignorecnt; ++i)
+            if (quiver_ignoreindx[i] == obj->otyp)
+                return TRUE;
+    return FALSE;
+}
 
 /* Throw the selected object, asking for direction */
 STATIC_OVL int
@@ -319,9 +355,11 @@ autoquiver()
 {
     struct obj *cand;
 
-    /* Keep existing behavior: do nothing if quiver already set. */
-    if (uquiver)
+    /* Keep existing behavior unless current quiver is explicitly excluded. */
+    if (uquiver && !quiver_slot_excluded(uquiver))
         return;
+    if (uquiver && quiver_slot_excluded(uquiver))
+        setuqwep((struct obj *) 0);
 
     /* Delegate selection to the centralized helper which understands
        user preference / skill-aware scoring. */
@@ -361,6 +399,9 @@ dofire()
      */
     if (!ok_to_throw(&shotlimit))
         return 0;
+
+    if (uquiver && quiver_slot_excluded(uquiver))
+        setuqwep((struct obj *) 0);
 
     /* If boomerang is quivered and trajectory option is on, show trajectories */
     if (uquiver && uquiver->otyp == BOOMERANG 

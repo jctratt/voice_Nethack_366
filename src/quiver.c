@@ -20,10 +20,20 @@
    are preferred.  It is saved/restored with the game state. */
 int *quiver_orderindx = 0; /* array of object types (otyp) */
 int quiver_ordercnt = 0;
+int *quiver_ignoreindx = 0; /* array of ignored object types (otyp) */
+int quiver_ignorecnt = 0;
+
+/* Persisted split option channels for quiver ordering. */
+char *quiverorder_otypes = 0;
+char *quiverorder_invlet = 0;
+char *quiverorder_ignore_type = 0;
+char *quiverorder_ignore_invlet = 0;
 
 /* Helper to look up position of an object's otyp in the saved order; -1 if
    not found. */
 STATIC_DCL int FDECL(quiver_order_pos, (int));
+STATIC_DCL boolean FDECL(quiver_is_ignored_otyp, (int));
+STATIC_DCL int FDECL(quiver_invlet_pos, (char, const char *));
 STATIC_DCL int
 quiver_order_pos(otyp)
 int otyp;
@@ -34,6 +44,63 @@ int otyp;
     for (i = 0; i < quiver_ordercnt; ++i)
         if (quiver_orderindx[i] == otyp)
             return i;
+    return -1;
+}
+
+STATIC_DCL boolean
+quiver_is_ignored_otyp(otyp)
+int otyp;
+{
+    int i;
+
+    if (!quiver_ignoreindx || quiver_ignorecnt <= 0)
+        return FALSE;
+    for (i = 0; i < quiver_ignorecnt; ++i)
+        if (quiver_ignoreindx[i] == otyp)
+            return TRUE;
+    return FALSE;
+}
+
+boolean
+quiver_obj_is_excluded(obj)
+struct obj *obj;
+{
+    if (!obj)
+        return FALSE;
+    return (boolean) (quiver_is_ignored_otyp(obj->otyp)
+                      || quiver_invlet_pos(obj->invlet,
+                                           quiverorder_ignore_invlet) >= 0);
+}
+
+boolean
+quiver_sync_readied_slot()
+{
+    if (!uquiver)
+        return FALSE;
+    if (quiver_obj_is_excluded(uquiver)) {
+        uquiver->owornmask &= ~W_QUIVER;
+        uquiver = (struct obj *) 0;
+        return TRUE;
+    }
+    return FALSE;
+}
+
+STATIC_DCL int
+quiver_invlet_pos(invlet, spec)
+char invlet;
+const char *spec;
+{
+    int pos = 0;
+
+    if (!spec || !*spec || !isalpha((uchar) invlet))
+        return -1;
+    for (; *spec; ++spec) {
+        if (!isalpha((uchar) *spec))
+            continue;
+        if (*spec == invlet)
+            return pos;
+        ++pos;
+    }
     return -1;
 }
 
@@ -48,28 +115,38 @@ int
 dosetquiver(VOID_ARGS)
 {
     struct obj *otmp;
-    int cnt = 0, i = 0, chidx = 0;
-    char lets[BUFSZ];
+    int cnt = 0, i = 0, chidx = 0, allow_gem_fallback = 0;
+    char lets[BUFSZ], entrylet[BUFSZ];
     char qbuf[QBUFSZ];
 
-    /* Build a list of unique quiver-candidate otypes present in inventory */
-    for (otmp = invent; otmp; otmp = otmp->nobj) {
-        if (otmp->owornmask || otmp->oartifact || !otmp->dknown)
-            continue;
-        if (!is_ammo(otmp) && !is_missile(otmp)
-            && !(otmp->oclass == WEAPON_CLASS && throwing_weapon(otmp))
-            && otmp->otyp != ROCK && otmp->otyp != FLINT)
-            continue;
-        /* add unique otyp to quiver_orderindx buffer (temporary) */
-        for (i = 0; i < cnt; ++i)
-            if (quiver_orderindx && quiver_orderindx[i] == otmp->otyp)
-                break;
-        if (i < cnt)
-            continue; /* already present */
-        /* append */
-        quiver_orderindx = (int *) realloc(quiver_orderindx,
-                                          (cnt + 1) * sizeof(int));
-        quiver_orderindx[cnt++] = otmp->otyp;
+    /* Build a list of unique quiver-candidate otypes present in inventory.
+       Pass 1: strict (exclude GEM_CLASS unless matched sling ammo).
+       Pass 2 (fallback): if none found, allow GEM_CLASS ammo as
+       desperation throwables. */
+    for (allow_gem_fallback = 0; allow_gem_fallback <= 1; ++allow_gem_fallback) {
+        cnt = 0;
+        for (otmp = invent; otmp; otmp = otmp->nobj) {
+            if (otmp->owornmask || otmp->oartifact || !otmp->dknown)
+                continue;
+            if (!((is_ammo(otmp) && (otmp->oclass != GEM_CLASS
+                                     || ammo_and_launcher(otmp, uwep)
+                                     || allow_gem_fallback))
+                  || is_missile(otmp)
+                  || (otmp->oclass == WEAPON_CLASS && throwing_weapon(otmp))))
+                continue;
+            /* add unique otyp to quiver_orderindx buffer (temporary) */
+            for (i = 0; i < cnt; ++i)
+                if (quiver_orderindx && quiver_orderindx[i] == otmp->otyp)
+                    break;
+            if (i < cnt)
+                continue; /* already present */
+            /* append */
+            quiver_orderindx = (int *) realloc(quiver_orderindx,
+                                               (cnt + 1) * sizeof(int));
+            quiver_orderindx[cnt++] = otmp->otyp;
+        }
+        if (cnt > 0)
+            break;
     }
 
     if (cnt == 0) {
@@ -79,95 +156,73 @@ dosetquiver(VOID_ARGS)
 
     quiver_ordercnt = cnt; /* adopt prepared list */
 
-    /* Build display letters for each entry (use spell-style menu UI) */
-    for (i = 0; i < cnt && i < (int) sizeof lets - 2; ++i)
-        lets[i] = 'a' + i;
-    lets[i] = '\0';
-
     for (;;) {
         /* Show current ordered preference list (also show a representative
            inventory letter if that otype is present). */
-        Sprintf(qbuf, "Quiver priority: [%s] swap which entry? (ESC to finish)", lets);
+        int lcnt = 0;
+        lets[0] = '\0';
         for (i = 0; i < cnt; ++i) {
             const char *oname = obj_typename(quiver_orderindx[i]);
             char repinv = 0;
             struct obj *ot;
             for (ot = invent; ot; ot = ot->nobj)
                 if (ot->otyp == quiver_orderindx[i]) { repinv = ot->invlet; break; }
-            if (repinv)
-                pline("%c: %s [%c]", 'a' + i, oname ? oname : "(unknown)", repinv);
-            else
-                pline("%c: %s", 'a' + i, oname ? oname : "(unknown)");
+            entrylet[i] = repinv ? repinv : '?';
+            if (repinv && !index(lets, repinv) && lcnt < (int) sizeof lets - 2) {
+                lets[lcnt++] = repinv;
+                lets[lcnt] = '\0';
+            }
+            pline("%c: %s", entrylet[i], oname ? oname : "(unknown)");
         }
+        entrylet[cnt] = '\0';
+
+        Sprintf(qbuf, "Quiver priority: [%.40s] swap which entry? (ESC to finish)",
+                lets[0] ? lets : "");
 
         chidx = yn_function(qbuf, (char *) 0, '\0');
         if (chidx == '\0' || index(quitchars, chidx))
             break; /* finish */
 
-        /* Accept inventory-letter input as an alternative to the menu
-           letter; map invlet -> menu index if it represents one of the
-           otypes shown. */
-        if (chidx < 'a' || chidx >= 'a' + cnt) {
-            if (isalpha((uchar) chidx) && !index(lets, chidx)) {
-                int mapped = -1, j;
-                for (j = 0; j < cnt; ++j) {
-                    struct obj *otmp;
-                    for (otmp = invent; otmp; otmp = otmp->nobj)
-                        if (otmp->invlet == chidx && otmp->otyp == quiver_orderindx[j]) {
-                            mapped = j;
-                            break;
-                        }
-                    if (mapped >= 0) break;
+        /* invlet-only selector: map typed inventory letter to list index */
+        {
+            int mapped = -1;
+            for (i = 0; i < cnt; ++i)
+                if (entrylet[i] == chidx) {
+                    mapped = i;
+                    break;
                 }
-                if (mapped >= 0)
-                    chidx = 'a' + mapped; /* remap to menu-letter */
-                else {
-                    You("don't have that entry.");
-                    continue;
-                }
-            } else {
+            if (mapped < 0) {
                 You("don't have that entry.");
                 continue;
             }
+            chidx = mapped;
         }
 
         /* ask for swap target */
         {
-            int src = chidx - 'a';
+            int src = chidx;
             int dst;
-            Sprintf(qbuf, "Swap '%c' with which entry? [%s] (ESC to cancel)", chidx, lets);
+            int mapped = -1;
+                Sprintf(qbuf, "Swap '%c' with which entry? [%.40s] (ESC to cancel)",
+                    entrylet[src], lets[0] ? lets : "");
             dst = yn_function(qbuf, (char *) 0, '\0');
             if (dst == '\0' || index(quitchars, dst))
                 continue;
-            /* allow invlet here too */
-            if (dst < 'a' || dst >= 'a' + cnt) {
-                if (isalpha((uchar) dst) && !index(lets, dst)) {
-                    int mapped = -1, j;
-                    for (j = 0; j < cnt; ++j) {
-                        struct obj *otmp;
-                        for (otmp = invent; otmp; otmp = otmp->nobj)
-                            if (otmp->invlet == dst && otmp->otyp == quiver_orderindx[j]) {
-                                mapped = j;
-                                break;
-                            }
-                        if (mapped >= 0) break;
-                    }
-                    if (mapped >= 0)
-                        dst = 'a' + mapped;
-                    else {
-                        You("don't have that entry.");
-                        continue;
-                    }
-                } else {
+
+            for (i = 0; i < cnt; ++i)
+                if (entrylet[i] == dst) {
+                    mapped = i;
+                    break;
+                }
+            if (mapped < 0) {
                     You("don't have that entry.");
                     continue;
-                }
             }
             /* perform swap in the order array */
             {
                 int tmp = quiver_orderindx[src];
-                quiver_orderindx[src] = quiver_orderindx[dst - 'a'];
-                quiver_orderindx[dst - 'a'] = tmp;
+                quiver_orderindx[src] = quiver_orderindx[mapped];
+                quiver_orderindx[mapped] = tmp;
             }
         }
     }
@@ -180,12 +235,26 @@ dosetquiver(VOID_ARGS)
 /* Helper: compute a heurisitic score for how desirable `obj` is to be
    the quiver candidate.  Higher is better. */
 STATIC_OVL int
-quiver_score(obj)
+quiver_score(obj, allow_gem_fallback)
 struct obj *obj;
+int allow_gem_fallback;
 {
     int score = 0;
     int skill = objects[obj->otyp].oc_skill;
     int psk = P_SKILL(weapon_type(obj));
+    int ivpos;
+
+    if (quiver_is_ignored_otyp(obj->otyp))
+        return 0;
+    if (quiver_invlet_pos(obj->invlet, quiverorder_ignore_invlet) >= 0)
+        return 0;
+
+    /* GEM_CLASS ammo (rocks/flint/gems) is only considered when the
+       currently wielded launcher is a sling. */
+    if (obj->oclass == GEM_CLASS) {
+        if (!ammo_and_launcher(obj, uwep) && !allow_gem_fallback)
+            return 0;
+    }
 
     /* If player has a launcher equipped, prefer matching ammo *before*
        other heuristics (user requested).  This makes bow/xbow/ sling
@@ -203,6 +272,12 @@ struct obj *obj;
         if (pos >= 0)
             score += (quiver_ordercnt - pos) * 60; /* tunable weight */
     }
+
+    /* Invlet channel has precedence over otype ordering and should work
+       even when the letter wasn't present when options were set. */
+    ivpos = quiver_invlet_pos(obj->invlet, quiverorder_invlet);
+    if (ivpos >= 0)
+        score += 5000 - (ivpos * 50);
 
     /* Prefer skillable items next (still important for weapon training). */
     if (skill != P_NONE) {
@@ -239,6 +314,9 @@ struct obj *obj;
             score += 120;
         else
             score += 60;
+
+        if (obj->oclass == GEM_CLASS && !ammo_and_launcher(obj, uwep))
+            score -= 120; /* fallback-only, prefer real missiles/weapons */
 
         /* Race-specific preference when using bows */
         if (Role_if(PM_RANGER) || Race_if(PM_ELF) || Race_if(PM_GNOME)) {
@@ -316,26 +394,35 @@ select_quiver_candidate()
 {
     struct obj *otmp, *best = (struct obj *) 0;
     int bestscore = 0;
+    int allow_gem_fallback;
 
-    for (otmp = invent; otmp; otmp = otmp->nobj) {
-        /* skip worn, artifact or unknown items (same policy as autoquiver) */
-        if (otmp->owornmask || otmp->oartifact || !otmp->dknown)
-            continue;
+    for (allow_gem_fallback = 0; allow_gem_fallback <= 1; ++allow_gem_fallback) {
+        best = (struct obj *) 0;
+        bestscore = 0;
+        for (otmp = invent; otmp; otmp = otmp->nobj) {
+            int s;
 
-        /* compute desirability */
-        int s = quiver_score(otmp);
-        if (s <= 0)
-            continue;
+            /* skip worn, artifact or unknown items (same policy as autoquiver) */
+            if (otmp->owornmask || otmp->oartifact || !otmp->dknown)
+                continue;
 
-        /* prefer the currently-readied quiver item unless something
-           substantially better exists */
-        if (otmp == uquiver)
-            s += 10;
+            /* compute desirability */
+            s = quiver_score(otmp, allow_gem_fallback);
+            if (s <= 0)
+                continue;
 
-        if (!best || s > bestscore) {
-            best = otmp;
-            bestscore = s;
+            /* prefer the currently-readied quiver item unless something
+               substantially better exists */
+            if (otmp == uquiver)
+                s += 10;
+
+            if (!best || s > bestscore) {
+                best = otmp;
+                bestscore = s;
+            }
         }
+        if (best)
+            break;
     }
 
     return best;

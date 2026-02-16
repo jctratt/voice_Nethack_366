@@ -9,6 +9,12 @@
 /* quiver ordering persistence (declared in quiver.c) */
 extern int *quiver_orderindx;
 extern int quiver_ordercnt;
+extern int *quiver_ignoreindx;
+extern int quiver_ignorecnt;
+extern char *quiverorder_otypes;
+extern char *quiverorder_invlet;
+extern char *quiverorder_ignore_type;
+extern char *quiverorder_ignore_invlet;
 
 #ifndef NO_SIGNAL
 #include <signal.h>
@@ -38,6 +44,7 @@ STATIC_DCL void FDECL(savemonchn, (int, struct monst *, int));
 STATIC_DCL void FDECL(savetrapchn, (int, struct trap *, int));
 STATIC_DCL void FDECL(savegamestate, (int, int));
 STATIC_OVL void FDECL(save_msghistory, (int, int));
+STATIC_OVL void FDECL(save_optstring, (int, const char *));
 #ifdef MFLOPPY
 STATIC_DCL void FDECL(savelev0, (int, XCHAR_P, int));
 STATIC_DCL boolean NDECL(swapout_oldest);
@@ -379,6 +386,17 @@ register int fd, mode;
     if (quiver_ordercnt > 0 && quiver_orderindx)
         bwrite(fd, (genericptr_t) quiver_orderindx,
                quiver_ordercnt * sizeof(*quiver_orderindx));
+
+    if ((sfsaveinfo.sfi1 & SFI1_QUIVER_SPLIT) == SFI1_QUIVER_SPLIT) {
+        bwrite(fd, (genericptr_t) &quiver_ignorecnt, sizeof quiver_ignorecnt);
+        if (quiver_ignorecnt > 0 && quiver_ignoreindx)
+            bwrite(fd, (genericptr_t) quiver_ignoreindx,
+                   quiver_ignorecnt * sizeof(*quiver_ignoreindx));
+        save_optstring(fd, quiverorder_otypes);
+        save_optstring(fd, quiverorder_invlet);
+        save_optstring(fd, quiverorder_ignore_type);
+        save_optstring(fd, quiverorder_ignore_invlet);
+    }
 
     save_artifacts(fd);
     save_oracles(fd, mode);
@@ -1294,6 +1312,18 @@ int fd, mode;
     }
     debugpline1("Stored %d messages into savefile.", msgcount);
     /* note: we don't attempt to handle release_data() here */
+}
+
+STATIC_OVL void
+save_optstring(fd, str)
+int fd;
+const char *str;
+{
+    int len = (str && *str) ? (int) strlen(str) : 0;
+
+    bwrite(fd, (genericptr_t) &len, sizeof len);
+    if (len > 0)
+        bwrite(fd, (genericptr_t) str, (unsigned) len);
 }
 
 void

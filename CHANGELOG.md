@@ -2,6 +2,14 @@
 
 Commits since `README.md` was last updated (commit c012979 — 2025-03-05):
 
+- UNCOMMITTED 2026-02-16 Jeff Tratt — FIX: quiver & inventory
+  - Prevent excluded quiver `invlet`/`otype` entries from being readied or shown; add pre-display quiver sync so inventory never shows stale `[qN]` markers at startup or after option changes.
+  - Restore strict case-sensitive invlet matching (don't treat `b` as `B`).
+  - FIX: reserve sticky-inventory letters for pickup menus so Alt+Y (sticky) items are never collided by floor pick-up accelerators.
+  - Files: `src/quiver.c`, `src/invent.c`, `src/pickup.c`, `src/wield.c`, `include/extern.h`, docs (`TODO.md`, `CHANGELOG.md`).
+  - Tested: new-game startup, save/restore, pickup menu and sticky-letter collisions.
+
+
 - UNCOMMITTED 2026-02-15 Jeff Tratt — UI: take-off menu — add "All metal" and "All non‑metal" material filters for `A` / `takeoffall`; selecting either filters worn/wielded items by material (metal vs. non‑metal) and reuses existing multi‑takeoff flow.
 - FIX: pets no longer attempt to move into the player's square when interposing; visible interpose actions announce a type-appropriate sound (dog → "growls", cat → "hisses", bird → "screeches", rodent/spider → "chitters", etc.) to make hallway interposes obvious.
 - ADD: 2026-02-15 Jeff Tratt — Feature: `#overview` pet locator (feature/pet_locator)
