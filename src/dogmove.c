@@ -36,6 +36,8 @@ pet_interpose_verb(mtmp)
         return "growls";
     case S_FELINE:
         return "hisses";
+    case S_UNICORN:
+        return "neighs";
     case S_RODENT:
         return "chitters";
     case S_SNAKE:
@@ -68,6 +70,8 @@ pet_interpose_verb(mtmp)
         return "buzzes";
     case MS_GRUNT:
         return "grunts";
+    case MS_NEIGH:
+        return "neighs";
     default:
         return "growls";
     }

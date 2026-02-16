@@ -52,6 +52,13 @@ main(void)
         return 6;
     }
 
+    /* pony -> neighs */
+    mtmp.data = &mons[PM_PONY];
+    if (strcmp(pet_interpose_verb(&mtmp), "neighs") != 0) {
+        fprintf(stderr, "FAILED: pony -> %s\n", pet_interpose_verb(&mtmp));
+        return 7;
+    }
+
     printf("OK: pet_interpose_verb mappings\n");
     return 0;
 }
