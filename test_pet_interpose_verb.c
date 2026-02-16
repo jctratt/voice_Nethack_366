@@ -52,9 +52,9 @@ main(void)
         return 6;
     }
 
-    /* pony -> neighs */
+    /* pony -> snorts */
     mtmp.data = &mons[PM_PONY];
-    if (strcmp(pet_interpose_verb(&mtmp), "neighs") != 0) {
+    if (strcmp(pet_interpose_verb(&mtmp), "snorts") != 0) {
         fprintf(stderr, "FAILED: pony -> %s\n", pet_interpose_verb(&mtmp));
         return 7;
     }
