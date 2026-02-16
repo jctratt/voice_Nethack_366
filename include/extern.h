@@ -1926,6 +1926,8 @@ E void FDECL(add_valid_menu_class, (int));
 E boolean FDECL(allow_all, (struct obj *));
 E boolean FDECL(allow_category, (struct obj *));
 E boolean FDECL(is_worn_by_type, (struct obj *));
+E boolean FDECL(is_worn_metal, (struct obj *));
+E boolean FDECL(is_worn_nonmetal, (struct obj *));
 E int FDECL(ck_bag, (struct obj *));
 #ifdef USE_TRAMPOLI
 E int FDECL(in_container, (struct obj *));

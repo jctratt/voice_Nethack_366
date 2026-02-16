@@ -329,6 +329,9 @@ typedef struct sortloot_item Loot;
 #define BUC_ALLBKNOWN (BUC_BLESSED | BUC_CURSED | BUC_UNCURSED)
 #define BUCX_TYPES (BUC_ALLBKNOWN | BUC_UNKNOWN)
 #define ALL_TYPES_SELECTED -2
+/* special menu category return values for take-off material filters */
+#define TAKEOFF_MAT_METAL     -3
+#define TAKEOFF_MAT_NONMETAL  -4
 
 /* Flags to control find_mid() */
 #define FM_FMON 0x01    /* search the fmon chain */

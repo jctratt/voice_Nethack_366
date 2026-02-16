@@ -1549,6 +1549,11 @@
 
           #takeoffall
                Remove all armor.  Default key is `A'.
+               In the take-off submenu (invoked by `A') you can choose
+               the material filters `All metal' or `All non-metal' to
+               limit the object-selection list to worn/wielded items
+               of that material; you may then select/deselect items
+               to remove as usual.
 
           #teleport
                Teleport around the level.  Default key is `^T'.

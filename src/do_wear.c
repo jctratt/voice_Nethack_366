@@ -2654,6 +2654,7 @@ int retry;
     int n, i = 0;
     menu_item *pick_list;
     boolean all_worn_categories = TRUE;
+    int material = 0; /* 0 = none, TAKEOFF_MAT_METAL, TAKEOFF_MAT_NONMETAL */
 
     if (retry) {
         all_worn_categories = (retry == -2);
@@ -2666,10 +2667,16 @@ int retry;
         if (!n)
             return 0;
         for (i = 0; i < n; i++) {
-            if (pick_list[i].item.a_int == ALL_TYPES_SELECTED)
+            int a = pick_list[i].item.a_int;
+            if (a == ALL_TYPES_SELECTED) {
                 all_worn_categories = TRUE;
-            else
-                add_valid_menu_class(pick_list[i].item.a_int);
+            } else if (a == TAKEOFF_MAT_METAL) {
+                material = TAKEOFF_MAT_METAL;
+            } else if (a == TAKEOFF_MAT_NONMETAL) {
+                material = TAKEOFF_MAT_NONMETAL;
+            } else {
+                add_valid_menu_class(a);
+            }
         }
         free((genericptr_t) pick_list);
     } else if (flags.menu_style == MENU_COMBINATION) {
@@ -2685,10 +2692,18 @@ int retry;
         || menu_class_present('C') || menu_class_present('X'))
         all_worn_categories = FALSE;
 
+    /* choose filter function based on material/category selection */
+    boolean FDECL((*ofilter), (OBJ_P)) = (boolean FDECL((*), (OBJ_P))) 0;
+    if (material == TAKEOFF_MAT_METAL)
+        ofilter = is_worn_metal;
+    else if (material == TAKEOFF_MAT_NONMETAL)
+        ofilter = is_worn_nonmetal;
+    else
+        ofilter = all_worn_categories ? is_worn : is_worn_by_type;
+
     n = query_objlist("What do you want to take off?", &invent,
                       (SIGNAL_NOMENU | USE_INVLET | INVORDER_SORT),
-                      &pick_list, PICK_ANY,
-                      all_worn_categories ? is_worn : is_worn_by_type);
+                      &pick_list, PICK_ANY, ofilter);
     if (n > 0) {
         for (i = 0; i < n; i++)
             (void) select_off(pick_list[i].item.a_obj);

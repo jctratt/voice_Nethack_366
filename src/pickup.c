@@ -480,6 +480,21 @@ register struct obj *otmp;
     return (is_worn(otmp) && allow_category(otmp)) ? TRUE : FALSE;
 }
 
+/* query_objlist callbacks: material-based filters for take-off submenu */
+boolean
+is_worn_metal(otmp)
+register struct obj *otmp;
+{
+    return (is_worn(otmp) && is_metallic(otmp)) ? TRUE : FALSE;
+}
+
+boolean
+is_worn_nonmetal(otmp)
+register struct obj *otmp;
+{
+    return (is_worn(otmp) && !is_metallic(otmp)) ? TRUE : FALSE;
+}
+
 /*
  * Have the hero pick things from the ground
  * or a monster's inventory if swallowed.
@@ -1178,6 +1193,18 @@ int how;               /* type of query */
             goto query_done;
         }
     } while (*pack);
+
+    /* Add material-based options for take-off menu (All metal / All non-metal) */
+    if (qflags & WORN_TYPES) {
+        any = zeroany;
+        any.a_int = TAKEOFF_MAT_METAL;
+        add_menu(win, NO_GLYPH, &any, invlet++, 0, ATR_NONE, "All metal",
+                 MENU_UNSELECTED);
+        any = zeroany;
+        any.a_int = TAKEOFF_MAT_NONMETAL;
+        add_menu(win, NO_GLYPH, &any, invlet++, 0, ATR_NONE,
+                 "All non-metal", MENU_UNSELECTED);
+    }
 
     if (do_unpaid || (qflags & BILLED_TYPES) || do_blessed || do_cursed
         || do_uncursed || do_buc_unknown) {
