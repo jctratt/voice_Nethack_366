@@ -1498,9 +1498,17 @@ int after; /* this is extra fast monster movement */
         if (mtarg && (!hungry || !rn2(5))) {
             int mstatus;
 
+            /* Do NOT let a *tame* pet decide to attack the hero here.
+               Tame pets should never treat the hero as a ranged target.
+               (If the pet is hostile or the player is under Conflict, the
+               appropriate code paths will handle that.) */
             if (mtarg == &youmonst) {
-                if (mattacku(mtmp))
-                    return 2;
+                if (!mtmp->mtame) {
+                    if (mattacku(mtmp))
+                        return 2;
+                } else {
+                    /* pet is tame — ignore hero as ranged attack target */
+                }
             } else {
                 mstatus = mattackm(mtmp, mtarg);
 
