@@ -21,6 +21,58 @@ STATIC_DCL boolean FDECL(can_reach_location, (struct monst *, XCHAR_P,
 STATIC_DCL boolean FDECL(could_reach_item, (struct monst *, XCHAR_P, XCHAR_P));
 STATIC_DCL void FDECL(quickmimic, (struct monst *));
 
+/* choose an appropriate verb for a pet interpose announcement
+   (returns 3rd-person singular present tense, e.g. "growls") */
+const char *
+pet_interpose_verb(mtmp)
+    struct monst *mtmp;
+{
+    /* Prefer monster class (mlet) for short, obvious mappings; fall back
+       to msound when appropriate.  Keep the returned verb in simple
+       3rd-person-singular present form for direct insertion into
+       pline("%s %s at %s.", Monnam(mtmp), verb, mon_nam(target)); */
+    switch (mtmp->data->mlet) {
+    case S_DOG:
+        return "growls";
+    case S_FELINE:
+        return "hisses";
+    case S_RODENT:
+        return "chitters";
+    case S_SNAKE:
+    case S_LIZARD:
+        return "hisses";
+    case S_ANT:
+    case S_SPIDER:
+        return "chitters";
+    default:
+        break;
+    }
+
+    /* birds are represented with the S_BAT class in this tree; use helper */
+    if (is_bird(mtmp->data))
+        return "screeches";
+
+    /* fallback based on monster sound class */
+    switch (mtmp->data->msound) {
+    case MS_BARK:
+        return "barks";
+    case MS_MEW:
+        return "mews";
+    case MS_HISS:
+        return "hisses";
+    case MS_SQAWK:
+        return "screeches";
+    case MS_SQEEK:
+        return "squeaks";
+    case MS_BUZZ:
+        return "buzzes";
+    case MS_GRUNT:
+        return "grunts";
+    default:
+        return "growls";
+    }
+}
+
 /* pick a carried item for pet to drop */
 struct obj *
 droppables(mon)
@@ -1098,7 +1150,7 @@ int after; /* this is extra fast monster movement */
                     /* announce interpose when visible */
                     if (pursue_mon && pursue_mon != &youmonst
                         && (canseemon(mtmp) || canspotmon(pursue_mon))) {
-                        pline("%s growls at %s.", Monnam(mtmp), mon_nam(pursue_mon));
+                        pline("%s %s at %s.", Monnam(mtmp), pet_interpose_verb(mtmp), mon_nam(pursue_mon));
                     }
                     did_interpose = TRUE;
                     /* set immediate move target and skip normal navigation */
@@ -1506,7 +1558,7 @@ int after; /* this is extra fast monster movement */
             int uyv = niy - u.uy;
             if (vx * uxv + vy * uyv > 0
                 && (canseemon(mtmp) || canspotmon(pursue_mon))) {
-                pline("%s growls at %s.", Monnam(mtmp), mon_nam(pursue_mon));
+                pline("%s %s at %s.", Monnam(mtmp), pet_interpose_verb(mtmp), mon_nam(pursue_mon));
             }
         }
         /* leash feedback is handled once-per-player-input in check_leash_end_of_turn() */

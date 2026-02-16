@@ -3,7 +3,7 @@
 Commits since `README.md` was last updated (commit c012979 — 2025-03-05):
 
 - UNCOMMITTED 2026-02-15 Jeff Tratt — UI: take-off menu — add "All metal" and "All non‑metal" material filters for `A` / `takeoffall`; selecting either filters worn/wielded items by material (metal vs. non‑metal) and reuses existing multi‑takeoff flow.
-- FIX: pets no longer attempt to move into the player's square when interposing; visible interpose actions now announce ("<pet> growls at <monster>") to make hallway interposes obvious.
+- FIX: pets no longer attempt to move into the player's square when interposing; visible interpose actions announce a type-appropriate sound (dog → "growls", cat → "hisses", bird → "screeches", rodent/spider → "chitters", etc.) to make hallway interposes obvious.
 - ADD: 2026-02-15 Jeff Tratt — Feature: `#overview` pet locator (feature/pet_locator)
   - Persist per-level short pet-name summary in `mapseen->petnames` and show `pets: ...` in `#overview` for levels that contain any of the player's tamed pets. Unnamed pets display by species. Ensures pets that follow the player are removed from the previous level's overview. Savefile `EDITLEVEL` incremented due to `mapseen` layout change; old saves/bones will be incompatible.
 

@@ -560,6 +560,7 @@ E struct obj *FDECL(droppables, (struct monst *));
 E int FDECL(dog_nutrition, (struct monst *, struct obj *));
 E int FDECL(dog_eat, (struct monst *, struct obj *, int, int, BOOLEAN_P));
 E int FDECL(dog_move, (struct monst *, int));
+E const char *FDECL(pet_interpose_verb, (struct monst *));
 #ifdef USE_TRAMPOLI
 E void FDECL(wantdoor, (int, int, genericptr_t));
 #endif
