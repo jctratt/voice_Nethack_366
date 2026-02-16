@@ -1563,6 +1563,26 @@ int after; /* this is extra fast monster movement */
         remove_monster(omx, omy);
         place_monster(mtmp, nix, niy);
 
+        /* Defensive: block any move that would cross *through* the hero in
+           a single monster step (this was causing pets to "jump over" the
+           player).  If detected, revert the pet to its original square and
+           report an informative message. */
+        if ((omx != nix || omy != niy)
+            && ((omx - u.ux) * (nix - u.ux) < 0 && omy == u.uy && niy == u.uy
+                /* horizontal crossing */
+                || (omy - u.uy) * (niy - u.uy) < 0 && omx == u.ux && nix == u.ux
+                /* vertical crossing */
+                || (omx - u.ux) * (nix - u.ux) < 0 && (omy - u.uy) * (niy - u.uy) < 0)) {
+            /* illegal cross detected; revert pet to original location */
+            if (canseemon(mtmp))
+                pline("%s paws at you but won't pass through.", Monnam(mtmp));
+            remove_monster(nix, niy);
+            place_monster(mtmp, omx, omy);
+            newsym(omx, omy);
+            newsym(nix, niy);
+            return 1; /* treat as a non-move this turn */
+        }
+
         /* announce interpose if not already announced by the urgent case */
         if (!did_interpose && pursue_mon && pursue_mon != &youmonst
             && abs(nix - u.ux) <= 1 && abs(niy - u.uy) <= 1) {
