@@ -13,8 +13,10 @@
 	"settings": {
 		"zenMode.hideActivityBar": true,
 		"workbench.editor.editorActionsLocation": "titleBar",
+		"git.sshCommand": "ssh -o IdentityAgent=/home/neon/source/voice_Nethack_366/tmp/ssh-agent.sock",
 		"chat.tools.terminal.autoApprove": {
-			"make": true
+			"make": true,
+			"cc": true
 		}
 	}
 }
