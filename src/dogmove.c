@@ -1558,6 +1558,12 @@ int after; /* this is extra fast monster movement */
                       mhis(mtmp));
                 m_unleash(mtmp, FALSE);
             }
+            /* Never allow a tame pet to attack the player via this path. */
+            if (mtmp->mtame) {
+                if (canseemon(mtmp))
+                    pline("%s paws at you but won't pass through.", Monnam(mtmp));
+                return 0;
+            }
             (void) mattacku(mtmp);
             return 0;
         }
