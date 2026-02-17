@@ -941,6 +941,14 @@ const char *optname;
             while (e >= s && isspace((uchar) *e))
                 *e-- = '\0';
         }
+        while (*s == '[' || *s == '(' || *s == '{')
+            ++s;
+        {
+            char *e = eos(s);
+
+            while (e > s && (e[-1] == ']' || e[-1] == ')' || e[-1] == '}'))
+                *--e = '\0';
+        }
         if (!*s)
             continue;
 
