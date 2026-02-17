@@ -2,6 +2,15 @@
 
 Commits since `README.md` was last updated (commit c012979 — 2025-03-05):
 
+- UNCOMMITTED 2026-02-17 Jeff Tratt — UI: quiver editor prompt + curses fixes
+  - Rework the interactive `O` (options) quiver editor prompt: deterministic category grouping (Arrows/bolts, Missiles, Spears, Blades+specials, Sling ammo), canonical `OBJ_NAME()` usage (no more appearance strings like "stone (black)"), inventory-letter annotations (`[a]`) for carried items, and clearer guidance that `otypes` take TYPE NAMES while `invlet` options take inventory letters.
+  - Make category headers render in inverse video when `use_inverse=true` and place headers on their own line for improved readability.
+  - Fix curses word-wrapping/truncation: `curses_num_lines` no longer truncates long prompts and honours embedded `\n`; `curses_break_str` treats `\n` as a hard break. This prevents prompt truncation and layout corruption.
+  - Parser accepts `/` or `,` as separators; prompt example now recommends `/` to match established preference.
+  - Files: `src/options.c`, `win/curses/cursmisc.c`, `win/curses/cursdial.c`.
+  - Tested: prompt layout under curses, option editing flow for all four quiver options (`quiverorder_otypes`, `quiverorder_invlet`, `quiverorder_ignore_type`, `quiverorder_ignore_invlet`).
+
+
 - UNCOMMITTED 2026-02-16 Jeff Tratt — FIX: quiver & inventory
   - Prevent excluded quiver `invlet`/`otype` entries from being readied or shown; add pre-display quiver sync so inventory never shows stale `[qN]` markers at startup or after option changes.
   - Restore strict case-sensitive invlet matching (don't treat `b` as `B`).

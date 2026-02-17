@@ -655,6 +655,13 @@ STATIC_DCL void FDECL(parse_quiver_otypes_list,
 STATIC_DCL void FDECL(parse_quiver_invlet_list,
                       (const char *, int **, int *, boolean, const char *));
 STATIC_DCL void FDECL(build_quiver_type_hint, (char *, int));
+STATIC_DCL boolean FDECL(is_quiver_prompt_otyp, (int));
+STATIC_DCL void FDECL(append_invlets_for_otyp, (char *, int, int));
+STATIC_DCL int FDECL(quiver_prompt_room, (const char *, int));
+STATIC_DCL void FDECL(quiver_prompt_append, (char *, int, const char *));
+STATIC_DCL const char *FDECL(get_quiver_option_current, (const char *));
+STATIC_DCL void FDECL(build_quiver_editor_prompt,
+                      (char *, int, const char *, const char *));
 STATIC_DCL boolean FDECL(is_quiver_option_name, (const char *));
 STATIC_DCL boolean FDECL(quiver_invlet_list_has, (char, const char *));
 STATIC_DCL boolean FDECL(current_quiver_excluded, (void));
@@ -786,6 +793,10 @@ const char *token;
         return DAGGER;
     if (!strcmpi(tokbuf, "dart"))
         return DART;
+    if (!strcmpi(tokbuf, "bolt") || !strcmpi(tokbuf, "bolts")
+        || !strcmpi(tokbuf, "crossbow bolt")
+        || !strcmpi(tokbuf, "crossbow bolts"))
+        return CROSSBOW_BOLT;
     if (!strcmpi(tokbuf, "arrow") || !strcmpi(tokbuf, "arrows"))
         return ARROW;
     if (!strcmpi(tokbuf, "rock") || !strcmpi(tokbuf, "rocks")
@@ -967,6 +978,8 @@ const char *optname;
         /* simple singularization for common ammo words */
         if (!strcmpi(s, "arrows"))
             Strcpy(s, "arrow");
+        else if (!strcmpi(s, "bolts") || !strcmpi(s, "crossbow bolts"))
+            Strcpy(s, "bolt");
         else if (!strcmpi(s, "darts"))
             Strcpy(s, "dart");
         else if (!strcmpi(s, "rocks") || !strcmpi(s, "stones"))
@@ -985,6 +998,13 @@ const char *optname;
             for (i = 1; i < NUM_OBJECTS; ++i)
                 if (objects[i].oc_class == WEAPON_CLASS
                     && objects[i].oc_skill == -P_BOW) {
+                    quiver_append_unique(arr, cnt, i);
+                    expanded = TRUE;
+                }
+        } else if (!strcmpi(s, "bolt") || !strcmpi(s, "crossbow bolt")) {
+            for (i = 1; i < NUM_OBJECTS; ++i)
+                if (objects[i].oc_class == WEAPON_CLASS
+                    && objects[i].oc_skill == -P_CROSSBOW) {
                     quiver_append_unique(arr, cnt, i);
                     expanded = TRUE;
                 }
@@ -1085,6 +1105,284 @@ int outsz;
 
     if (!*outbuf)
         (void) Strcpy(outbuf, "(no throwable types in inventory)");
+}
+
+STATIC_OVL boolean
+is_quiver_prompt_otyp(otyp)
+int otyp;
+{
+    const struct objclass *ocp;
+
+    if (otyp <= 0 || otyp >= NUM_OBJECTS)
+        return FALSE;
+
+    ocp = &objects[otyp];
+    if (ocp->oc_class == WEAPON_CLASS || ocp->oc_class == GEM_CLASS)
+        return TRUE;
+    if (otyp == ROCK || otyp == FLINT)
+        return TRUE;
+    return FALSE;
+}
+
+STATIC_OVL void
+append_invlets_for_otyp(outbuf, outsz, otyp)
+char *outbuf;
+int outsz;
+int otyp;
+{
+    struct obj *otmp;
+    boolean used[256];
+    int cnt = 0;
+
+    if (!outbuf || outsz <= 0)
+        return;
+    outbuf[0] = '\0';
+    (void) memset((genericptr_t) used, 0, sizeof used);
+
+    for (otmp = invent; otmp; otmp = otmp->nobj) {
+        char one[2];
+
+        if (otmp->otyp != otyp)
+            continue;
+        if (!isalpha((uchar) otmp->invlet))
+            continue;
+        if (used[(uchar) otmp->invlet])
+            continue;
+        used[(uchar) otmp->invlet] = TRUE;
+
+        one[0] = otmp->invlet;
+        one[1] = '\0';
+        (void) strncat(outbuf, one, outsz - 1 - strlen(outbuf));
+        ++cnt;
+        if (cnt >= outsz - 1)
+            break;
+    }
+}
+
+STATIC_OVL int
+quiver_prompt_room(buf, outsz)
+const char *buf;
+int outsz;
+{
+    int used;
+
+    if (!buf || outsz <= 0)
+        return 0;
+    used = (int) strlen(buf);
+    if (used >= outsz - 1)
+        return 0;
+    return (outsz - 1) - used;
+}
+
+STATIC_OVL void
+quiver_prompt_append(buf, outsz, text)
+char *buf;
+int outsz;
+const char *text;
+{
+    int room;
+
+    if (!buf || !text || outsz <= 0)
+        return;
+    room = quiver_prompt_room(buf, outsz);
+    if (room > 0)
+        (void) strncat(buf, text, room);
+}
+
+STATIC_OVL const char *
+get_quiver_option_current(optname)
+const char *optname;
+{
+    if (!strcmp(optname, "quiverorder_otypes"))
+        return quiverorder_otypes ? quiverorder_otypes : "";
+    if (!strcmp(optname, "quiverorder_invlet"))
+        return quiverorder_invlet ? quiverorder_invlet : "";
+    if (!strcmp(optname, "quiverorder_ignore_type"))
+        return quiverorder_ignore_type ? quiverorder_ignore_type : "";
+    if (!strcmp(optname, "quiverorder_ignore_invlet"))
+        return quiverorder_ignore_invlet ? quiverorder_ignore_invlet : "";
+    if (!strcmp(optname, "quiverorder")) {
+        static char legacy[BUFSZ];
+
+        legacy[0] = '\0';
+        if (quiverorder_otypes && *quiverorder_otypes)
+            (void) strncat(legacy, quiverorder_otypes,
+                           sizeof legacy - 1 - strlen(legacy));
+        (void) strncat(legacy, ";", sizeof legacy - 1 - strlen(legacy));
+        if (quiverorder_invlet && *quiverorder_invlet)
+            (void) strncat(legacy, quiverorder_invlet,
+                           sizeof legacy - 1 - strlen(legacy));
+        return legacy;
+    }
+    return "";
+}
+
+STATIC_OVL void
+build_quiver_editor_prompt(outbuf, outsz, optname, current)
+char *outbuf;
+int outsz;
+const char *optname;
+const char *current;
+{
+    /*
+     * Build a compact prompt listing all accepted quiver otype words,
+     * grouped by category.  Category headers are on their own line and
+     * prefixed with \001 so the curses renderer can apply A_REVERSE.
+     * Items currently in inventory get a [letter] annotation.
+     * Uses OBJ_NAME (canonical name) not obj_typename (appearance name).
+     */
+    int otyp, ci, si;
+    char line[BUFSZ * 3];     /* one category line */
+    char entry[BUFSZ];
+    char invlets[32];
+    const char *nm;
+    const char *cur = (current && *current) ? current : "(empty)";
+    boolean first;
+    boolean is_invlet_opt;
+    /* \001 prefix = render line in inverse if use_inverse is on */
+    static const char inv_marker[] = "\001";
+
+    /* skill-based categories: label + up to 3 skill values (0-terminated) */
+    static const int arrow_skills[] = { -P_BOW, -P_CROSSBOW, 0 };
+    static const int missile_skills[] = { -P_BOOMERANG, -P_SHURIKEN,
+                                          -P_DART, 0 };
+    static const int spear_skills[] = { P_SPEAR, 0 };
+    struct skill_cat {
+        const char *label;
+        const int *skills;
+    } cats[] = {
+        { "Arrows/bolts", arrow_skills },
+        { "Missiles", missile_skills },
+        { "Spears", spear_skills },
+    };
+
+    /* Blades + specials: listed by explicit canonical name */
+    static const char *blade_names[] = {
+        "dagger", "elven dagger", "orcish dagger", "silver dagger",
+        "knife", "stiletto", "crysknife", "war hammer", "aklys",
+        (const char *) 0
+    };
+
+    if (!outbuf || outsz <= 0)
+        return;
+    outbuf[0] = '\0';
+
+    /* Determine if this is a type option or an invlet option */
+    is_invlet_opt = (!strcmp(optname, "quiverorder_invlet")
+                     || !strcmp(optname, "quiverorder_ignore_invlet"));
+
+    /* Guidance line: tell user what kind of value to enter */
+    if (is_invlet_opt) {
+        quiver_prompt_append(outbuf, outsz,
+            "Enter INVENTORY LETTERS (e.g. abd) for quiver slot ordering.\n");
+        quiver_prompt_append(outbuf, outsz,
+            "Letters refer to items currently in your pack.\n");
+    } else {
+        quiver_prompt_append(outbuf, outsz,
+            "Enter TYPE NAMES separated by / (e.g. arrow/dart/dagger).\n");
+        quiver_prompt_append(outbuf, outsz,
+            "Accepted type names ([inv letter] if carried):\n");
+    }
+
+    /* For invlet options, skip the type reference list */
+    if (!is_invlet_opt) {
+        /* --- skill-based categories --- */
+        for (ci = 0; ci < SIZE(cats); ci++) {
+            /* Header line with inverse marker */
+            Sprintf(line, "%s %s:\n", inv_marker, cats[ci].label);
+            quiver_prompt_append(outbuf, outsz, line);
+            /* Items line */
+            Strcpy(line, " ");
+            first = TRUE;
+            for (otyp = STRANGE_OBJECT + 1; otyp < NUM_OBJECTS; otyp++) {
+                boolean match = FALSE;
+
+                for (si = 0; cats[ci].skills[si]; si++) {
+                    if (objects[otyp].oc_skill == cats[ci].skills[si]) {
+                        match = TRUE;
+                        break;
+                    }
+                }
+                if (!match)
+                    continue;
+                nm = OBJ_NAME(objects[otyp]);
+                if (!nm || !*nm)
+                    continue;
+
+                append_invlets_for_otyp(invlets, (int) sizeof invlets, otyp);
+                if (invlets[0])
+                    Sprintf(entry, "%s[%s]", nm, invlets);
+                else
+                    Strcpy(entry, nm);
+
+                if (!first)
+                    Strcat(line, ", ");
+                Strcat(line, entry);
+                first = FALSE;
+            }
+            Strcat(line, "\n");
+            quiver_prompt_append(outbuf, outsz, line);
+        }
+
+        /* --- Blades + specials --- */
+        Sprintf(line, "%s Blades+specials:\n", inv_marker);
+        quiver_prompt_append(outbuf, outsz, line);
+        Strcpy(line, " ");
+        first = TRUE;
+        for (si = 0; blade_names[si]; si++) {
+            for (otyp = STRANGE_OBJECT + 1; otyp < NUM_OBJECTS; otyp++) {
+                nm = OBJ_NAME(objects[otyp]);
+                if (!nm || !*nm)
+                    continue;
+                if (strcmpi(nm, blade_names[si]))
+                    continue;
+
+                append_invlets_for_otyp(invlets, (int) sizeof invlets, otyp);
+                if (invlets[0])
+                    Sprintf(entry, "%s[%s]", nm, invlets);
+                else
+                    Strcpy(entry, nm);
+
+                if (!first)
+                    Strcat(line, ", ");
+                Strcat(line, entry);
+                first = FALSE;
+                break;  /* found the otyp for this name */
+            }
+        }
+        Strcat(line, "\n");
+        quiver_prompt_append(outbuf, outsz, line);
+
+        /* --- Sling ammo --- */
+        Sprintf(line, "%s Sling ammo:\n", inv_marker);
+        quiver_prompt_append(outbuf, outsz, line);
+        Strcpy(line, " ");
+        first = TRUE;
+        for (otyp = STRANGE_OBJECT + 1; otyp < NUM_OBJECTS; otyp++) {
+            if (objects[otyp].oc_skill != -P_SLING)
+                continue;
+            nm = OBJ_NAME(objects[otyp]);
+            if (!nm || !*nm)
+                continue;
+            append_invlets_for_otyp(invlets, (int) sizeof invlets, otyp);
+            if (invlets[0]) {
+                /* Only show sling items that are in inventory */
+                Sprintf(entry, "%s[%s]", nm, invlets);
+                if (!first)
+                    Strcat(line, ", ");
+                Strcat(line, entry);
+                first = FALSE;
+            }
+        }
+        if (!first)
+            Strcat(line, ", ");
+        Strcat(line, "+ all gem/rock names\n");
+        quiver_prompt_append(outbuf, outsz, line);
+    }
+
+    /* --- Current value + prompt --- */
+    Sprintf(line, "\nCurrent: %s\nSet %s to what?", cur, optname);
+    quiver_prompt_append(outbuf, outsz, line);
 }
 
 STATIC_OVL void
@@ -5456,34 +5754,34 @@ doset() /* changing options via menu by Per Liboriussen */
 
                 if (option_uses_name_editor(compopt[opt_indx].name)) {
                     char abuf[BUFSZ];
-                    char hint[BUFSZ];
+                    char qprompt[BUFSZ * 24];
+                    const char *optname = compopt[opt_indx].name;
+                    const char *qcur;
 
-                    Sprintf(buf, "Set %s to what?", compopt[opt_indx].name);
-                    if (!strcmp(compopt[opt_indx].name, "quiverorder_otypes")
-                        || !strcmp(compopt[opt_indx].name,
-                                   "quiverorder_ignore_type")
-                        || !strcmp(compopt[opt_indx].name, "quiverorder")) {
-                        build_quiver_type_hint(hint, (int) sizeof hint);
-                        if ((int) (strlen(buf) + strlen(" Types now: ")
-                                   + strlen(hint))
-                            < (int) sizeof buf) {
-                            (void) Strcat(buf, " Types now: ");
-                            (void) Strcat(buf, hint);
-                        }
-                    }
-                    (void) get_compopt_value(compopt[opt_indx].name, abuf);
+                    Sprintf(buf, "Set %s to what?", optname);
+                    (void) get_compopt_value(optname, abuf);
                     if (!strcmp(abuf, "none") || !strcmp(abuf, "default")
                         || !strcmp(abuf, "(none)")
                         || !strcmp(abuf, "(to be done)"))
                         abuf[0] = '\0';
-                    get_name_input(buf, abuf, (int) sizeof abuf);
+
+                    if (is_quiver_option_name(optname)) {
+                        qcur = get_quiver_option_current(optname);
+                        build_quiver_editor_prompt(qprompt,
+                                                   (int) sizeof qprompt,
+                                                   optname, qcur);
+                    } else {
+                        Strcpy(qprompt, buf);
+                    }
+
+                    get_name_input(qprompt, abuf, (int) sizeof abuf);
                     if (abuf[0] == '\033')
                         continue;
-                    Sprintf(buf, "%s:", compopt[opt_indx].name);
+                    Sprintf(buf, "%s:", optname);
                     (void) strncat(eos(buf), abuf,
                                    (sizeof buf - 1 - strlen(buf)));
                     (void) parseoptions(buf, setinitial, fromfile);
-                    if (is_quiver_option_name(compopt[opt_indx].name))
+                    if (is_quiver_option_name(optname))
                         show_quiver_rc_block();
                 } else if (!special_handling(compopt[opt_indx].name,
                                              setinitial, fromfile)) {

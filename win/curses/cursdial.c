@@ -200,7 +200,14 @@ curses_name_input_dialog(const char *prompt, char *answer, int buffer)
 
     for (count = 0; count < prompt_height; count++) {
         tmpstr = curses_break_str(prompt, maxwidth, count + 1);
-        mvwaddstr(askwin, count, 0, tmpstr);
+        if (tmpstr && tmpstr[0] == '\001' && iflags.use_inverse) {
+            /* Marker char \001 = render this line in inverse video */
+            wattron(askwin, A_REVERSE);
+            mvwaddstr(askwin, count, 0, tmpstr + 1);
+            wattroff(askwin, A_REVERSE);
+        } else {
+            mvwaddstr(askwin, count, 0, tmpstr);
+        }
         free(tmpstr);
     }
 

@@ -264,34 +264,46 @@ curses_copy_of(const char *s)
 int
 curses_num_lines(const char *str, int width)
 {
-    int last_space, count;
-    int curline = 1;
-    char substr[BUFSZ];
-    char tmpstr[BUFSZ];
+    int curline = 0;
+    const char *seg, *nl;
+    int seglen, pos, last_space, count;
 
-    strncpy(substr, str, BUFSZ-1);
-    substr[BUFSZ-1] = '\0';
+    if (!str || !*str || width <= 0)
+        return 1;
 
-    while (strlen(substr) > (size_t) width) {
-        last_space = 0;
+    /* Process each \n-delimited segment separately */
+    seg = str;
+    for (;;) {
+        nl = strchr(seg, '\n');
+        seglen = nl ? (int)(nl - seg) : (int) strlen(seg);
 
-        for (count = 0; count <= width; count++) {
-            if (substr[count] == ' ')
-                last_space = count;
-
+        if (seglen == 0) {
+            curline++;  /* empty line from consecutive \n */
+        } else {
+            pos = 0;
+            while (seglen - pos > width) {
+                last_space = 0;
+                for (count = 0; count <= width && pos + count < seglen;
+                     count++) {
+                    if (seg[pos + count] == ' ')
+                        last_space = count;
+                }
+                if (last_space == 0)
+                    last_space = (count > 0) ? count - 1 : 1;
+                pos += last_space + 1;
+                curline++;
+            }
+            curline++;  /* remaining (or sole) portion of segment */
         }
-        if (last_space == 0) {  /* No spaces found */
-            last_space = count - 1;
-        }
-        for (count = (last_space + 1); count < (int) strlen(substr); count++) {
-            tmpstr[count - (last_space + 1)] = substr[count];
-        }
-        tmpstr[count - (last_space + 1)] = '\0';
-        strcpy(substr, tmpstr);
-        curline++;
+
+        if (!nl)
+            break;
+        seg = nl + 1;
+        if (!*seg)
+            break;  /* trailing \n, don't count as extra line */
     }
 
-    return curline;
+    return curline < 1 ? 1 : curline;
 }
 
 /* Write a debug message to disk to avoid spamming the on-screen message window.
@@ -356,7 +368,10 @@ curses_break_str(const char *str, int width, int line_num)
         curline++;
         last_space = 0;
         for (count = 0; count <= width; count++) {
-            if (substr[count] == ' ') {
+            if (substr[count] == '\n') {
+                last_space = count;
+                break;
+            } else if (substr[count] == ' ') {
                 last_space = count;
             } else if (substr[count] == '\0') {
                 last_space = count;
@@ -426,7 +441,10 @@ curses_str_remainder(const char *str, int width, int line_num)
         curline++;
         last_space = 0;
         for (count = 0; count <= width; count++) {
-            if (substr[count] == ' ') {
+            if (substr[count] == '\n') {
+                last_space = count;
+                break;
+            } else if (substr[count] == ' ') {
                 last_space = count;
             } else if (substr[count] == '\0') {
                 last_space = count;
