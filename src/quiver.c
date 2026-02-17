@@ -384,6 +384,28 @@ int allow_gem_fallback;
         score += dam;
     }
 
+    /* Enchantment: each +1 adds to both to-hit and damage for thrown
+       weapons, so it's a meaningful differentiator between otherwise
+       identical items.  Cap contribution to avoid runaway scores on
+       highly enchanted artifacts. */
+    if (obj->known) {
+        int ench = obj->spe;
+        if (ench > 0)
+            score += (ench > 7) ? 21 : ench * 3;
+        else if (ench < 0)
+            score += (ench < -7) ? -21 : ench * 3; /* penalty */
+    }
+
+    /* BUC status: blessed thrown weapons get +1 to-hit in combat and
+       are generally more desirable; cursed weapons get -1 to-hit and
+       may weld if re-wielded, so penalise them. */
+    if (obj->bknown) {
+        if (obj->blessed)
+            score += 8;
+        else if (obj->cursed)
+            score -= 12; /* stronger penalty; cursed items are risky */
+    }
+
     return score;
 }
 

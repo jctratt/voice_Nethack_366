@@ -7,8 +7,10 @@ Commits since `README.md` was last updated (commit c012979 — 2025-03-05):
   - Make category headers render in inverse video when `use_inverse=true` and place headers on their own line for improved readability.
   - Fix curses word-wrapping/truncation: `curses_num_lines` no longer truncates long prompts and honours embedded `\n`; `curses_break_str` treats `\n` as a hard break. This prevents prompt truncation and layout corruption.
   - Parser accepts `/` or `,` as separators; prompt example now recommends `/` to match established preference.
-  - Files: `src/options.c`, `win/curses/cursmisc.c`, `win/curses/cursdial.c`.
-  - Tested: prompt layout under curses, option editing flow for all four quiver options (`quiverorder_otypes`, `quiverorder_invlet`, `quiverorder_ignore_type`, `quiverorder_ignore_invlet`).
+  - Add scoring for enchantment and BUC status in `quiver_score()` (identified items only): enchantment contributes a bounded bonus, blessed items favored, cursed items penalised.
+  - Sling ammo listing reorganised into explicit subgroups (rocks/stones, gems (summarised), collapsed worthless glass) with inventory-letter annotations shown for carried items.
+  - Files: `src/options.c`, `src/quiver.c`, `win/curses/cursmisc.c`, `win/curses/cursdial.c`.
+  - Tested: prompt layout under curses, option editing flow for all four quiver options (`quiverorder_otypes`, `quiverorder_invlet`, `quiverorder_ignore_type`, `quiverorder_ignore_invlet`), and quiver candidate selection improvements (enchantment/BUC influence).
 
 
 - UNCOMMITTED 2026-02-16 Jeff Tratt — FIX: quiver & inventory

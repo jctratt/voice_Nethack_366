@@ -1356,28 +1356,79 @@ const char *current;
         /* --- Sling ammo --- */
         Sprintf(line, "%s Sling ammo:\n", inv_marker);
         quiver_prompt_append(outbuf, outsz, line);
-        Strcpy(line, " ");
-        first = TRUE;
-        for (otyp = STRANGE_OBJECT + 1; otyp < NUM_OBJECTS; otyp++) {
-            if (objects[otyp].oc_skill != -P_SLING)
-                continue;
-            nm = OBJ_NAME(objects[otyp]);
-            if (!nm || !*nm)
-                continue;
-            append_invlets_for_otyp(invlets, (int) sizeof invlets, otyp);
-            if (invlets[0]) {
-                /* Only show sling items that are in inventory */
-                Sprintf(entry, "%s[%s]", nm, invlets);
-                if (!first)
-                    Strcat(line, ", ");
-                Strcat(line, entry);
-                first = FALSE;
+        /* Sub-group 1: rocks/stones (commonly used, listed explicitly) */
+        {
+            static const char *rock_names[] = {
+                "rock", "flint", "luckstone", "loadstone", "touchstone",
+                (const char *) 0
+            };
+            Strcpy(line, " ");
+            first = TRUE;
+            for (si = 0; rock_names[si]; si++) {
+                for (otyp = STRANGE_OBJECT + 1; otyp < NUM_OBJECTS; otyp++) {
+                    nm = OBJ_NAME(objects[otyp]);
+                    if (!nm || !*nm)
+                        continue;
+                    if (strcmpi(nm, rock_names[si]))
+                        continue;
+                    append_invlets_for_otyp(invlets, (int) sizeof invlets,
+                                            otyp);
+                    if (invlets[0])
+                        Sprintf(entry, "%s[%s]", nm, invlets);
+                    else
+                        Strcpy(entry, nm);
+                    if (!first)
+                        Strcat(line, ", ");
+                    Strcat(line, entry);
+                    first = FALSE;
+                    break;
+                }
             }
+            Strcat(line, "\n");
+            quiver_prompt_append(outbuf, outsz, line);
         }
-        if (!first)
-            Strcat(line, ", ");
-        Strcat(line, "+ all gem/rock names\n");
-        quiver_prompt_append(outbuf, outsz, line);
+        /* Sub-group 2: gemstones (summarized, inventory items shown) */
+        {
+            Strcpy(line, " Gems: ");
+            first = TRUE;
+            for (otyp = STRANGE_OBJECT + 1; otyp < NUM_OBJECTS; otyp++) {
+                if (objects[otyp].oc_skill != -P_SLING)
+                    continue;
+                nm = OBJ_NAME(objects[otyp]);
+                if (!nm || !*nm)
+                    continue;
+                /* skip rocks (handled above) and glass (below) */
+                if (objects[otyp].oc_class != GEM_CLASS)
+                    continue;
+                if (!strncmpi(nm, "worthless", 9))
+                    continue;
+                if (!strcmpi(nm, "rock") || !strcmpi(nm, "flint")
+                    || !strcmpi(nm, "luckstone")
+                    || !strcmpi(nm, "loadstone")
+                    || !strcmpi(nm, "touchstone"))
+                    continue;
+                append_invlets_for_otyp(invlets, (int) sizeof invlets,
+                                        otyp);
+                if (invlets[0]) {
+                    Sprintf(entry, "%s[%s]", nm, invlets);
+                    if (!first)
+                        Strcat(line, ", ");
+                    Strcat(line, entry);
+                    first = FALSE;
+                } else if (first) {
+                    /* show a few example names for reference */
+                    Strcat(line, nm);
+                    first = FALSE;
+                }
+            }
+            if (!first)
+                Strcat(line, ", ");
+            Strcat(line, "... (all named gems)\n");
+            quiver_prompt_append(outbuf, outsz, line);
+        }
+        /* Sub-group 3: worthless glass (collapsed) */
+        quiver_prompt_append(outbuf, outsz,
+            " Also: worthless piece of <color> glass (9 colors)\n");
     }
 
     /* --- Current value + prompt --- */
