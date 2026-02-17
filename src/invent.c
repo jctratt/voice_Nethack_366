@@ -5,9 +5,12 @@
 
 #include "hack.h"
 
+#include <ctype.h>
+
 /* quiver ordering (externs defined in quiver.c) */
 extern int *quiver_orderindx;
 extern int quiver_ordercnt;
+extern char *quiverorder_otypes;
 
 #ifndef C /* same as cmd.c */
 #define C(c) (0x1f & (c))
@@ -34,6 +37,7 @@ STATIC_PTR int FDECL(ckunpaid, (struct obj *));
 STATIC_PTR char *FDECL(safeq_xprname, (struct obj *));
 STATIC_PTR char *FDECL(safeq_shortxprname, (struct obj *));
 STATIC_PTR int FDECL(qc_cmp, (const genericptr, const genericptr));
+STATIC_DCL int FDECL(qc_text_rank, (struct obj *));
 STATIC_DCL char FDECL(display_pickinv, (const char *, const char *,
                                         const char *, BOOLEAN_P, long *));
 STATIC_DCL char FDECL(display_used_invlets, (CHAR_P));
@@ -445,6 +449,81 @@ const genericptr vptr2;
 
 /* comparator for quiver-candidate ordering */
 STATIC_OVL int
+qc_text_rank(otmp)
+struct obj *otmp;
+{
+    char *work, *tok;
+    int rank = 0;
+    int objskill;
+
+    if (!quiverorder_otypes || !*quiverorder_otypes || !otmp)
+        return -1;
+
+    objskill = objects[otmp->otyp].oc_skill;
+    work = dupstr(quiverorder_otypes);
+    for (tok = strtok(work, "/,"); tok; tok = strtok((char *) 0, "/,")) {
+        char *s = tok;
+        int slen;
+
+        while (*s && isspace((uchar) *s))
+            ++s;
+        if (!*s)
+            continue;
+        {
+            char *e = eos(s) - 1;
+
+            while (e >= s && isspace((uchar) *e))
+                *e-- = '\0';
+        }
+        while (*s == '[' || *s == '(' || *s == '{')
+            ++s;
+        {
+            char *e = eos(s);
+
+            while (e > s && (e[-1] == ']' || e[-1] == ')' || e[-1] == '}'))
+                *--e = '\0';
+        }
+        slen = (int) strlen(s);
+        while (slen > 0
+               && (s[slen - 1] == ':' || s[slen - 1] == ';'
+                   || s[slen - 1] == '.'))
+            s[--slen] = '\0';
+        if (!*s)
+            continue;
+
+        if (!strcmpi(s, "arrows"))
+            Strcpy(s, "arrow");
+        else if (!strcmpi(s, "darts"))
+            Strcpy(s, "dart");
+        else if (!strcmpi(s, "rocks") || !strcmpi(s, "stones"))
+            Strcpy(s, "rock");
+
+        if (!strcmpi(s, "dagger") && objskill == P_DAGGER) {
+            free((genericptr_t) work);
+            return rank;
+        }
+        if (!strcmpi(s, "arrow") && objskill == -P_BOW) {
+            free((genericptr_t) work);
+            return rank;
+        }
+        if (!strcmpi(s, "dart") && otmp->otyp == DART) {
+            free((genericptr_t) work);
+            return rank;
+        }
+        if ((!strcmpi(s, "rock") || !strcmpi(s, "stone"))
+            && (otmp->otyp == ROCK || otmp->otyp == FLINT)) {
+            free((genericptr_t) work);
+            return rank;
+        }
+
+        ++rank;
+    }
+
+    free((genericptr_t) work);
+    return -1;
+}
+
+STATIC_OVL int
 qc_cmp(a, b)
 const genericptr a;
 const genericptr b;
@@ -462,6 +541,14 @@ const genericptr b;
             if (quiver_orderindx[i] == ob->otyp) { posb = i; break; }
         }
     }
+    if (posa < 0) posa = quiver_ordercnt + 1000;
+    if (posb < 0) posb = quiver_ordercnt + 1000;
+
+    if (posa >= quiver_ordercnt + 1000)
+        posa = qc_text_rank(oa);
+    if (posb >= quiver_ordercnt + 1000)
+        posb = qc_text_rank(ob);
+
     if (posa < 0) posa = quiver_ordercnt + 1000;
     if (posb < 0) posb = quiver_ordercnt + 1000;
     if (posa != posb) return posa < posb ? -1 : 1;
