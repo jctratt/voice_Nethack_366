@@ -188,7 +188,148 @@ STATIC_VAR xchar gtyp, gx, gy; /* type and position of dog's current goal */
 STATIC_DCL struct monst *FDECL(best_target_from_origin, (struct monst *, int, int, int));
 STATIC_DCL struct monst *FDECL(find_targ_from_origin, (struct monst *, int, int, int, int, int));
 
+STATIC_DCL boolean FDECL(pet_bfs_to_player, (struct monst *, xchar *, xchar *));
+
 STATIC_PTR void FDECL(wantdoor, (int, int, genericptr_t));
+
+/*
+ * pet_bfs_to_player: BFS shortest-path from the player's position to the
+ * pet, modeled after the travel ('_') command pathfinder.  Returns TRUE and
+ * fills *nx, *ny with the square the pet should step into next.  Returns
+ * FALSE if no reachable path exists.
+ *
+ * The BFS expands outward from the player.  Each cell records which
+ * neighbor it was reached *from* (encoded as direction index 1-8, with
+ * 0 = unvisited).  When the wave hits the pet's square we walk the
+ * predecessor chain back to the first cell adjacent to the pet and
+ * return that cell.
+ *
+ * Passability is evaluated from the monster's perspective: pets that
+ * can open doors treat closed doors as passable, pets that phase
+ * through walls treat walls as passable, etc.
+ */
+STATIC_OVL boolean
+pet_bfs_to_player(mtmp, nx, ny)
+struct monst *mtmp;
+xchar *nx, *ny;
+{
+    /* Direction offsets matching xdir[]/ydir[] indices 0-7 */
+    static const int dx8[8] = { -1, -1,  0,  1, 1, 1, 0, -1 };
+    static const int dy8[8] = {  0, -1, -1, -1, 0, 1, 1,  1 };
+
+    /* pred[x][y] stores the *reverse* direction index (1-based) that
+       led us here from the player side, 0 means unvisited. */
+    xchar pred[COLNO][ROWNO];
+    /* double-buffered BFS frontier (same technique as findtravelpath) */
+    xchar stepx[2][COLNO * ROWNO];
+    xchar stepy[2][COLNO * ROWNO];
+
+    struct permonst *mdat = mtmp->data;
+    boolean can_open  = (!nohands(mdat) && !verysmall(mdat));
+    boolean can_phase = passes_walls(mdat);
+    boolean can_ooze  = amorphous(mdat);
+    int n, nn, set, i, dir;
+    int mx = mtmp->mx, my = mtmp->my;
+    int px = u.ux, py = u.uy;
+    int cx, cy;
+
+    if (mx == px && my == py)
+        return FALSE; /* already on top of player?? */
+
+    (void) memset((genericptr_t) pred, 0, sizeof pred);
+
+    /* seed with player position */
+    stepx[0][0] = px;
+    stepy[0][0] = py;
+    pred[px][py] = 9; /* sentinel: visited, is origin */
+    n = 1;
+    set = 0;
+
+    while (n > 0) {
+        nn = 0;
+        for (i = 0; i < n; i++) {
+            cx = stepx[set][i];
+            cy = stepy[set][i];
+
+            for (dir = 0; dir < 8; dir++) {
+                int tx = cx + dx8[dir];
+                int ty = cy + dy8[dir];
+                int rdir;          /* reverse direction */
+                int rtyp;
+
+                if (!isok(tx, ty))
+                    continue;
+                if (pred[tx][ty])
+                    continue; /* already visited */
+
+                rtyp = levl[tx][ty].typ;
+
+                /* --- passability check (monster perspective) --- */
+                if (IS_ROCK(rtyp)) {
+                    if (can_phase && may_passwall(tx, ty))
+                        ; /* ok */
+                    else if (rtyp == IRONBARS && passes_bars(mdat))
+                        ; /* ok */
+                    else
+                        continue; /* impassable */
+                } else if (IS_DOOR(rtyp)) {
+                    if (levl[tx][ty].doormask & (D_CLOSED | D_LOCKED)) {
+                        if (!can_phase && !can_ooze && !can_open)
+                            continue; /* can't deal with closed door */
+                    }
+                    /* diagonal move into/out of a doorway with door? */
+                    if (dx8[dir] && dy8[dir]) {
+                        /* entering a non-doorless door diagonally is illegal */
+                        if (levl[tx][ty].doormask & ~D_BROKEN)
+                            continue;
+                        /* leaving from a doorway diagonally likewise */
+                        if (IS_DOOR(levl[cx][cy].typ)
+                            && (levl[cx][cy].doormask & ~D_BROKEN))
+                            continue;
+                    }
+                }
+                /* pool / lava */
+                if (is_pool(tx, ty) && !is_swimmer(mdat)
+                    && !is_flyer(mdat) && !is_floater(mdat)
+                    && !is_clinger(mdat))
+                    continue;
+                if (is_lava(tx, ty) && !likes_lava(mdat)
+                    && !is_flyer(mdat) && !is_floater(mdat)
+                    && !is_clinger(mdat))
+                    continue;
+                /* boulder */
+                if (sobj_at(BOULDER, tx, ty) && !throws_rocks(mdat))
+                    continue;
+                /* diagonal tight-squeeze */
+                if (dx8[dir] && dy8[dir]
+                    && bad_rock(mdat, cx, ty)
+                    && bad_rock(mdat, tx, cy))
+                    continue;
+
+                /* reverse direction: the direction from tx,ty back to cx,cy */
+                rdir = (dir + 4) % 8;
+
+                pred[tx][ty] = rdir + 1; /* 1-based so 0 = unvisited */
+
+                if (tx == mx && ty == my) {
+                    /* Found the pet!  Walk predecessor chain back to the
+                       square adjacent to the pet (one step). */
+                    *nx = mx + dx8[rdir];
+                    *ny = my + dy8[rdir];
+                    return TRUE;
+                }
+
+                stepx[1 - set][nn] = tx;
+                stepy[1 - set][nn] = ty;
+                nn++;
+            }
+        }
+        n = nn;
+        set = 1 - set;
+    }
+
+    return FALSE; /* no path found */
+}
 
 boolean
 cursed_object_at(x, y)
@@ -1090,10 +1231,10 @@ int after; /* this is extra fast monster movement */
     } else
         whappr = 0;
 
-    /* Hard rejoin mode: when a tame pet is more than 7 tiles away,
+    /* Hard rejoin mode: when a tame pet is more than 3 tiles away,
        suppress tactical behavior and force movement back toward player. */
     if (mtmp->mtame && !mtmp->mleashed
-        && distmin(omx, omy, u.ux, u.uy) > 7)
+        && distmin(omx, omy, u.ux, u.uy) > 3)
         force_rejoin = TRUE;
 
     /* choose a monster to pursue (player-centered preferred)
@@ -1148,14 +1289,13 @@ int after; /* this is extra fast monster movement */
            player.  Otherwise, prioritize rejoining the player. */
         if (pthreat > 16)
             pursue_mon = (struct monst *) 0;
+        /* When actively returning to the player, be more selective:
+           only pursue targets very close to the player (immediate
+           threats) so the pet doesn't detour.  The pet will still
+           melee-attack adjacent hostiles via ALLOW_M regardless. */
+        else if (force_rejoin && pthreat > 8)
+            pursue_mon = (struct monst *) 0;
     }
-
-    /* Hard player-first guard for tame pets: if separated by more than
-       2 tiles, rejoin the player area before doing tactical pursuit.
-       This prevents side-to-side interpose oscillation while the player
-       is under immediate threat. */
-    if (force_rejoin || (mtmp->mtame && udist > 4))
-        pursue_mon = (struct monst *) 0;
 
     appr = dog_goal(mtmp, has_edog ? edog : (struct edog *) 0, after, udist,
                     whappr);
@@ -1163,8 +1303,21 @@ int after; /* this is extra fast monster movement */
         return 0;
 
     if (force_rejoin) {
-        gx = u.ux;
-        gy = u.uy;
+        /* Use BFS shortest-path (like the travel '_' command) to find the
+           optimal next step for the pet to reach the player, accounting
+           for doors, corridors, and the pet's movement capabilities.
+           The BFS is recomputed each turn so player movement is tracked. */
+        xchar bfs_nx, bfs_ny;
+
+        if (pet_bfs_to_player(mtmp, &bfs_nx, &bfs_ny)) {
+            gx = bfs_nx;
+            gy = bfs_ny;
+        } else {
+            /* BFS couldn't find a path (pet might be completely cut off);
+               fall back to direct approach toward the player. */
+            gx = u.ux;
+            gy = u.uy;
+        }
         appr = 1;
     }
 
@@ -1365,9 +1518,14 @@ int after; /* this is extra fast monster movement */
 
             /* Keep pets within MAX_PET_DISTANCE once they're near, but if a
                pet is already farther out, allow moves that bring it closer
-               so it won't get stuck permanently out of range. */
+               so it won't get stuck permanently out of range.
+               When force_rejoin is active, relax this constraint: the pet
+               may need to move toward a door that temporarily increases
+               Euclidean distance to the player in order to navigate through
+               rooms and corridors to actually reach the player. */
             if (new_player_dist > allowed_dist_sq
-                && new_player_dist >= old_player_dist)
+                && new_player_dist >= old_player_dist
+                && !force_rejoin)
                 continue;
         }
 
@@ -1476,8 +1634,10 @@ int after; /* this is extra fast monster movement */
         /* lessen the chance of backtracking to previous position(s) */
         /* This causes unintended issues for pets trying to follow
            the hero. Thus, only run it if not leashed and >5 tiles
-           away. */
-        if (!mtmp->mleashed && distmin(mtmp->mx, mtmp->my, u.ux, u.uy) > 5) {
+           away.  When force_rejoin is active, skip this entirely so
+           the pet can retrace its steps to exit a room. */
+        if (!mtmp->mleashed && !force_rejoin
+            && distmin(mtmp->mx, mtmp->my, u.ux, u.uy) > 5) {
             k = has_edog ? uncursedcnt : cnt;
             for (j = 0; j < MTSZ && j < k - 1; j++)
                 if (nx == mtmp->mtrack[j].x && ny == mtmp->mtrack[j].y)
@@ -1506,7 +1666,7 @@ int after; /* this is extra fast monster movement */
             int tpdist2 = dist2(pursue_mon->mx, pursue_mon->my, u.ux, u.uy);
             if (tpdist2 <= PET_TARGET_RADIUS * PET_TARGET_RADIUS)
                 MON_WEIGHT = 7; /* stronger, but don't overwhelm follow behavior */
-            jtmp -= monDelta * MON_WEIGHT;
+            jtmp += monDelta * MON_WEIGHT;
 
             /* prefer candidate squares that are on the same side of the player
                as the target (encourages the pet to position between @ and x) */
@@ -1518,16 +1678,16 @@ int after; /* this is extra fast monster movement */
             const int SAME_SIDE_BONUS = 6;
             const int OPP_SIDE_PENALTY = 3;
             if (dot > 0)
-                jtmp += SAME_SIDE_BONUS;
+                jtmp -= SAME_SIDE_BONUS;
             else
-                jtmp -= OPP_SIDE_PENALTY;
+                jtmp += OPP_SIDE_PENALTY;
 
             /* if the hostile is very close to the player, prefer squares
                adjacent to the player on the target side so the pet will
                interpose quickly */
             if (tpdist2 <= 4) { /* target adjacent or nearly adjacent to player */
                 if (abs(nx - u.ux) <= 1 && abs(ny - u.uy) <= 1 && dot > 0)
-                    jtmp += 20; /* strong preference for interposing */
+                    jtmp -= 20; /* strong preference for interposing */
             }
 
             /* penalize moves that increase distance to the player, but
@@ -1539,7 +1699,7 @@ int after; /* this is extra fast monster movement */
             int PLAYER_WEIGHT = 2;
             if (tpdist2 <= PET_TARGET_RADIUS * PET_TARGET_RADIUS)
                 PLAYER_WEIGHT = 1;
-            jtmp -= playerDelta * PLAYER_WEIGHT;
+            jtmp += playerDelta * PLAYER_WEIGHT;
 
             /* If we selected a concrete interpose-side square, bias strongly
                toward moves that close distance to it. */

@@ -2,6 +2,12 @@
 
 Commits since `README.md` was last updated (commit c012979 — 2025-03-05):
 
+- UNCOMMITTED 2026-02-17 Jeff Tratt — FIX: pet follow & combat AI
+  - Fix: pets were avoiding nearby hostiles due to inverted pursuit scoring; pets now actively pursue and interpose for player-centered threats.
+  - Preserve BFS-based rejoin while allowing immediate-threat pursuit; tightened rejoin/BFS trigger thresholds to improve follow responsiveness.
+  - Files: `src/dogmove.c`.
+  - Tested: pet following across rooms, interpose announcements, nearby combat behavior.
+
 - UNCOMMITTED 2026-02-17 Jeff Tratt — UI: quiver editor prompt + curses fixes
   - Rework the interactive `O` (options) quiver editor prompt: deterministic category grouping (Arrows/bolts, Missiles, Spears, Blades+specials, Sling ammo), canonical `OBJ_NAME()` usage (no more appearance strings like "stone (black)"), inventory-letter annotations (`[a]`) for carried items, and clearer guidance that `otypes` take TYPE NAMES while `invlet` options take inventory letters.
   - Make category headers render in inverse video when `use_inverse=true` and place headers on their own line for improved readability.
