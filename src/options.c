@@ -930,6 +930,8 @@ const char *optname;
         char *s = tok;
         int otyp;
         int slen;
+        int i;
+        boolean expanded = FALSE;
 
         while (*s && isspace((uchar) *s))
             ++s;
@@ -971,6 +973,24 @@ const char *optname;
             Strcpy(s, "rock");
         else if (!strcmpi(s, "flints"))
             Strcpy(s, "flint");
+
+        if (!strcmpi(s, "dagger")) {
+            for (i = 1; i < NUM_OBJECTS; ++i)
+                if (objects[i].oc_class == WEAPON_CLASS
+                    && objects[i].oc_skill == P_DAGGER) {
+                    quiver_append_unique(arr, cnt, i);
+                    expanded = TRUE;
+                }
+        } else if (!strcmpi(s, "arrow")) {
+            for (i = 1; i < NUM_OBJECTS; ++i)
+                if (objects[i].oc_class == WEAPON_CLASS
+                    && objects[i].oc_skill == -P_BOW) {
+                    quiver_append_unique(arr, cnt, i);
+                    expanded = TRUE;
+                }
+        }
+        if (expanded)
+            continue;
 
         /* allow broad ignore words without warning (they don't affect
            quiver candidates directly but users may enter them) */
