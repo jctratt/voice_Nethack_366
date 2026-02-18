@@ -701,9 +701,17 @@ handle_voice_output(const char *message)
         msg[sizeof(msg) - 1] = '\0';
 
         /* Check VOICE_FORCE patterns first */
+        /* VOICE_FORCE backreference handling (concise):
+         * - Supports backrefs `\0`..`\9` (0 = whole match, 1..9 = capture groups)
+         * - Backrefs are expanded inside the `speak_text` string; unmatched
+         *   groups produce an empty string (safe fallback).
+         * - Any inserted text has embedded '"' escaped for TTS/shell safety.
+         * - Patterns use POSIX ERE (REG_EXTENDED); prefer `[[:space:]]` over `\s`.
+         */
 #define VF_MAX_GROUPS 10
         struct voice_force *vf;
         for (vf = forcelist; vf; vf = vf->next) {
+            /* pmatch[i] holds offsets for group i (0 = whole match) */
             regmatch_t pmatch[VF_MAX_GROUPS];
             reti = regcomp(&regex, vf->pattern, REG_EXTENDED);
             if (reti) {
@@ -712,13 +720,15 @@ handle_voice_output(const char *message)
                 return;
             }
 
+            /* regexec fills pmatch[0..VF_MAX_GROUPS-1] on match */
             reti = regexec(&regex, msg, VF_MAX_GROUPS, pmatch, 0);
             if (!reti) { /* Match found in VOICE_FORCE */
                 regfree(&regex);
                 char expanded[BUFSZ * 2] = { 0 };
                 if (vf->speak_text) {
-                    /* Expand \0..\9 within speak_text, with literal text
-                     * between them.  e.g. "foo \1 and \2 bar" works. */
+                    /* Expand \0..\9 within speak_text (literal text allowed
+                     * between backrefs). Double-quotes in substituted text are
+                     * escaped to keep TTS command safe. */
                     const char *sp = vf->speak_text;
                     int ei = 0;
                     while (*sp && ei < (int) sizeof(expanded) - 1) {
@@ -734,6 +744,7 @@ handle_voice_output(const char *message)
                                      gi < eo
                                      && ei < (int) sizeof(expanded) - 1;
                                      gi++) {
+                                    /* escape embedded quotes */
                                     if (msg[gi] == '"'
                                             && ei < (int) sizeof(expanded) - 2)
                                         expanded[ei++] = '\\';
