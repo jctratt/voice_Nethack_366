@@ -12,6 +12,7 @@
 #include "flag.h"
 #include <regex.h>
 #include <string.h>
+#include <ctype.h>
 
 #define BIGBUFSZ                                                \
     (5 * BUFSZ) /* big enough to format a 4*BUFSZ string (from  \
@@ -699,75 +700,69 @@ handle_voice_output(const char *message)
                 sizeof(msg) - 1); // Ensure null termination
         msg[sizeof(msg) - 1] = '\0';
 
-        // Check VOICE_FORCE patterns first
+        /* Check VOICE_FORCE patterns first */
+#define VF_MAX_GROUPS 10
         struct voice_force *vf;
         for (vf = forcelist; vf; vf = vf->next) {
-            regmatch_t pmatch[2]; // 2 for full match (0) and \1 (1)
-            reti =
-                regcomp(&regex, vf->pattern,
-                        REG_EXTENDED); // Remove REG_NOSUB for capture groups
+            regmatch_t pmatch[VF_MAX_GROUPS];
+            reti = regcomp(&regex, vf->pattern, REG_EXTENDED);
             if (reti) {
                 pline("Could not compile VOICE_FORCE regex");
                 regfree(&regex);
                 return;
             }
 
-            reti =
-                regexec(&regex, msg, 2, pmatch, 0); // Capture up to 1 group
-            if (!reti) { // Match found in VOICE_FORCE
+            reti = regexec(&regex, msg, VF_MAX_GROUPS, pmatch, 0);
+            if (!reti) { /* Match found in VOICE_FORCE */
                 regfree(&regex);
-                // Proceed directly to voice output, skipping VOICE_EXCEPTION
-                if (vf->speak_text && strcmp(vf->speak_text, "\\1") == 0
-                    && pmatch[1].rm_so != -1) {
-                    // Extract and escape captured group \1
-                    size_t len = pmatch[1].rm_eo - pmatch[1].rm_so;
-                    char captured[BUFSZ];
-                    strncpy(captured, msg + pmatch[1].rm_so, len);
-                    captured[len] = '\0';
-                    char escaped[BUFSZ * 2] = { 0 };
-                    int k, m = 0;
-                    for (k = 0; captured[k] && m < sizeof(escaped) - 1; k++) {
-                        if (captured[k] == '"')
-                            escaped[m++] = '\\';
-                        escaped[m++] = captured[k];
+                char expanded[BUFSZ * 2] = { 0 };
+                if (vf->speak_text) {
+                    /* Expand \0..\9 within speak_text, with literal text
+                     * between them.  e.g. "foo \1 and \2 bar" works. */
+                    const char *sp = vf->speak_text;
+                    int ei = 0;
+                    while (*sp && ei < (int) sizeof(expanded) - 1) {
+                        if (*sp == '\\' && isdigit((unsigned char) sp[1])) {
+                            int grp = sp[1] - '0';
+                            sp += 2;
+                            if (grp < VF_MAX_GROUPS
+                                    && pmatch[grp].rm_so != -1) {
+                                int so = pmatch[grp].rm_so;
+                                int eo = pmatch[grp].rm_eo;
+                                int gi;
+                                for (gi = so;
+                                     gi < eo
+                                     && ei < (int) sizeof(expanded) - 1;
+                                     gi++) {
+                                    if (msg[gi] == '"'
+                                            && ei < (int) sizeof(expanded) - 2)
+                                        expanded[ei++] = '\\';
+                                    expanded[ei++] = msg[gi];
+                                }
+                            }
+                            /* unmatched group -> insert nothing */
+                        } else {
+                            if (*sp == '"'
+                                    && ei < (int) sizeof(expanded) - 2)
+                                expanded[ei++] = '\\';
+                            expanded[ei++] = *sp++;
+                        }
                     }
-                    escaped[m] = '\0';
-                    if (strstr(engine, "piper")) {
-                        snprintf(sayit, sizeof(sayit), "echo \"%s\" | %s %s",
-                                 escaped, engine, flags.voice_command);
-                    } else if (strstr(engine, "gtts")) {
-                        snprintf(sayit, sizeof(sayit), "%s \"%s\" %s", engine,
-                                 escaped, flags.voice_command);
-                    } else {
-                        snprintf(sayit, sizeof(sayit), "%s %s \"%s\"", engine,
-                                 flags.voice_command, escaped);
-                    }
-                } else if (vf->speak_text) {
-                    // Use custom speak_text as-is (assumes no quotes needed
-                    // escaping here)
-                    if (strstr(engine, "piper")) {
-                        snprintf(sayit, sizeof(sayit), "echo \"%s\" | %s %s",
-                                 vf->speak_text, engine, flags.voice_command);
-                    } else if (strstr(engine, "gtts")) {
-                        snprintf(sayit, sizeof(sayit), "%s \"%s\" %s", engine,
-                                 vf->speak_text, flags.voice_command);
-                    } else {
-                        snprintf(sayit, sizeof(sayit), "%s %s \"%s\"", engine,
-                                 flags.voice_command, vf->speak_text);
-                    }
+                    expanded[ei] = '\0';
                 } else {
-                    // Default to full message
-                    if (strstr(engine, "piper")) {
-                        snprintf(sayit, sizeof(sayit), "echo \"%s\" | %s %s",
-                                 escaped_message, engine,
-                                 flags.voice_command);
-                    } else if (strstr(engine, "gtts")) {
-                        snprintf(sayit, sizeof(sayit), "%s \"%s\" %s", engine,
-                                 escaped_message, flags.voice_command);
-                    } else {
-                        snprintf(sayit, sizeof(sayit), "%s %s \"%s\"", engine,
-                                 flags.voice_command, escaped_message);
-                    }
+                    /* NULL speak_text: speak the full original message */
+                    strncpy(expanded, escaped_message, sizeof(expanded) - 1);
+                    expanded[sizeof(expanded) - 1] = '\0';
+                }
+                if (strstr(engine, "piper")) {
+                    snprintf(sayit, sizeof(sayit), "echo \"%s\" | %s %s",
+                             expanded, engine, flags.voice_command);
+                } else if (strstr(engine, "gtts")) {
+                    snprintf(sayit, sizeof(sayit), "%s \"%s\" %s", engine,
+                             expanded, flags.voice_command);
+                } else {
+                    snprintf(sayit, sizeof(sayit), "%s %s \"%s\"", engine,
+                             flags.voice_command, expanded);
                 }
                 (void) system(sayit);
                 flushinp();
@@ -775,6 +770,7 @@ handle_voice_output(const char *message)
             }
             regfree(&regex);
         }
+#undef VF_MAX_GROUPS
 
         // Check VOICE_EXCEPTION patterns (only if no VOICE_FORCE match)
         // Compile the regex for voice exceptions
