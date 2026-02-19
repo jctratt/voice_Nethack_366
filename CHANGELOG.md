@@ -8,6 +8,11 @@ Commits since `README.md` was last updated (commit c012979 — 2025-03-05):
   - Files: `src/invent.c`, `src/quiver.c`.
   - Tested: manual inventory display and autoquiver ordering agree; non-quiverable items remain excluded.
 
+- UNCOMMITTED 2026-02-19 Jeff Tratt — FIX: sleeping monsters no longer interrupt occupations (eat & pick-axe/dig)
+  - Fix: nearby *sleeping* monsters (including sleeping watchmen) no longer cancel multi-turn occupations. "You resume your meal." will now correctly restart the `eatfood` occupation; sleeping watchmen adjacent to a pick-axe dig will not stop the `dig` occupation.
+  - Files: `src/monmove.c`, `src/dig.c`.
+  - Tested: resume-eating with adjacent sleeping monsters; pick-axe digging with a sleeping watchman.
+
 - UNCOMMITTED 2026-02-18 Jeff Tratt — FIX: quiver `invlet` precedence (autoquiver/dofire)
   - Implement invlet-first selection for quiver ordering: `select_quiver_candidate_invlet_first()` now iterates `quiverorder_invlet` and returns the first available quiverable item. `autoquiver()` and `dofire()` now honor the invlet list with absolute precedence; fixes bug where same-type items (multiple daggers) could be skipped.
   - Non-quiverable and excluded invlets are ignored; fallback to existing scoring remains when no invlet match is found.

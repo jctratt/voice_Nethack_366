@@ -1240,7 +1240,7 @@ boolean zap;
             for (mtmp = fmon; mtmp; mtmp = mtmp->nmon) {
                 if (DEADMONSTER(mtmp))
                     continue;
-                if (is_watch(mtmp->data) && mtmp->mcansee && m_canseeu(mtmp)
+                if (is_watch(mtmp->data) && mtmp->mcansee && !mtmp->msleeping && m_canseeu(mtmp)
                     && couldsee(mtmp->mx, mtmp->my) && mtmp->mpeaceful)
                     break;
             }

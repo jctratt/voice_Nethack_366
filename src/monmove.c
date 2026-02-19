@@ -85,7 +85,7 @@ register struct monst *mtmp;
     int x, y;
 
     if (mtmp->mpeaceful && in_town(u.ux + u.dx, u.uy + u.dy)
-        && mtmp->mcansee && m_canseeu(mtmp) && !rn2(3)) {
+        && mtmp->mcansee && !mtmp->msleeping && m_canseeu(mtmp) && !rn2(3)) {
         if (picking_lock(&x, &y) && IS_DOOR(levl[x][y].typ)
             && (levl[x][y].doormask & D_LOCKED)) {
             if (couldsee(mtmp->mx, mtmp->my)) {
@@ -110,20 +110,23 @@ int
 dochugw(mtmp)
 register struct monst *mtmp;
 {
-    int x = mtmp->mx, y = mtmp->my;
-    boolean already_saw_mon = !occupation ? 0 : canspotmon(mtmp);
+    int nx, ny;
+    int new_dist;
     int rd = dochug(mtmp);
+
+    nx = mtmp->mx;
+    ny = mtmp->my;
+    new_dist = distu(nx, ny);
 
     /* a similar check is in monster_nearby() in hack.c */
     /* check whether hero notices monster and stops current activity */
     if (occupation && !rd && !Confusion && (!mtmp->mpeaceful || Hallucination)
         /* it's close enough to be a threat */
-        && distu(x, y) <= (BOLT_LIM + 1) * (BOLT_LIM + 1)
-        /* and either couldn't see it before, or it was too far away */
-        && (!already_saw_mon || !couldsee(x, y)
-            || distu(x, y) > (BOLT_LIM + 1) * (BOLT_LIM + 1))
+        && new_dist <= (BOLT_LIM + 1) * (BOLT_LIM + 1)
         /* can see it now, or sense it and would normally see it */
-        && (canseemon(mtmp) || (sensemon(mtmp) && couldsee(x, y)))
+        && (canseemon(mtmp) || (sensemon(mtmp) && couldsee(nx, ny)))
+        /* don't be interrupted by monsters that are actually asleep */
+        && !mtmp->msleeping
         && mtmp->mcanmove && !noattacks(mtmp->data)
         && !onscary(u.ux, u.uy, mtmp)) {
         /* Check if player wants to continue occupation with limit control */
