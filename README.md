@@ -27,6 +27,8 @@ A modified version of NetHack 3.6.6 with text-to-speech capabilities using espea
   `OPTIONS=quiverorder:<type-list>;<letters>` — supports object-type names (`/`-separated) and/or legacy inventory letters. Example:
   `OPTIONS=quiverorder:elven dagger/dagger/darts;defij`  (when both provided, the `;invlet` list takes precedence). `quiver_autoswap` will automatically switch your quivered item to a higher-priority candidate when picked up.
 
+  When `quiverorder_invlet` is set, the game iterates the listed inventory letters in order and selects the *first available* quiverable item — the invlet list has absolute precedence (not just a scoring hint). Non-quiverable or excluded letters are skipped automatically.
+
 - **Showlines (sight-lines helper)** 🟡
   - Adds an extended command `#showlines` (also bound by default to a Ctrl key) that draws transient sight/ray lines out from the player to help judge line-of-sight and zap direction.
   - Adds an extended command `#showboomerang` (no default separate key binding) that draws transient boomerang trajectories for the 8 directions, using the same visibility and stopping rules as `#showlines`.

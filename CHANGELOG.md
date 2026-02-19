@@ -2,6 +2,13 @@
 
 Commits since `README.md` was last updated (commit c012979 — 2025-03-05):
 
+- UNCOMMITTED 2026-02-18 Jeff Tratt — FIX: quiver `invlet` precedence (autoquiver/dofire)
+  - Implement invlet-first selection for quiver ordering: `select_quiver_candidate_invlet_first()` now iterates `quiverorder_invlet` and returns the first available quiverable item. `autoquiver()` and `dofire()` now honor the invlet list with absolute precedence; fixes bug where same-type items (multiple daggers) could be skipped.
+  - Non-quiverable and excluded invlets are ignored; fallback to existing scoring remains when no invlet match is found.
+  - Files: `src/quiver.c`, `src/dothrow.c`, `README.md`, `CHANGELOG.md`.
+  - Tested: quiver cycling with same-type items assigned different invlets; verified non-quiverable items are skipped.
+
+
 - UNCOMMITTED 2026-02-17 Jeff Tratt — FIX: pet follow & combat AI
   - Fix: pets were avoiding nearby hostiles due to inverted pursuit scoring; pets now actively pursue and interpose for player-centered threats.
   - Preserve BFS-based rejoin while allowing immediate-threat pursuit; tightened rejoin/BFS trigger thresholds to improve follow responsiveness.

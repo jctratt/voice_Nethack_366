@@ -409,6 +409,46 @@ int allow_gem_fallback;
     return score;
 }
 
+/* Selection helper: iterate through quiverorder_invlet in priority order
+   and return the first available quiverable item. Falls back to
+   select_quiver_candidate() scoring if no invlet match found or if
+   invlet list is empty. This gives absolute priority to user's invlet
+   ordering (ABCDEFG), not just a scoring bonus. */
+struct obj *
+select_quiver_candidate_invlet_first()
+{
+    struct obj *otmp;
+    const char *spec = quiverorder_invlet;
+
+    /* If user has specified an invlet list, honor it strictly */
+    if (spec && *spec) {
+        int pos = 0;
+        for (; *spec; ++spec) {
+            if (!isalpha((uchar) *spec))
+                continue;
+
+            /* Search inventory for item with this invlet */
+            for (otmp = invent; otmp; otmp = otmp->nobj) {
+                if (otmp->invlet != *spec)
+                    continue;
+                if (otmp->owornmask || otmp->oartifact || !otmp->dknown)
+                    continue;
+                /* Check if it's a quiverable item */
+                if (is_ammo(otmp) || is_missile(otmp)
+                    || (otmp->oclass == WEAPON_CLASS && throwing_weapon(otmp))
+                    || otmp->otyp == ROCK || otmp->otyp == FLINT) {
+                    return otmp;  /* Found first match in invlet priority order */
+                }
+                break;  /* This invlet was found but not quiverable; move to next */
+            }
+            ++pos;
+        }
+    }
+
+    /* No invlet list, or no invlet match found: fall back to scoring */
+    return select_quiver_candidate();
+}
+
 /* Selection helper used by dofire()/autoquiver().  Scans inventory and
    returns the highest-scoring usable object, or NULL if none found. */
 struct obj *

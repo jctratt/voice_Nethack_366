@@ -46,6 +46,7 @@ extern boolean notonhead; /* for long worms */
 extern int *quiver_ignoreindx;
 extern int quiver_ignorecnt;
 extern char *quiverorder_ignore_invlet;
+extern struct obj *NDECL(select_quiver_candidate_invlet_first);
 
 STATIC_OVL boolean
 invlet_in_quiver_spec(invlet, spec)
@@ -361,9 +362,10 @@ autoquiver()
     if (uquiver && quiver_slot_excluded(uquiver))
         setuqwep((struct obj *) 0);
 
-    /* Delegate selection to the centralized helper which understands
-       user preference / skill-aware scoring. */
-    cand = select_quiver_candidate();
+    /* Delegate selection to the invlet-first helper which honors user's
+       quiverorder_invlet priority list with absolute precedence, falling
+       back to skill-aware scoring if no invlet match. */
+    cand = select_quiver_candidate_invlet_first();
     if (cand) {
         setuqwep(cand);
         /* user-visible feedback showing which inventory letter was chosen */
