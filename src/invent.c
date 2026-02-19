@@ -11,6 +11,7 @@
 extern int *quiver_orderindx;
 extern int quiver_ordercnt;
 extern char *quiverorder_otypes;
+extern char *quiverorder_invlet; /* honor invlet-spec ordering for [qN] labels */
 
 #ifndef C /* same as cmd.c */
 #define C(c) (0x1f & (c))
@@ -531,6 +532,29 @@ const genericptr b;
     struct obj *oa = *(struct obj **) a;
     struct obj *ob = *(struct obj **) b;
     int i, posa = -1, posb = -1;
+
+    /* If an invlet-priority list has been configured, give those
+       inventory letters absolute precedence so the visible [qN] labels
+       match the order used by `select_quiver_candidate_invlet_first()`.
+       Items whose invlet is not listed come after the specified ones. */
+    if (quiverorder_invlet && *quiverorder_invlet) {
+        int invposa = -1, invposb = -1;
+        const char *s;
+        int p = 0;
+        for (s = quiverorder_invlet; *s; ++s) {
+            if (!isalpha((uchar) *s))
+                continue;
+            if (*s == oa->invlet) invposa = p;
+            if (*s == ob->invlet) invposb = p;
+            ++p;
+        }
+        if (invposa >= 0 || invposb >= 0) {
+            if (invposa < 0) return 1; /* ob present in spec, oa not -> ob first */
+            if (invposb < 0) return -1; /* oa present, ob not -> oa first */
+            if (invposa != invposb) return invposa < invposb ? -1 : 1;
+            /* same invlet-rank -> fall through to lower-priority tie-breakers */
+        }
+    }
 
     /* prefer types appearing earlier in quiver_orderindx; otherwise sort by invlet */
     if (quiver_ordercnt > 0 && quiver_orderindx) {

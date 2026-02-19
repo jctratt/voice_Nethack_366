@@ -2,6 +2,12 @@
 
 Commits since `README.md` was last updated (commit c012979 — 2025-03-05):
 
+- UNCOMMITTED 2026-02-19 Jeff Tratt — FIX: inventory `[qN]` labels to respect `quiverorder_invlet`
+  - Ensure visible `[qN]` tags in the inventory follow the `quiverorder_invlet` option so display numbering matches autoquiver/dofire selection semantics.
+  - `qc_cmp()` now gives `quiverorder_invlet` precedence when present; falls back to otype/text ranking otherwise.
+  - Files: `src/invent.c`, `src/quiver.c`.
+  - Tested: manual inventory display and autoquiver ordering agree; non-quiverable items remain excluded.
+
 - UNCOMMITTED 2026-02-18 Jeff Tratt — FIX: quiver `invlet` precedence (autoquiver/dofire)
   - Implement invlet-first selection for quiver ordering: `select_quiver_candidate_invlet_first()` now iterates `quiverorder_invlet` and returns the first available quiverable item. `autoquiver()` and `dofire()` now honor the invlet list with absolute precedence; fixes bug where same-type items (multiple daggers) could be skipped.
   - Non-quiverable and excluded invlets are ignored; fallback to existing scoring remains when no invlet match is found.
