@@ -1,13 +1,30 @@
-/* quiver.c -- quiver ordering and selection helpers
+/* quiver.c -- quiver ordering, selection and user preferences
  *
- * Initial implementation:
- * - `select_quiver_candidate()` picks the best candidate from inventory
- *   using a simple scoring function that prefers matched ammo, missiles,
- *   throwing weapons, sticky-marked objects and higher player skill.
- * - `dosetquiver()` is implemented as a first-step: it opens the
- *   existing `ready` picker (dowieldquiver) so the player can explicitly
- *   choose which object to ready into the quiver.  A full reorder UI
- *   and persistent preference list will follow in later commits.
+ * Overview of implemented behavior:
+ * - Persistent preference lists: `quiver_orderindx`/`quiver_ordercnt`
+ *   hold a saved ordering by `otyp` (saved/restored via save.c).
+ * - Option channels: `quiverorder_otypes`, `quiverorder_invlet`,
+ *   `quiverorder_ignore_type`, and `quiverorder_ignore_invlet` are
+ *   supported and exposed via `OPTIONS=` handling in `options.c`.
+ * - Selection helpers:
+ *     - `select_quiver_candidate_invlet_first()` honors an invlet
+ *       priority list with absolute precedence.
+ *     - `select_quiver_candidate()` falls back to `quiver_score()`-
+ *       based selection when no invlet match is present.
+ * - Interactive UI: `dosetquiver()` provides an in-game reorder UI
+ *   that constructs and persists `quiver_orderindx` for later use.
+ * - Readied-slot sync: `quiver_sync_readied_slot()` clears an excluded
+ *   `uquiver` automatically when options change or an item is excluded.
+ * - Scoring: `quiver_score()` encodes launcher-matching, invlet
+ *   precedence, user order position, skill/proficiency, BUC/enchants,
+ *   quantity and role preferences.
+ *
+ * Notes:
+ * - `quiverorder_invlet` has precedence over `quiverorder_otypes`.
+ * - Ignored types/invlets are respected by selection and `uquiver`
+ *   synchronization.
+ * - Persistence and option parsing are integrated (see `options.c`,
+ *   `save.c`, `restore.c` and `invent.c`).
  */
 
 #include "hack.h"
