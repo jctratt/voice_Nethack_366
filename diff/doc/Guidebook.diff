@@ -1079,6 +1079,10 @@
 +               Name  a  monster, an individual object, or a type of object.
 +               Same as "#call".  Autocompletes.  Default keys are `N',  `M-
                 n', and `M-N'.
++
++               The menu also exposes three helper actions: use `I' to open
++               the intrinsic tracker, `N' for your personal notes manager,
++               and `P' to invoke the price-identification tool.
  
            #offer
 -               Offer a sacrifice to the gods.  Autocompletes.  Default  key

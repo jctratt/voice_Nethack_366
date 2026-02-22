@@ -1435,7 +1435,11 @@ int i;
                           && index(callable, objects[i].oc_class)));
 }
 
-/* C and #name commands - player can name monster or object or type of obj */
+/* C and #name commands - player can name monster or object or type of obj.
+ *
+ * February 2026: menu also provides shortcuts for intrinsic tracker and notes
+ * manager so they are easily accessible from the naming submenu.
+ */
 int
 docallcmd()
 {
@@ -1472,7 +1476,20 @@ docallcmd()
     any.a_char = 'a'; /* group accelerator 'l' */
     add_menu(win, NO_GLYPH, &any, abc ? 0 : any.a_char, 'l', ATR_NONE,
              "record an annotation for the current level", MENU_UNSELECTED);
-    end_menu(win, "What do you want to name?");
+
+    /* new submenu entries added February 2026 */
+    any.a_char = 'I'; /* group accelerator 'C' */
+    add_menu(win, NO_GLYPH, &any, abc ? 0 : any.a_char, 'C', ATR_NONE,
+             "open intrinsic tracker menu", MENU_UNSELECTED);
+    any.a_char = 'N'; /* group accelerator 'C' */
+    add_menu(win, NO_GLYPH, &any, abc ? 0 : any.a_char, 'C', ATR_NONE,
+             "open notes menu", MENU_UNSELECTED);
+    any.a_char = 'P'; /* group accelerator 'C' */
+    add_menu(win, NO_GLYPH, &any, abc ? 0 : any.a_char, 'C', ATR_NONE,
+             "price identification", MENU_UNSELECTED);
+
+    /* more generic prompt now that the menu includes non-naming actions */
+    end_menu(win, "What do you want to do?");
     if (select_menu(win, PICK_ONE, &pick_list) > 0) {
         ch = pick_list[0].item.a_char;
         free((genericptr_t) pick_list);
@@ -1521,6 +1538,15 @@ docallcmd()
         break;
     case 'a': /* annotate level */
         donamelevel();
+        break;
+    case 'I': /* open intrinsic tracker from name menu */
+        dointrinsicsmenu();
+        break;
+    case 'N': /* open notes manager from name menu */
+        donotes();
+        break;
+    case 'P': /* run price identification from name menu */
+        price_identify();
         break;
     }
     return 0;

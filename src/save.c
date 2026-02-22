@@ -317,7 +317,15 @@ register int fd, mode;
     urealtime.finish_time = getnow();
     urealtime.realtime += (long) (urealtime.finish_time
                                   - urealtime.start_timing);
-    bwrite(fd, (genericptr_t) &u, sizeof u);
+    /* Do not persist transient, runtime-only "loud-wake" one-time flags. */
+    {
+        struct you ucopy = u; /* copy current player state */
+        ucopy.uevent.umjollnir_woke = 0;
+        ucopy.uevent.uwand_lightning_woke = 0;
+        ucopy.uevent.uhorn_woke = 0;
+        ucopy.uevent.uexplosion_woke = 0;
+        bwrite(fd, (genericptr_t) &ucopy, sizeof ucopy);
+    }
     { char dbg[256]; Sprintf(dbg, "SAVE: wrote u struct, note_count=%d, note_list=%p", u.note_count, (void*)u.note_list); curses_debug_log(dbg); }
 
     /* save intrinsics tracker (length + bytes) -- only when supported */

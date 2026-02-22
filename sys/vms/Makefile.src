@@ -205,7 +205,7 @@ HOBJ5 = rect.obj,region.obj,restore.obj,rip.obj,rnd.obj,role.obj, \
 	spell.obj,steal.obj,steed.obj,sys.obj,teleport.obj,timeout.obj, \
 	topten.obj, track.obj,trap.obj
 HOBJ6 = u_init.obj,uhitm.obj,vault.obj,vision.obj,vis_tab.obj,weapon.obj, \
-	were.obj,wield.obj,windows.obj,wizard.obj,worm.obj,worn.obj, \
+	were.obj,wield.obj,quiver.obj,windows.obj,wizard.obj,worm.obj,worn.obj, \
 	write.obj,zap.obj,version.obj
 HOBJ  = $(FIRSTOBJ) $(SYSOBJ) $(WINOBJ) $(RANDOBJ) \
 	$(HOBJ1) $(HOBJ2) $(HOBJ3) $(HOBJ4) $(HOBJ5) $(HOBJ6)

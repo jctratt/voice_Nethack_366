@@ -97,60 +97,61 @@ struct monst *mtmp;
     /* Display the threat */
     pline("%s is approaching!", Monnam(mtmp));
 
-    /* Show the options */
-    choice = yn_function("Continue your occupation? [(y)es (n)o (a)ction limit (h)p limit (q)uit]",
-                        "ynah", 'n');
+    for (;;) {
+        /* Show the options: yes interrupts, no continues */
+        choice = yn_function("Interrupt your occupation? [y/n/a:actions/h:hp/?]", "ynah?", 'y');
 
-    switch (choice) {
-    case 'y':
-        /* Continue uninterrupted from now on */
-        context.occ_interrupt.continue_mode = 1;
-        pline("You will continue your occupation uninterrupted.");
-        return TRUE; /* continue */
+        switch (choice) {
+        case 'y':
+            if (occtxt && *occtxt)
+                You("stop %s.", occtxt);
+            else
+                You("stop.");
+            return FALSE; /* stop occupation */
 
-    case 'n':
-        /* Stop now */
-        pline("You stop.");
-        return FALSE; /* stop occupation */
+        case 'n':
+            return TRUE; /* continue occupation */
 
-    case 'a':
-        /* Set action limit */
-        getlin("How many more actions?", ans);
-        if (ans[0] && ans[0] != '\033') {
-            val = strtol(ans, &endp, 10);
-            if (endp > ans && *endp == '\0' && val > 0L && val <= LARGEST_INT) {
-                context.occ_interrupt.actions_remaining = (int) val;
-                pline("Will stop after %d more actions.",
-                      context.occ_interrupt.actions_remaining);
-                return TRUE; /* continue */
-            } else {
+        case 'a':
+            /* Set action limit */
+            ans[0] = '\0';
+            getlin("How many more actions?", ans);
+            if (ans[0] && ans[0] != '\033') {
+                val = strtol(ans, &endp, 10);
+                if (endp > ans && *endp == '\0' && val > 0L && val <= LARGEST_INT) {
+                    context.occ_interrupt.actions_remaining = (int) val;
+                    pline("Will stop after %d more actions.",
+                          context.occ_interrupt.actions_remaining);
+                    return TRUE; /* continue */
+                }
                 pline("That's not valid.");
-                return prompt_occ_interrupt(mtmp);
             }
-        }
-        return prompt_occ_interrupt(mtmp); /* Cancelled, ask again */
+            break;
 
-    case 'h':
-        /* Set HP loss limit */
-        getlin("Maximum HP loss allowed?", ans);
-        if (ans[0] && ans[0] != '\033') {
-            val = strtol(ans, &endp, 10);
-            if (endp > ans && *endp == '\0' && val > 0L && val <= LARGEST_INT) {
-                context.occ_interrupt.hp_budget = (int) val;
-                pline("Will stop if you lose more than %d HP.",
-                      context.occ_interrupt.hp_budget);
-                return TRUE; /* continue */
-            } else {
+        case 'h':
+            /* Set HP loss limit */
+            ans[0] = '\0';
+            getlin("How much hp do you want to lose before occupation ends?", ans);
+            if (ans[0] && ans[0] != '\033') {
+                val = strtol(ans, &endp, 10);
+                if (endp > ans && *endp == '\0' && val > 0L && val <= LARGEST_INT) {
+                    context.occ_interrupt.hp_budget = (int) val;
+                    context.occ_interrupt.start_hp = Upolyd ? u.mh : u.uhp;
+                    pline("Will stop if you lose more than %d HP.",
+                          context.occ_interrupt.hp_budget);
+                    return TRUE; /* continue */
+                }
                 pline("That's not valid.");
-                return prompt_occ_interrupt(mtmp);
             }
-        }
-        return prompt_occ_interrupt(mtmp); /* Cancelled, ask again */
+            break;
 
-    case 'q':
-    default:
-        /* Stop */
-        return FALSE;
+        case '?':
+            pline("y: interrupt now, n: keep going, a: set action limit, h: set HP-loss limit");
+            break;
+
+        default:
+            break;
+        }
     }
 }
 

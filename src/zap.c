@@ -2310,6 +2310,8 @@ boolean ordinary;
 
     case WAN_LIGHTNING:
         learn_it = TRUE;
+        /* record/announce first-use even if no monsters are woken */
+        maybe_announce_wand_lightning_wake();
         if (!Shock_resistance) {
             You("shock yourself!");
             damage = d(12, 6);
@@ -3083,6 +3085,12 @@ struct obj *obj;
             impossible("weffects: unexpected spell or wand");
         disclose = TRUE;
     }
+
+    /* count a player's lightning-wand zap as a "first use" (even if no
+       monster is actually awakened) */
+    if (otyp == WAN_LIGHTNING)
+        maybe_announce_wand_lightning_wake();
+
     if (disclose) {
         learnwand(obj);
         if (was_unkn)
@@ -5311,12 +5319,58 @@ makewish()
     if (flags.verbose)
         You("may wish for an object.");
  retry:
+    /* keep the historical phrasing but still use the #name input dialog
+       (see get_name_input) so curses builds get a popup window with full
+       editing support rather than the simple single‑line prompt used by
+       getlin(). */
     Strcpy(promptbuf, "For what do you wish");
     if (iflags.cmdassist && tries > 0)
         Strcat(promptbuf, " (enter 'help' for assistance)");
     Strcat(promptbuf, "?");
-    getlin(promptbuf, buf);
+    /* On the very first attempt, provide a common prefix so wand-of-wishing
+       usage can be quicker.  The user can backspace or change it as needed. */
+    if (tries == 0)
+        Strcpy(buf, "blessed fixed greased ");
+    /* convert space to zero terminator later; any buffer size is
+       BUFSZ which is passed below. */
+    get_name_input(promptbuf, buf, BUFSZ);
     (void) mungspaces(buf);
+
+    /* tokenize the input on spaces and expand any gdsm/sdsm tokens, leaving
+       prefixes such as "blessed fixed +2" intact.  this lets wishes like
+       "blessed fixed greased +2 GDSM" work correctly. */
+    {
+        char buf2[BUFSZ];
+        char *p = buf;
+        char *q = buf2;
+
+        buf2[0] = '\0';
+        while (*p) {
+            char word[BUFSZ];
+            int n = 0;
+
+            /* copy one token */
+            while (*p && *p != ' ') {
+                word[n++] = *p++;
+            }
+            word[n] = '\0';
+
+            if (!strcmpi(word, "gdsm"))
+                Strcpy(word, "gray dragon scale mail");
+            else if (!strcmpi(word, "sdsm"))
+                Strcpy(word, "silver dragon scale mail");
+
+            if (q != buf2)
+                *q++ = ' ';
+            Strcpy(q, word);
+            q += strlen(q);
+
+            if (*p == ' ')
+                p++; /* skip separator */
+        }
+        Strcpy(buf, buf2);
+    }
+
     if (buf[0] == '\033') {
         buf[0] = '\0';
     } else if (!strcmpi(buf, "help")) {

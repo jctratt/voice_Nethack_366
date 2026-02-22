@@ -158,6 +158,7 @@ static struct Bool_Opt {
 #endif
     { "implicit_uncursed", &iflags.implicit_uncursed, TRUE, SET_IN_GAME },
     { "invweight", &flags.invweight, FALSE, SET_IN_GAME },
+    { "drop_ignore_gems", &flags.drop_ignore_gems, FALSE, SET_IN_GAME },
     { "large_font", &iflags.obsolete, FALSE, SET_IN_FILE }, /* OBSOLETE */
     { "legacy", &flags.legacy, TRUE, DISP_IN_GAME },
     { "lit_corridor", &flags.lit_corridor, FALSE, SET_IN_GAME },

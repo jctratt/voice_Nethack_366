@@ -265,6 +265,7 @@ E int dotogglevoice(void);
 #endif /* VOICE_ENABLED */
 
 /* ### notes.c ### */
+E int NDECL(dointrinsicsmenu);
 E int NDECL(donotes);
 E void FDECL(add_note, (const char *));
 E void FDECL(delete_note, (int));
@@ -1969,6 +1970,10 @@ E void VDECL(Your, (const char *, ...)) PRINTF_F(1, 2);
 E void VDECL(You_feel, (const char *, ...)) PRINTF_F(1, 2);
 E void VDECL(You_cant, (const char *, ...)) PRINTF_F(1, 2);
 E void VDECL(You_hear, (const char *, ...)) PRINTF_F(1, 2);
+E void NDECL(maybe_announce_mjollnir_wake);
+E void NDECL(maybe_announce_wand_lightning_wake);
+E void NDECL(maybe_announce_instrument_wake);
+E void NDECL(maybe_announce_explosion_wake);
 E void VDECL(You_see, (const char *, ...)) PRINTF_F(1, 2);
 E void VDECL(pline_The, (const char *, ...)) PRINTF_F(1, 2);
 E void VDECL(There, (const char *, ...)) PRINTF_F(1, 2);

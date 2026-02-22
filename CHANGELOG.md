@@ -2,9 +2,19 @@
 
 Commits since `README.md` was last updated (commit c012979 — 2025-03-05):
 
+- UNCOMMITTED 2026-02-22 Jeff Tratt — UI: add price identification to `#name` submenu
+  - `#name` now has a `P` entry which invokes the existing `price_identify` command, alongside the previously added intrinsics and notes shortcuts.
+  - Updated automated tests (`test_simple.sh`, `tools/test_name_menu.exp`) and documentation references accordingly.
+
 - UNCOMMITTED 2026-02-19 Jeff Tratt — UI: add intrinsic tracker and notes commands to `#name` submenu
   - `#name` (and its `N`/`C` key) now shows two additional entries: `I` opens the intrinsics tracker, `N` opens the personal notes manager.
   - Prompt text updated to "What do you want to do?" and documentation adjusted.
+  - Wish input now uses the #name dialog for improved editing (prompt remains "For what do you wish?").
+  - Added shorthand handling so wishing for "gdsm" or "sdsm" expands to the
+    full gray/silver dragon scale mail names (works even with prefixes like
+    "blessed fixed +2 GDSM").
+  - First wish prompt is now prefilled with "blessed fixed greased ", a common
+    convenience phrase that can be edited or cleared.
   - Automated tests (`test_simple.sh`, `tools/test_name_menu.exp`) exercise the new menu entries.
   - `dat/cmdhelp` entry for `N` updated to mention submenu functionality.
 

@@ -619,6 +619,14 @@ unsigned int *stuckid, *steedid;
 #endif
     mread(fd, (genericptr_t) &u, sizeof(struct you));
 
+    /* Transient, runtime-only "loud-wake" one-time flags must NOT be
+       restored from save files — zero them here so every restore treats
+       noisy items as first-time use. */
+    u.uevent.umjollnir_woke = 0;
+    u.uevent.uwand_lightning_woke = 0;
+    u.uevent.uhorn_woke = 0;
+    u.uevent.uexplosion_woke = 0;
+
     /* Handle pointers in 'you' struct following NetHack's oextra pattern:
      * The pointer values read from the save file are garbage (old memory addresses),
      * but non-null garbage = data exists, null = no data.

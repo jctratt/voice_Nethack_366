@@ -2900,7 +2900,9 @@ monster_nearby()
     register int x, y;
     register struct monst *mtmp;
 
-    if (!is_digging()) {
+    if (is_digging())
+        pline("dig");
+
     /* Also see the similar check in dochugw() in monmove.c */
     for (x = u.ux - 1; x <= u.ux + 1; x++)
         for (y = u.uy - 1; y <= u.uy + 1; y++) {
@@ -2912,11 +2914,15 @@ monster_nearby()
                 && (!is_hider(mtmp->data) || !mtmp->mundetected)
                 && !noattacks(mtmp->data) && mtmp->mcanmove
                 && !mtmp->msleeping  /* aplvax!jcn */
-                && !onscary(u.ux, u.uy, mtmp) && canspotmon(mtmp))
-                return 1;
+                && !onscary(u.ux, u.uy, mtmp) && canspotmon(mtmp)) {
+                if (is_digging()) {
+                    if (!check_occ_interrupt(mtmp))
+                        return 1;
+                } else {
+                    return 1;
+                }
+            }
         }
-    } else
-        pline("dig");
 
     return 0;
 }

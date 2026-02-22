@@ -1216,8 +1216,15 @@ int dieroll; /* needed for Magicbane and vorpal blades */
             pline_The("massive hammer hits%s %s%c",
                       !spec_dbon_applies ? "" : "!  Lightning strikes",
                       hittee, !spec_dbon_applies ? '.' : '!');
-        if (spec_dbon_applies)
+        if (spec_dbon_applies) {
             wake_nearto(mdef->mx, mdef->my, 4 * 4);
+            /* one-time player-visible message when Mjollnir's lightning wakes monsters */
+            if (otmp->oartifact == ART_MJOLLNIR && !u.uevent.umjollnir_woke) {
+                if (realizes_damage)
+                    maybe_announce_mjollnir_wake();
+                u.uevent.umjollnir_woke = 1;
+            }
+        }
         if (!rn2(5))
             (void) destroy_mitem(mdef, RING_CLASS, AD_ELEC);
         if (!rn2(5))

@@ -38,6 +38,9 @@ struct monst *mtmp;
 /*
  * Move for priests and shopkeepers.  Called from shk_move() and pri_move().
  * Valid returns are  1: moved  0: didn't  -1: let m_move do it  -2: died.
+ *
+ * Peaceful priests additionally avoid occupying their altar square when
+ * choosing a move, even during relocations triggered by priest logic.
  */
 int
 move_special(mtmp, in_his_shop, appr, uondoor, avoid, omx, omy, gx, gy)
@@ -98,6 +101,12 @@ pick_move:
     for (i = 0; i < cnt; i++) {
         nx = poss[i].x;
         ny = poss[i].y;
+        /* peaceful priests should never even consider stepping on their
+           own altar; skip that square when choosing a move.  (angry ones
+           get no such protection so that pursuit remains relentless) */
+        if (mtmp->ispriest && mtmp->mpeaceful && EPRI(mtmp)
+            && nx == EPRI(mtmp)->shrpos.x && ny == EPRI(mtmp)->shrpos.y)
+            continue;
         if (IS_ROOM(levl[nx][ny].typ)
             || (mtmp->isshk && (!in_his_shop || ESHK(mtmp)->following))) {
             if (avoid && (info[i] & NOTONL))
@@ -197,8 +206,19 @@ register struct monst *priest;
     gx = EPRI(priest)->shrpos.x;
     gy = EPRI(priest)->shrpos.y;
 
-    gx += rn1(3, -1); /* mill around the altar */
-    gy += rn1(3, -1);
+    /* peaceful priests mill around their shrine but never stand
+       on the altar itself; angry/conflicted ones keep the original
+       behaviour so they can step onto it while pursuing the player. */
+    if (priest->mpeaceful) {
+        do {
+            gx = EPRI(priest)->shrpos.x + rn1(3, -1);
+            gy = EPRI(priest)->shrpos.y + rn1(3, -1);
+        } while (gx == EPRI(priest)->shrpos.x
+                 && gy == EPRI(priest)->shrpos.y);
+    } else {
+        gx += rn1(3, -1); /* mill around the altar */
+        gy += rn1(3, -1);
+    }
 
     if (!priest->mpeaceful
         || (Conflict && !resist(priest, RING_CLASS, 0, 0))) {

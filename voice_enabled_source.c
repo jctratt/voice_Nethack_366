@@ -4,6 +4,8 @@
 // changes to Nethack 3.6.6 to enable voice output with espeak
 // I wrote this on KDE Neon X11
 
+// This is a compilation of changes for this feature.
+
 // .nethackrc needs:
 // # Enable or disable voice output (changeable in-game options)
 // OPTIONS=voice_enabled

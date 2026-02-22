@@ -607,6 +607,7 @@ struct obj *instr;
         else
             You("blow into the horn.");
         awaken_monsters(u.ulevel * 30);
+        maybe_announce_instrument_wake();
         exercise(A_WIS, FALSE);
         break;
     case BUGLE: /* Awaken & attract soldiers */
@@ -615,6 +616,7 @@ struct obj *instr;
         else
             You("blow into the bugle.");
         awaken_soldiers(&youmonst);
+        maybe_announce_instrument_wake();
         exercise(A_WIS, FALSE);
         break;
     case MAGIC_HARP: /* Charm monsters */
@@ -650,6 +652,7 @@ struct obj *instr;
         do_earthquake((u.ulevel - 1) / 3 + 1);
         /* shake up monsters in a much larger radius... */
         awaken_monsters(ROWNO * COLNO);
+        maybe_announce_instrument_wake();
         makeknown(DRUM_OF_EARTHQUAKE);
         break;
     case LEATHER_DRUM: /* Awaken monsters */
@@ -666,6 +669,7 @@ struct obj *instr;
                 rn2(2) ? "butcher" : rn2(2) ? "manage" : "pull off",
                 an(beats[rn2(SIZE(beats))]));
         awaken_monsters(u.ulevel * (mundane ? 5 : 40));
+        maybe_announce_instrument_wake();
         context.botl = TRUE;
         break;
     default:

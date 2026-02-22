@@ -1284,6 +1284,39 @@ unsigned doname_flags;
             Sprintf(eos(bp), " (%u aum)", obj->owt);
     }
     bp = strprepend(bp, prefix);
+
+    /* insert spellbook level prefix into final name if appropriate */
+    if (obj->oclass == SPBOOK_CLASS
+        && objects[obj->otyp].oc_name_known
+        && obj->otyp != SPE_NOVEL
+        && objects[obj->otyp].oc_level > 0) {
+        char levbuf[20];
+        char *marker, *ins;
+        int levlen;
+        Sprintf(levbuf, "L%d ", objects[obj->otyp].oc_level);
+        levlen = (int) strlen(levbuf);
+        marker = strstr(bp, " of ");
+        if (!marker)
+            marker = strstr(bp, "called ");
+        if (!marker)
+            marker = strstr(bp, "spellbook");
+        if (marker) {
+            if (!strncmp(marker, " of ", 4))
+                ins = marker + 4;
+            else if (!strncmp(marker, "called ", 7))
+                ins = marker + 7;
+            else
+                ins = marker + 9; /* after "spellbook" */
+            if (*ins) {
+                size_t taillen = strlen(ins);
+                memmove(ins + levlen, ins, taillen + 1);
+            }
+            memcpy(ins, levbuf, levlen);
+        } else {
+            /* shouldn't happen but mimic previous fallback */
+            Sprintf(eos(bp), " [%s]", levbuf);
+        }
+    }
     return bp;
 }
 

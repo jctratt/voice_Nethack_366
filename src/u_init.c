@@ -624,6 +624,10 @@ u_init()
     u.uevent.uhand_of_elbereth = 0;
     u.uevent.uheard_tune = 0;
     u.uevent.uopened_dbridge = 0;
+    u.uevent.umjollnir_woke = 0;
+    u.uevent.uwand_lightning_woke = 0;
+    u.uevent.uhorn_woke = 0;
+    u.uevent.uexplosion_woke = 0;
     u.uevent.udemigod = 0;              /* not a demi-god yet... */
     u.udg_cnt = 0;
     u.mh = u.mhmax = u.mtimedone = 0;

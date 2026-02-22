@@ -165,7 +165,7 @@ STATIC_PTR int NDECL(doterrain);
 STATIC_PTR int NDECL(wiz_wish);
 STATIC_PTR int NDECL(wiz_identify);
 STATIC_PTR int NDECL(wiz_intrinsic);
-STATIC_PTR int NDECL(dointrinsicsmenu);
+int NDECL(dointrinsicsmenu); /* public so other files (do_name.c) can call it */
 STATIC_PTR int NDECL(wiz_map);
 STATIC_PTR int NDECL(wiz_makemap);
 STATIC_PTR int NDECL(wiz_genesis);
@@ -3436,7 +3436,7 @@ int doshowlines(VOID_ARGS);
 int doshowboomerang(VOID_ARGS);
 boolean is_showboom_direction_set(VOID_ARGS);
 
-STATIC_PTR int
+int
 dointrinsicsmenu(VOID_ARGS)
 {
     winid win;

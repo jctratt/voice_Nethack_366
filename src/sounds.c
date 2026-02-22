@@ -43,6 +43,12 @@ dosounds()
         };
         You_hear1(fountain_msg[rn2(3) + hallu]);
     }
+
+/* One-time loud-wake announcement helpers
+ * These are intentionally simple and per-source so they can be called
+ * from places that wake monsters (artifacts, instruments, explosions).
+ */
+
     if (level.flags.nsinks && !rn2(300)) {
         static const char *const sink_msg[3] = {
             "a slow drip.", "a gurgling noise.", "dishes being washed!",
@@ -295,6 +301,51 @@ dosounds()
         }
         return;
     }
+}
+
+void
+maybe_announce_mjollnir_wake()
+{
+    if (u.uevent.umjollnir_woke)
+        return;
+    u.uevent.umjollnir_woke = 1;
+    if (Deaf || !flags.acoustics)
+        return;
+    pline("Wow! That was loud!");
+}
+
+void
+maybe_announce_wand_lightning_wake()
+{
+    if (u.uevent.uwand_lightning_woke)
+        return;
+    /* record the event even if player is Deaf so it's still "one-time" */
+    u.uevent.uwand_lightning_woke = 1;
+    if (Deaf || !flags.acoustics)
+        return;
+    pline("That lightning crack was loud!");
+}
+
+void
+maybe_announce_instrument_wake()
+{
+    if (u.uevent.uhorn_woke)
+        return;
+    u.uevent.uhorn_woke = 1;
+    if (Deaf || !flags.acoustics)
+        return;
+    pline("The horn's blast is deafening!");
+}
+
+void
+maybe_announce_explosion_wake()
+{
+    if (u.uevent.uexplosion_woke)
+        return;
+    u.uevent.uexplosion_woke = 1;
+    if (Deaf || !flags.acoustics)
+        return;
+    pline("That was a huge explosion!");
 }
 
 static const char *const h_sounds[] = {

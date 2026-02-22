@@ -41,7 +41,7 @@ j	Jump: shortcut for '#jump'
 k	Kick: synonym for '^D'
 l	Loot: shortcut for '#loot'
 n	Start a count; continue with digit(s)
-N	Name: shortcut for '#name'
+N	Name / submenu: shortcut for '#name' (also opens intrinsics/notes/price ID)
 u	Untrap: shortcut for '#untrap'
 &. #0,-1 vs 1,2,3,4
 a	Apply (use) a tool or break a wand

@@ -10,7 +10,7 @@ When adding any feature to NetHack that requires persistence across save/load cy
 ### 1. **Define Your Data Structure**
 **Location:** Appropriate header file (e.g., `include/you.h`, `include/flag.h`, `include/hack.h`)
 
-Note: If you add persistent per-level summaries (for example, `mapseen` additions such as a short `petnames` string used by `#overview`), you must update the `mapseen` structure in `include/dungeon.h` and increment `EDITLEVEL` in `include/patchlevel.h` so old saves/bones are invalidated. Follow the `custom/custom_lth` pattern when adding variable-length text fields.
+Note: If you add persistent per-level summaries (for example, `mapseen` additions such as a short `petnames` string used by `#overview`), you must update the `mapseen` structure in `include/dungeon.h` and increment `EDITLEVEL` in `include/patchlevel.h` so old saves/bones are invalidated. Adding or removing fields in `struct flag` likewise requires bumping `EDITLEVEL` (see recent change for `invweight` and `drop_ignore_gems`). Follow the `custom/custom_lth` pattern when adding variable-length text fields.
 
 ```c
 /* Example: Adding a new player attribute */

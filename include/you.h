@@ -51,6 +51,10 @@ struct u_event {
     Bitfield(uhand_of_elbereth, 2); /* became Hand of Elbereth */
     Bitfield(udemigod, 1);          /* killed the wiz */
     Bitfield(uvibrated, 1);         /* stepped on "vibrating square" */
+    Bitfield(umjollnir_woke, 1);    /* saw Mjollnir wake monsters (one-time) */
+    Bitfield(uwand_lightning_woke, 1); /* saw wand-of-lightning wake monsters (one-time) */
+    Bitfield(uhorn_woke, 1);         /* heard a horn/bugle/drum wake monsters (one-time) */
+    Bitfield(uexplosion_woke, 1);   /* saw an explosion wake monsters (one-time) */
     Bitfield(ascended, 1);          /* has offered the Amulet */
 };
 

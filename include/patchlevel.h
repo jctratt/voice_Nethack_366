@@ -14,9 +14,10 @@
  * Incrementing EDITLEVEL can be used to force invalidation of old bones
  * and save files.
  *
- * NOTE: increased because `struct flag` layout changed (added `invweight`).
+ * NOTE: increased because `struct flag` layout changed (added
+ * `invweight` and `drop_ignore_gems`).
  */
-#define EDITLEVEL 2
+#define EDITLEVEL 3
 
 #define COPYRIGHT_BANNER_A "NetHack, Copyright 1985-2020"
 #define COPYRIGHT_BANNER_B \

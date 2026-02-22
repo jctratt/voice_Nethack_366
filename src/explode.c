@@ -573,6 +573,12 @@ int expltype;
     if (inside_engulfer)
         i = (i + 3) / 4;
     wake_nearto(x, y, i);
+
+    /* one-time, source-specific loud-wake messages */
+    if (type == -WAN_LIGHTNING)
+        maybe_announce_wand_lightning_wake();
+    else
+        maybe_announce_explosion_wake();
 }
 
 struct scatter_chain {
