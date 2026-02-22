@@ -44,6 +44,14 @@ struct flag {
     /* show per-item inventory weight in inventory listings as [TOTALxITEM]
        e.g. "[60x20]" for 3 items weighing 20 each */
     boolean invweight;
+    /* when performing a drop and filtering by unknown bless/curse (+X),
+       treat gems/rocks as if they aren't carried so they don't show up in
+       the list of candidates.  the class still appears in the initial
+       category prompt and items can be dropped by asking for the g/r class
+       or using "drop all".  Old games will read this as FALSE because the
+       savefile reader zero-fills new bytes.
+     */
+    boolean drop_ignore_gems;
     boolean legacy;          /* print game entry "story" */
     boolean lit_corridor;    /* show a dark corr as lit if it is in sight */
     boolean nap;             /* `timed_delay' option for display effects */

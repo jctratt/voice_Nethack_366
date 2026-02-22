@@ -27,6 +27,48 @@ STATIC_DCL int FDECL(CFDECLSPEC sortloot_cmp, (const genericptr,
                                                const genericptr));
 STATIC_DCL void NDECL(reorder_invent);
 STATIC_DCL void FDECL(noarmor, (BOOLEAN_P));
+
+/* previously we had a helper to strip gem/rock letters from the
+   category prompt when drop_ignore_gems was set; that behaviour turned
+   out to be unwanted.  The option now affects only the object-selection
+   filtering for an unknown-BUC drop, so neither of the following
+   routines are used any more.  They are left here commented in case the
+   feature is tweaked again, but the call site has been removed. */
+#if 0
+/* remove a single character from an inventory-type list */
+STATIC_OVL void
+remove_class_sym(ilets, sym)
+    char *ilets;
+    char sym;
+{
+    char *p;
+
+    if ((p = index(ilets, sym)) != 0) {
+        (void) strcpy(p, p + 1);
+    }
+}
+
+/* filter out gem and rock symbols when the drop-ignore option is active
+   (only invoked for the drop command).  We keep a copy of the original
+   content so that if filtering produces an empty string we can restore it,
+   which prevents presenting an unusable "[]" prompt when the player only
+   carries gems/stones.
+ */
+void
+hide_drop_gems(ilets)
+    char *ilets;
+{
+    char savebuf[BUFSZ];
+
+    if (!flags.drop_ignore_gems)
+        return;
+    Strcpy(savebuf, ilets);
+    remove_class_sym(ilets, def_oc_syms[GEM_CLASS].sym);
+    remove_class_sym(ilets, def_oc_syms[ROCK_CLASS].sym);
+    if (!ilets[0])
+        Strcpy(ilets, savebuf);
+}
+#endif
 STATIC_DCL void FDECL(invdisp_nothing, (const char *, const char *));
 STATIC_DCL boolean FDECL(worn_wield_only, (struct obj *));
 STATIC_DCL boolean FDECL(only_here, (struct obj *));
@@ -2050,7 +2092,20 @@ STATIC_PTR int
 ckvalidcat(otmp)
 struct obj *otmp;
 {
-    /* use allow_category() from pickup.c */
+    /* Hide gems/rocks only when the unknown-BUC filter (+X) is active
+       and the option is enabled.  We deliberately avoid doing this for
+       the other B/U/C filters since the user's intention in those cases
+       may well include gems/stones with the requested bless/curse state.
+       The check for explicit class presence allows the user to force them
+       back by entering 'g' or 'r' ahead of time. */
+    if (flags.drop_ignore_gems
+        && menu_class_present('X')
+        && (otmp->oclass == GEM_CLASS || otmp->oclass == ROCK_CLASS)
+        && !menu_class_present(def_oc_syms[GEM_CLASS].sym)
+        && !menu_class_present(def_oc_syms[ROCK_CLASS].sym))
+        return 0;
+
+    /* fall back to the usual category filter logic from pickup.c */
     return (int) allow_category(otmp);
 }
 
@@ -2143,6 +2198,12 @@ unsigned *resultflags;
     }
 
     iletct = collect_obj_classes(ilets, invent, FALSE, ofilter, &itemcount);
+
+    /* previously we would remove gems/rocks from the category prompt
+       here when drop_ignore_gems was enabled.  that behaviour is no longer
+       desired; the option now only affects the object-selection stage when
+       filtering by unknown BUC. */
+
     unpaid = count_unpaid(invent);
 
     if (ident && !iletct) {
@@ -2998,6 +3059,7 @@ long *out_cnt;
                     else if (total_wt > 0)
                         Sprintf(eos(lab), " [%ld]", total_wt);
                 }
+
                 /* map object to unique quiver-candidate rank (if any) */
                 if (qc_cnt > 0) {
                     for (qi = 0; qi < qc_cnt; ++qi) {

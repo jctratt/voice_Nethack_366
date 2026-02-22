@@ -2,6 +2,12 @@
 
 Commits since `README.md` was last updated (commit c012979 — 2025-03-05):
 
+- UNCOMMITTED 2026-02-19 Jeff Tratt — UI: add intrinsic tracker and notes commands to `#name` submenu
+  - `#name` (and its `N`/`C` key) now shows two additional entries: `I` opens the intrinsics tracker, `N` opens the personal notes manager.
+  - Prompt text updated to "What do you want to do?" and documentation adjusted.
+  - Automated tests (`test_simple.sh`, `tools/test_name_menu.exp`) exercise the new menu entries.
+  - `dat/cmdhelp` entry for `N` updated to mention submenu functionality.
+
 - UNCOMMITTED 2026-02-19 Jeff Tratt — FIX: inventory `[qN]` labels to respect `quiverorder_invlet`
   - Ensure visible `[qN]` tags in the inventory follow the `quiverorder_invlet` option so display numbering matches autoquiver/dofire selection semantics.
   - `qc_cmp()` now gives `quiverorder_invlet` precedence when present; falls back to otype/text ranking otherwise.
@@ -51,6 +57,7 @@ Commits since `README.md` was last updated (commit c012979 — 2025-03-05):
   - Persist per-level short pet-name summary in `mapseen->petnames` and show `pets: ...` in `#overview` for levels that contain any of the player's tamed pets. Unnamed pets display by species. Ensures pets that follow the player are removed from the previous level's overview. Savefile `EDITLEVEL` incremented due to `mapseen` layout change; old saves/bones will be incompatible.
 
 - bbe76a5 / b550dea0 2026-02-14 Jeff Tratt — Feature: `OPTIONS=invweight` — add persistent per-item inventory weight display (format: `[TOTALxITEM]`, e.g. `[60x20]` for 3 items of 20 each). Implemented persistent `flags.invweight`, added inventory display, documented option in `dat/opthelp`, and updated save/restore handling. NOTE: `EDITLEVEL` was incremented because `struct flag` layout changed (old savefiles/bones invalidated). Replaced an expect-based test with in-source changes; see tests for follow-up unit-style coverage.
+- 2026-02-22 Jeff Tratt — Add `OPTIONS=drop_ignore_gems` boolean. When enabled, gems and rocks are ignored when dropping unknown-BUC items (the +X filter); they are still visible in the initial category prompt and can be dropped by specifying g/r or using "drop all". New flag `flags.drop_ignore_gems` saved in game file; `EDITLEVEL` bumped. Added filtering helper, updated `ggetobj()` and `query_category()` plus `allow_category()`, documentation, and a standalone unit test.
 
 
 
@@ -63,6 +70,18 @@ Commits since `README.md` was last updated (commit c012979 — 2025-03-05):
 - 6c2e5be 2026-02-06 Jeff Tratt — Add #showlines: transient sight-lines aid (curses highlights + tmp_at fallback), persistent until move, auto-clear on cancel/move, integrate with 'z' and 'Z'
 - 6376f7f 2026-02-05 Jeff Tratt — color: show hero color for confuse-monster charges and force redraw
 - 84e4ff0 2026-02-05 Jeff Tratt — name: use price-identify logic for #name floor price ranges; compute surcharge variant to avoid L0 ranges
+- UNCOMMITTED 2026-02-20 Jeff Tratt — UI: add intrinsics and notes to #name submenu
+  - `#name`/`C` (`N` key) now shows two extra entries for opening the
+    intrinsic tracker and personal notes manager. Prompt updated to
+    "What do you want to do?" and new accelerator keys `I`/`N` added.
+    Tests updated accordingly.
+
+- UNCOMMITTED 2026-02-20 Jeff Tratt — Feature: show known spellbook level in inventory
+  - Append `[LN]` suffix (with spell level) to known spellbooks in inventory
+    listings; novels and unidentified spellbooks are excluded. Works in
+    normal and permanent inventories and plays nicely with `OPTIONS=invweight`.
+  - Added smoke test script verifying the level string and updated
+    documentation as appropriate.
 - 8a2cde9 2026-02-04 Jeff Tratt — priceid: show alternate candidate prices; move category selection earlier; add Ctrl-B/Ctrl-S toggle and Ctrl-G category jump; credit dizzy (Aubrey Raech/dizzyprice)
 - 935e871 2026-02-04 Jeff Tratt — docall: add appearance-based short prefill and labeled shop L/H hints; use shop_get_cost/shop_set_cost
 - ff3ecbb 2026-02-03 Jeff Tratt — Reapply WIP tile options and resolve BL_TILE merge conflicts

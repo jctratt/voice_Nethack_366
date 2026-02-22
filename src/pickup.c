@@ -442,6 +442,15 @@ boolean
 allow_category(obj)
 struct obj *obj;
 {
+    /* drop_ignore_gems only suppresses gems/rocks when the filter
+       the player has chosen is solely "unknown BUC" (i.e. +X).  in all
+       other situations they remain selectable.  we implement that here
+       before any other filtering so that an otherwise matching gem/rock
+       can still be rejected. */
+    if (flags.drop_ignore_gems && bucx_filter && !class_filter
+        && (obj->oclass == GEM_CLASS || obj->oclass == ROCK_CLASS))
+        return FALSE;
+
     /* For coins, if any class filter is specified, accept if coins
      * are included regardless of whether either unpaid or BUC-status
      * is also specified since player has explicitly requested coins.
@@ -1200,7 +1209,7 @@ int how;               /* type of query */
 
     ccount = count_categories(olist, qflags);
     /* no point in actually showing a menu for a single category */
-    if (ccount == 1 && !do_unpaid && num_buc_types <= 1
+    if (ccount == 1 && !(qflags & WORN_TYPES) && !do_unpaid && num_buc_types <= 1
         && !(qflags & BILLED_TYPES)) {
         for (curr = olist; curr; curr = FOLLOW(curr, qflags)) {
             if (ofilter && !(*ofilter)(curr))
