@@ -1492,6 +1492,18 @@ int after; /* this is extra fast monster movement */
         ny = poss[i].y;
         cursemsg[i] = FALSE;
 
+        /* don't allow diagonal moves that pass through a doorway with a
+           door in it.  this mirrors the checks in hack.c and pet_bfs_to_player
+           to keep pets from "transporting" over doors via diagonal steps */
+        if (nx != omx && ny != omy) {
+            /* moving diagonally */
+            if ((IS_DOOR(levl[nx][ny].typ)
+                 && (levl[nx][ny].doormask & ~D_BROKEN))
+                || (IS_DOOR(levl[omx][omy].typ)
+                    && (levl[omx][omy].doormask & ~D_BROKEN)))
+                continue;
+        }
+
         /* Never consider moving onto the player's square; that results in
            the pet 'attacking' the player (mattacku).  Allow only when the
            movement flags explicitly permit (e.g. ALLOW_U under Conflict).
