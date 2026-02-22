@@ -2090,6 +2090,9 @@ The \(lq#enhance\(rq extended command is used to review current weapons
 proficiency
 (also spell proficiency) and to choose which skill(s) to improve when
 you've used one or more skills enough to become eligible to do so.
+The on-screen list shows each skill with both your current level and the
+maximum level possible for your role; the latter column is informational
+only.
 The skill rankings are \(lqnone\(rq (sometimes also referred to as
 \(lqrestricted\(rq, because you won't be able to advance),
 \(lqunskilled\(rq, \(lqbasic\(rq, \(lqskilled\(rq, and \(lqexpert\(rq.
