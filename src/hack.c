@@ -4,6 +4,7 @@
 /* NetHack may be freely redistributed.  See license for details. */
 
 #include "hack.h"
+#include <stdbool.h>
 
 /* #define DEBUG */ /* uncomment for debugging */
 
@@ -1623,10 +1624,56 @@ domove_core()
             if (M_AP_TYPE(mtmp) && !Protection_from_shape_changers
                 && !sensemon(mtmp))
                 stumble_onto_mimic(mtmp);
-            else if (mtmp->mpeaceful && !Hallucination)
+            else if (mtmp->mpeaceful && !Hallucination) {
                 /* m_monnam(): "dog" or "Fido", no "invisible dog" or "it" */
                 pline("Pardon me, %s.", m_monnam(mtmp));
-            else
+                /* We're already on a stair/ladder tile and have used the
+                   "m" prefix against an adjacent peaceful pet.  The hero is
+                   about to try to go up/down and we want that pet to be
+                   *non‑adjacent* so it won't follow.  Move the pet one square
+                   further from the player if possible; if the straightforward
+                   step is blocked, pick any nearby good position that is not
+                   adjacent to the hero.  If all else fails, leave the pet
+                   where it is. */
+                if (On_stairs(u.ux, u.uy)) {
+                    int dx = sgn(mtmp->mx - u.ux);
+                    int dy = sgn(mtmp->my - u.uy);
+                    int nx = mtmp->mx + dx;
+                    int ny = mtmp->my + dy;
+
+                    if ((dx || dy) && goodpos(nx, ny, mtmp, 0)) {
+                        rloc_to(mtmp, nx, ny);
+                        monflee(mtmp, 3, TRUE, FALSE); /* give a few fleeing steps */
+                    } else {
+                        /* search adjacent squares for a spot that keeps the
+                           pet off the player's 8 neighbours */
+                        bool moved = FALSE;
+                        for (int ix = -1; ix <= 1 && !moved; ix++) {
+                            for (int iy = -1; iy <= 1 && !moved; iy++) {
+                                int cx = mtmp->mx + ix;
+                                int cy = mtmp->my + iy;
+                                if (ix == 0 && iy == 0)
+                                    continue;
+                                if (!goodpos(cx, cy, mtmp, 0))
+                                    continue;
+                                if (abs(cx - u.ux) > 1 || abs(cy - u.uy) > 1) {
+                                    rloc_to(mtmp, cx, cy);
+                                    monflee(mtmp, 3, TRUE, FALSE);
+                                    moved = TRUE;
+                                }
+                            }
+                        }
+                        if (!moved) {
+                            coord cc;
+                            if (enexto(&cc, mtmp->mx, mtmp->my, mtmp->data)
+                                && (abs(cc.x - u.ux) > 1 || abs(cc.y - u.uy) > 1)) {
+                                rloc_to(mtmp, cc.x, cc.y);
+                                monflee(mtmp, 3, TRUE, FALSE);
+                            }
+                        }
+                    }
+                }
+            } else
                 You("move right into %s.", mon_nam(mtmp));
             return;
         }

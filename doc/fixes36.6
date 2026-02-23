@@ -13,7 +13,11 @@ avoid divide by 0 crash if 'bogusmon' (file of bogus monster types) is empty
 avoid #wizrumorcheck crash if either 'rumors.tru' or 'rumors.fal' or both
 	were empty when makedefs built 'rumors'
 avoid "<mon>'s glorkum pass harmlessly through the shade" for weaponless mon
-  
+avoid pets blocking staircases: using an 'm' prefix on a stair/ladder square
+with a peaceful pet now prints "Pardon me" and nudges the pet one square
+away (ensuring it is no longer adjacent) so the hero can go up/down without
+having the pet follow or block the stairs next turn
+
 
 Platform- and/or Interface-Specific Fixes or Features
 -----------------------------------------------------
