@@ -569,14 +569,57 @@ struct obj *obj;         /* missile (or stack providing it) */
                 && is_unicorn(youmonst.data)) {
                 if (singleobj->otyp > LAST_GEM) {
                     You("catch the %s.", xname(singleobj));
-                    You("are not interested in %s junk.",
-                        s_suffix(mon_nam(mon)));
+                    /* include the item type when commenting on the junk */
+                    You("are not interested in %s %s junk.",
+                        s_suffix(mon_nam(mon)),
+                        simple_typename(singleobj->otyp));
+                    /* append suffix to any personal name */
+                    if (has_oname(singleobj)) {
+                        char buf[PL_PSIZ];
+                        Strcpy(buf, ONAME(singleobj));
+                        if (!strstri(buf, " junk")) {
+                            Strcat(buf, " junk");
+                            oname(singleobj, buf);
+                        }
+                    }
+                    /* also update the persistent type name if present */
+                    if (objects[singleobj->otyp].oc_uname) {
+                        char buf2[PL_PSIZ];
+                        Strcpy(buf2, objects[singleobj->otyp].oc_uname);
+                        if (!strstri(buf2, " junk")) {
+                            Strcat(buf2, " junk");
+                            free((genericptr_t)objects[singleobj->otyp].oc_uname);
+                            objects[singleobj->otyp].oc_uname = dupstr(buf2);
+                        }
+                    }
                     makeknown(singleobj->otyp);
                     dropy(singleobj);
                 } else {
+                    /* gem thrown by unicorn is a gift; name the gem in the
+                       phrase so the player knows what kind of gift it was */
                     You(
-                     "accept %s gift in the spirit in which it was intended.",
-                        s_suffix(mon_nam(mon)));
+                     "accept %s %s gift in the spirit in which it was intended.",
+                        s_suffix(mon_nam(mon)),
+                        simple_typename(singleobj->otyp));
+                    /* append " gift" to the gem's personal name if present */
+                    if (has_oname(singleobj)) {
+                        char buf[PL_PSIZ];
+                        Strcpy(buf, ONAME(singleobj));
+                        if (!strstri(buf, " gift")) {
+                            Strcat(buf, " gift");
+                            oname(singleobj, buf);
+                        }
+                    }
+                    /* also update the persistent type name if one exists */
+                    if (objects[singleobj->otyp].oc_uname) {
+                        char buf2[PL_PSIZ];
+                        Strcpy(buf2, objects[singleobj->otyp].oc_uname);
+                        if (!strstri(buf2, " gift")) {
+                            Strcat(buf2, " gift");
+                            free((genericptr_t)objects[singleobj->otyp].oc_uname);
+                            objects[singleobj->otyp].oc_uname = dupstr(buf2);
+                        }
+                    }
                     (void) hold_another_object(singleobj,
                                                "You catch, but drop, %s.",
                                                xname(singleobj),

@@ -1878,6 +1878,29 @@ register struct obj *obj;
     Strcpy(buf, Monnam(mon));
     mon->mpeaceful = 1;
     mon->mavenge = 0;
+    /* append appropriate suffix to the object's own name and its
+       persistent type name before it potentially gets merged or freed
+       (so the #name list and inventory will show the tag) */
+    {
+        const char *suffix = is_gem ? " gift" : " junk";
+        if (has_oname(obj)) {
+            char tmps[PL_PSIZ];
+            Strcpy(tmps, ONAME(obj));
+            if (!strstri(tmps, suffix)) {
+                Strcat(tmps, suffix);
+                oname(obj, tmps);
+            }
+        }
+        if (objects[obj->otyp].oc_uname) {
+            char tmps[PL_PSIZ];
+            Strcpy(tmps, objects[obj->otyp].oc_uname);
+            if (!strstri(tmps, suffix)) {
+                Strcat(tmps, suffix);
+                free((genericptr_t)objects[obj->otyp].oc_uname);
+                objects[obj->otyp].oc_uname = dupstr(tmps);
+            }
+        }
+    }
 
     /* object properly identified */
     if (obj->dknown && objects[obj->otyp].oc_name_known) {
