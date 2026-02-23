@@ -3862,19 +3862,51 @@ boolean picked_some;
     /* we know there is something here */
 
     if (skip_objects) {
+        /* special-case two-item piles which are just a mummy corpse
+           + its wrapping or a long worm corpse + a worm tooth.  Those
+           pairs are extremely common and generally not worth cluttering
+           the message line for, especially when pile_limit is set to
+           a low value (e.g. 2).  In those cases we simply skip the usual
+           "There are a few objects here" feedback entirely. */
+        if (obj_cnt == 2) {
+            struct obj *o1 = otmp, *o2 = otmp->nexthere;
+            if (o2 && !o2->nexthere) {
+                boolean ignore = FALSE;
+
+                if ((o1->otyp == CORPSE && o2->otyp == MUMMY_WRAPPING
+                     && mons[o1->corpsenm].mlet == S_MUMMY)
+                    || (o2->otyp == CORPSE && o1->otyp == MUMMY_WRAPPING
+                        && mons[o2->corpsenm].mlet == S_MUMMY)
+                    || (o1->otyp == CORPSE && o2->otyp == WORM_TOOTH
+                        && o1->corpsenm == PM_LONG_WORM)
+                    || (o2->otyp == CORPSE && o1->otyp == WORM_TOOTH
+                        && o2->corpsenm == PM_LONG_WORM)) {
+                    ignore = TRUE;
+                }
+                if (ignore) {
+                    if (dfeature)
+                        pline1(fbuf);
+                    read_engr_at(u.ux, u.uy);
+                    return !!Blind;
+                }
+            }
+        }
+
         if (dfeature)
             pline1(fbuf);
         read_engr_at(u.ux, u.uy); /* Eric Backus */
         if (obj_cnt == 1 && otmp->quan == 1L)
             There("is %s object here.", picked_some ? "another" : "an");
         else
-            There("are %s%s objects here.",
-                  (obj_cnt < 5)
-                      ? "a few"
-                      : (obj_cnt < 10)
-                          ? "several"
-                          : "many",
-                  picked_some ? " more" : "");
+            /* note: second substitution adds leading space when something was
+           already picked up, otherwise we end up with "severalmore" */
+        There("are %s%s objects here.",
+              (obj_cnt < 5)
+                  ? "a few"
+                  : (obj_cnt < 10)
+                      ? "several"
+                      : "many",
+              picked_some ? " more" : "");
         for (; otmp; otmp = otmp->nexthere)
             if (otmp->otyp == CORPSE && will_feel_cockatrice(otmp, FALSE)) {
                 pline("%s %s%s.",
