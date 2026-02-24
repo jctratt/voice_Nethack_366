@@ -473,6 +473,8 @@ struct instance_flags {
                                     it in the midst of options processing */
     genericptr_t returning_missile; /* 'struct obj *'; Mjollnir or aklys */
     boolean obsolete;  /* obsolete options can point at this, it isn't used */
+    boolean shockwave;        /* show expanding ring for noise/wake events */
+    boolean shockwave_sparkle; /* sparkle monsters woken by noise */
 };
 
 /*

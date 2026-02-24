@@ -2,6 +2,12 @@
 
 Commits since `README.md` was last updated (commit c012979 — 2025-03-05):
 
+- UNCOMMITTED 2026-02-24 Jeff Tratt — FEATURE: visual "shockwave" effect for noise events
+  - Add expanding square ring animation around any event that calls `wake_nearto()` (explosions, traps, door breaks, etc.) and for musical instruments using a parallel hook.  Ring uses explosion glyphs and slows to 150 ms per frame, holding the final frame for one second.
+  - Visible monsters woken by noise now get a `shieldeff()` sparkle if `iflags.shockwave_sparkle` is enabled.
+  - Two new runtime-only `iflags` options (not saved in saves) control the effects: `shockwave` and `shockwave_sparkle`; both default to ON and appear in the `O` menu.
+  - Code changes: `src/display.c` (new animation), `src/mon.c` (hook in `wake_nearto()`), `src/music.c` (hook in `awaken_monsters()`), `src/monmove.c` (walking sparkle), plus option registration and `include/flag.h`/`extern.h` updates.
+
 - UNCOMMITTED 2026-02-22 Jeff Tratt — UI: add price identification to `#name` submenu
   - `#name` now has a `P` entry which invokes the existing `price_identify` command, alongside the previously added intrinsics and notes shortcuts.
   - Updated automated tests (`test_simple.sh`, `tools/test_name_menu.exp`) and documentation references accordingly.

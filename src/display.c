@@ -916,6 +916,71 @@ xchar x, y;
     }
 }
 
+/*
+ * shockwave_ring_effect()
+ *
+ * Display an expanding concentric square ring centered at (cx,cy) out to
+ * radius min(maxr,10), using explosion glyphs on the perimeter cells.  Each
+ * frame erases the previous ring before drawing the next, so the ring
+ * appears to expand outward.  Used to visualize the sound radius of
+ * wake_nearto() and awaken_monsters() events.
+ */
+void
+shockwave_ring_effect(cx, cy, maxr)
+int cx, cy, maxr;
+{
+    int r, dx, dy, nx, ny, sidx, glyph;
+    int vismax = (maxr < 10) ? maxr : 10; /* cap to avoid long delays */
+    boolean first, any;
+
+    if (!iflags.shockwave || vismax < 2)
+        return;
+
+    for (r = 1; r <= vismax; r++) {
+        first = TRUE;
+        any = FALSE;
+        for (dx = -r; dx <= r; dx++) {
+            for (dy = -r; dy <= r; dy++) {
+                /* only cells exactly on the Chebyshev perimeter */
+                if (abs(dx) != r && abs(dy) != r)
+                    continue;
+                nx = cx + dx;
+                ny = cy + dy;
+                if (!isok(nx, ny) || !cansee(nx, ny))
+                    continue;
+                /* classify position on ring to pick directional glyph */
+                if      (dx == -r && dy == -r) sidx = S_explode1; /* top-left */
+                else if (dx == -r && dy ==  r) sidx = S_explode7; /* bot-left */
+                else if (dx ==  r && dy == -r) sidx = S_explode3; /* top-right */
+                else if (dx ==  r && dy ==  r) sidx = S_explode9; /* bot-right */
+                else if (dy == -r)             sidx = S_explode2; /* top edge */
+                else if (dy ==  r)             sidx = S_explode8; /* bot edge */
+                else if (dx == -r)             sidx = S_explode4; /* left edge */
+                else                           sidx = S_explode6; /* right edge */
+                glyph = explosion_to_glyph(EXPL_MAGICAL, sidx);
+                if (first) {
+                    tmp_at(DISP_BEAM, glyph);
+                    first = FALSE;
+                } else {
+                    tmp_at(DISP_CHANGE, glyph);
+                }
+                tmp_at(nx, ny);
+                any = TRUE;
+            }
+        }
+        if (any) {
+            int i, delay_count;
+            flush_screen(0);
+            /* last frame: hold ~1 second; other frames: ~150ms each */
+            delay_count = (r == vismax) ? 20 : 3;
+            for (i = 0; i < delay_count; i++)
+                nh_delay_output();
+        }
+        if (!first) /* session was opened */
+            tmp_at(DISP_END, 0);
+    }
+}
+
 STATIC_OVL int
 tether_glyph(x, y)
 int x, y;

@@ -3059,14 +3059,26 @@ wake_nearto(x, y, distance)
 int x, y, distance;
 {
     struct monst *mtmp;
+    int radius, r;
+    boolean was_asleep;
+
+    /* visual shockwave ring expanding from the noise source */
+    if (distance > 0) {
+        for (radius = 0; (radius + 1) * (radius + 1) <= distance; radius++)
+            ;
+        shockwave_ring_effect(x, y, radius);
+    }
 
     for (mtmp = fmon; mtmp; mtmp = mtmp->nmon) {
         if (DEADMONSTER(mtmp))
             continue;
         if (distance == 0 || dist2(mtmp->mx, mtmp->my, x, y) < distance) {
+            was_asleep = (mtmp->msleeping != 0);
             /* sleep for N turns uses mtmp->mfrozen, but so does paralysis
                so we leave mfrozen monsters alone */
             mtmp->msleeping = 0; /* wake indeterminate sleep */
+            if (was_asleep && iflags.shockwave_sparkle && canseemon(mtmp))
+                shieldeff(mtmp->mx, mtmp->my);
             if (!(mtmp->data->geno & G_UNIQ))
                 mtmp->mstrategy &= ~STRAT_WAITMASK; /* wake 'meditation' */
             if (context.mon_moving)

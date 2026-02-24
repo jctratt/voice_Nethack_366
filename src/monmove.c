@@ -240,6 +240,8 @@ register struct monst *mtmp;
             || (!rn2(7) && M_AP_TYPE(mtmp) != M_AP_FURNITURE
                 && M_AP_TYPE(mtmp) != M_AP_OBJECT))) {
         mtmp->msleeping = 0;
+        if (iflags.shockwave_sparkle && canseemon(mtmp))
+            shieldeff(mtmp->mx, mtmp->my);
         return 1;
     }
     return 0;

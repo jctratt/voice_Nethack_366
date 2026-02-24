@@ -63,14 +63,24 @@ int distance;
 {
     register struct monst *mtmp;
     register int distm;
+    int radius;
+    boolean was_asleep;
+
+    /* visual shockwave ring from the instrument player */
+    for (radius = 0; (radius + 1) * (radius + 1) <= distance; radius++)
+        ;
+    shockwave_ring_effect(u.ux, u.uy, radius);
 
     for (mtmp = fmon; mtmp; mtmp = mtmp->nmon) {
         if (DEADMONSTER(mtmp))
             continue;
         if ((distm = distu(mtmp->mx, mtmp->my)) < distance) {
+            was_asleep = (mtmp->msleeping != 0);
             mtmp->msleeping = 0;
             mtmp->mcanmove = 1;
             mtmp->mfrozen = 0;
+            if (was_asleep && iflags.shockwave_sparkle && canseemon(mtmp))
+                shieldeff(mtmp->mx, mtmp->my);
             /* may scare some monsters -- waiting monsters excluded */
             if (!unique_corpstat(mtmp->data)
                 && (mtmp->mstrategy & STRAT_WAITMASK) != 0)
