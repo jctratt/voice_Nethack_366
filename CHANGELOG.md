@@ -2,6 +2,16 @@
 
 Commits since `README.md` was last updated (commit c012979 — 2025-03-05):
 
+- UNCOMMITTED 2026-02-24 Jeff Tratt — FEATURE: #force doubles as quick quiver when not standing on a container
+  - If no lockable box or chest is underfoot, issuing `#force` now selects the
+    highest-priority quiver item (honoring invlet/otype ordering); the chosen
+    object is readied and printed exactly as with `#quiver`.  A message is
+    shown if the item was already prepared.  If no suitable ammo exists,
+    the familiar "You decide not to force the issue." text remains.
+  - This behaviour is documented in the Guidebook and mn/tex sources.
+  - Implementation edits in `src/lock.c` plus associated externs; testable by
+    picking up ammunition and invoking `#force` on empty floor.
+
 - UNCOMMITTED 2026-02-24 Jeff Tratt — FEATURE: visual "shockwave" effect for noise events
   - Add expanding square ring animation around any event that calls `wake_nearto()` (explosions, traps, door breaks, etc.) and for musical instruments using a parallel hook.  Ring uses explosion glyphs and slows to 150 ms per frame, holding the final frame for one second.
   - Visible monsters woken by noise now get a `shieldeff()` sparkle if `iflags.shockwave_sparkle` is enabled.

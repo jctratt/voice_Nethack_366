@@ -1271,6 +1271,10 @@
 
           #force
                Force a lock.  Autocompletes.  Default key is `M-f'.
+               If you aren't standing on a locked container, this command
+               instead readies the highest-priority quiver item (as though
+               you had used #quiver), giving a message if it's already
+               prepared.
 
           #glance
                Show  what  type  of thing a map symbol corresponds to.  De-

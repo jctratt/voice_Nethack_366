@@ -1127,6 +1127,8 @@ Default key is \(oqf\(cq.
 Force a lock.
 Autocompletes.
 Default key is \(oqM-f\(cq.
+If no lockable container is present, ready the highest-priority
+quiver item (same as #quiver), reporting if it is already quivered.
 .lp "#glance  "
 Show what type of thing a map symbol corresponds to.
 Default key is \(oq;\(cq.

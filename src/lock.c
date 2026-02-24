@@ -5,6 +5,10 @@
 
 #include "hack.h"
 
+/* we reuse quiver selection logic when #force finds no container */
+extern struct obj *NDECL(select_quiver_candidate_invlet_first);
+extern void FDECL(setuqwep, (struct obj *));
+
 /* at most one of `door' and `box' should be non-null at any given time */
 STATIC_VAR NEARDATA struct xlock_s {
     struct rm *door;
@@ -565,40 +569,69 @@ doforce()
 
     /* A lock is made only for the honest man, the thief will break it. */
     xlock.box = (struct obj *) 0;
-    for (otmp = level.objects[u.ux][u.uy]; otmp; otmp = otmp->nexthere)
-        if (Is_box(otmp)) {
-            if (otmp->obroken || !otmp->olocked) {
-                /* force doname() to omit known "broken" or "unlocked"
-                   prefix so that the message isn't worded redundantly;
-                   since we're about to set lknown, there's no need to
-                   remember and then reset its current value */
-                otmp->lknown = 0;
-                There("is %s here, but its lock is already %s.",
-                      doname(otmp), otmp->obroken ? "broken" : "unlocked");
+    {
+        boolean saw_box = FALSE;
+
+        for (otmp = level.objects[u.ux][u.uy]; otmp; otmp = otmp->nexthere)
+            if (Is_box(otmp)) {
+                saw_box = TRUE;
+                if (otmp->obroken || !otmp->olocked) {
+                    /* force doname() to omit known "broken" or "unlocked"
+                       prefix so that the message isn't worded redundantly;
+                       since we're about to set lknown, there's no need to
+                       remember and then reset its current value */
+                    otmp->lknown = 0;
+                    There("is %s here, but its lock is already %s.",
+                          doname(otmp), otmp->obroken ? "broken" : "unlocked");
+                    otmp->lknown = 1;
+                    continue;
+                }
+                (void) safe_qbuf(qbuf, "There is ", " here; force its lock?",
+                                 otmp, doname, ansimpleoname, "a box");
                 otmp->lknown = 1;
-                continue;
+
+                c = ynq(qbuf);
+                if (c == 'q')
+                    return 0;
+                if (c == 'n')
+                    continue;
+
+                if (picktyp)
+                    You("force %s into a crack and pry.", yname(uwep));
+                else
+                    You("start bashing it with %s.", yname(uwep));
+                xlock.box = otmp;
+                xlock.chance = objects[uwep->otyp].oc_wldam * 2;
+                xlock.picktyp = picktyp;
+                xlock.magic_key = FALSE;
+                xlock.usedtime = 0;
+                break;
             }
-            (void) safe_qbuf(qbuf, "There is ", " here; force its lock?",
-                             otmp, doname, ansimpleoname, "a box");
-            otmp->lknown = 1;
 
-            c = ynq(qbuf);
-            if (c == 'q')
-                return 0;
-            if (c == 'n')
-                continue;
+        if (xlock.box) {
+            set_occupation(forcelock, "forcing the lock", 0);
+        } else if (!saw_box) {
+            /* no container here; treat #force as a quick quiver command */
+            struct obj *cand;
 
-            if (picktyp)
-                You("force %s into a crack and pry.", yname(uwep));
-            else
-                You("start bashing it with %s.", yname(uwep));
-            xlock.box = otmp;
-            xlock.chance = objects[uwep->otyp].oc_wldam * 2;
-            xlock.picktyp = picktyp;
-            xlock.magic_key = FALSE;
-            xlock.usedtime = 0;
-            break;
+            /* pick highest-priority ammunition candidate */
+            cand = select_quiver_candidate_invlet_first();
+            if (cand) {
+                if (cand == uquiver) {
+                    /* behaviour mirrors dowieldquiver */
+                    pline("That ammunition is already readied!");
+                } else {
+                    setuqwep(cand);
+                    prinv((char *) 0, cand, 0L);
+                }
+            } else {
+                You("decide not to force the issue.");
+            }
+        } else {
+            You("decide not to force the issue.");
         }
+        return 1;
+    }
 
     if (xlock.box)
         set_occupation(forcelock, "forcing the lock", 0);
