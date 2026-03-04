@@ -946,7 +946,7 @@ int cx, cy, maxr;
                     continue;
                 nx = cx + dx;
                 ny = cy + dy;
-                if (!isok(nx, ny) || !cansee(nx, ny))
+                if (!isok(nx, ny))
                     continue;
                 /* classify position on ring to pick directional glyph */
                 if      (dx == -r && dy == -r) sidx = S_explode1; /* top-left */
@@ -959,7 +959,7 @@ int cx, cy, maxr;
                 else                           sidx = S_explode6; /* right edge */
                 glyph = explosion_to_glyph(EXPL_MAGICAL, sidx);
                 if (first) {
-                    tmp_at(DISP_BEAM, glyph);
+                    tmp_at(DISP_ALL, glyph);
                     first = FALSE;
                 } else {
                     tmp_at(DISP_CHANGE, glyph);

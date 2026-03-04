@@ -389,13 +389,21 @@ curses_putch(winid wid, int x, int y, int ch, int color, int attr)
     nch = map[y][x];
     (void) curses_map_borders(&sx, &sy, &ex, &ey, -1, -1);
 
-    if ((x >= sx) && (x <= ex) && (y >= sy) && (y <= ey)) {
+    /* Draw if within visible boundaries, or if outside but still within map bounds
+       (for temporary effects like soundwaves that should extend into unseen terrain) */
+    if ((x >= 0) && (x < COLNO) && (y >= 0) && (y < ROWNO)) {
         if (border) {
             x++;
             y++;
         }
 
-        write_char(mapwin, x - sx, y - sy, nch);
+        /* Check if position is within the visible window */
+        if ((x - 1 >= sx) && (x - 1 <= ex) && (y >= sy) && (y <= ey)) {
+            write_char(mapwin, x - sx, y - sy, nch);
+        }
+        /* For positions outside visible area, we still store them in the map array
+           but cannot draw them on the current screen view. This is a limitation
+           of the curses interface which only displays the visible portion. */
         //pline("Color=%d", color);
     }
     /* refresh after every character?
