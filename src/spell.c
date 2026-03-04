@@ -722,7 +722,7 @@ int *spell_no;
         }
 
         for (;;) {
-            Sprintf(qbuf, "Cast which spell? [%s *?] (press '%c' to view/reorder — this cancels casting)", lets, SPBOOK_SYM);
+            Sprintf(qbuf, "Cast which spell? [%s *?] (press '%c' to view/reorder - this cancels casting)", lets, SPBOOK_SYM);
             ilet = yn_function(qbuf, (char *) 0, '\0');
             if (ilet == '*' || ilet == '?')
                 break; /* use menu mode */
@@ -1789,7 +1789,7 @@ int *spell_no;
 
     if (splaction == SPELLMENU_CAST) {
         char prompt_with_hint[QBUFSZ];
-        Sprintf(prompt_with_hint, "%s  (press '%c' to view/reorder — cancels casting)", prompt, SPBOOK_SYM);
+        Sprintf(prompt_with_hint, "%s  (press '%c' to view/reorder - cancels casting)", prompt, SPBOOK_SYM);
         end_menu(tmpwin, prompt_with_hint);
     } else {
         end_menu(tmpwin, prompt);
