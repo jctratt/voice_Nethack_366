@@ -165,10 +165,13 @@ static struct trobj Valkyrie[] = {
     { FOOD_RATION, 0, FOOD_CLASS, 1, 0 },
     { 0, 0, 0, 0, 0 }
 };
+/* Wizard used to start with a quarterstaff; switched to athame in
+   [2026-03-06 commit].  ATHAME replaces QUARTERSTAFF in this context.
+   Documented in CHANGELOG. */
 static struct trobj Wizard[] = {
 #define W_MULTSTART 2
 #define W_MULTEND 6
-    { QUARTERSTAFF, 1, WEAPON_CLASS, 1, 1 },
+    { ATHAME, 1, WEAPON_CLASS, 1, 1 },
     { CLOAK_OF_MAGIC_RESISTANCE, 0, ARMOR_CLASS, 1, UNDEF_BLESS },
     { UNDEF_TYP, UNDEF_SPE, WAND_CLASS, 1, UNDEF_BLESS },
     { UNDEF_TYP, UNDEF_SPE, RING_CLASS, 2, UNDEF_BLESS },
