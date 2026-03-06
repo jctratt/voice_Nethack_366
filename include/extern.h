@@ -380,7 +380,8 @@ E void FDECL(feel_location, (XCHAR_P, XCHAR_P));
 E void FDECL(newsym, (int, int));
 E void FDECL(newsym_force, (int, int));
 E void FDECL(shieldeff, (XCHAR_P, XCHAR_P));
-E void FDECL(shockwave_ring_effect, (int, int, int));
+E void FDECL(shockwave_ring_effect, (int, int, int, boolean));
+/* fast variant used for frequent small-radius events such as kicking */
 E void FDECL(tmp_at, (int, int));
 E void FDECL(flash_glyph_at, (int, int, int, int));
 E void FDECL(swallowed, (int));

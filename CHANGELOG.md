@@ -6,6 +6,8 @@ Commits since `README.md` was last updated (commit c012979 — 2025-03-05):
 
 - UNCOMMITTED 2026-03-06 Jeff Tratt — TWEAK: Wizard dagger skill bumped from Expert to Master; noted in `src/u_init.c`.
 
+- UNCOMMITTED 2026-03-06 Jeff Tratt — PERF: shockwave_ring_effect gains fast mode for small radii; wake_nearto automatically uses fast animation for radius ≤2.  Kicking objects and doors now invoke a short fast shockwave (radius 2) to both wake nearby monsters and provide visual feedback.
+
 - UNCOMMITTED 2026-02-24 Jeff Tratt — FEATURE: #force doubles as quick quiver when not standing on a container
   - If no lockable box or chest is underfoot, issuing `#force` now selects the
     highest-priority quiver item (honoring invlet/otype ordering); the chosen

@@ -925,13 +925,26 @@ xchar x, y;
  * appears to expand outward.  Used to visualize the sound radius of
  * wake_nearto() and awaken_monsters() events.
  */
+/*
+ * shockwave_ring_effect()
+ *
+ * Display an expanding concentric square ring centered at (cx,cy) out to
+ * radius min(maxr,10), using explosion glyphs on the perimeter cells.  Each
+ * frame erases the previous ring before drawing the next, so the ring
+ * appears to expand outward.  Used to visualize the sound radius of
+ * wake_nearto() and awaken_monsters() events.  Fast mode skips much of the
+ * delay so it can be used for very frequent, small-radius effects such as
+ * kicking.
+ */
 void
-shockwave_ring_effect(cx, cy, maxr)
+shockwave_ring_effect(cx, cy, maxr, fast)
 int cx, cy, maxr;
+boolean fast;
 {
     int r, dx, dy, nx, ny, sidx, glyph;
     int vismax = (maxr < 10) ? maxr : 10; /* cap to avoid long delays */
     boolean first, any;
+    int delay_count;
 
     if (!iflags.shockwave || vismax < 2)
         return;
@@ -969,10 +982,16 @@ int cx, cy, maxr;
             }
         }
         if (any) {
-            int i, delay_count;
+            int i;
             flush_screen(0);
-            /* last frame: hold ~1 second; other frames: ~150ms each */
-            delay_count = (r == vismax) ? 20 : 3;
+            /* delay behaviour differs for fast mode */
+            if (fast) {
+                /* small radius means shorter hold and frame delays */
+                delay_count = (r == vismax) ? 4 : 1;
+            } else {
+                /* last frame: hold ~1 second; other frames: ~150ms each */
+                delay_count = (r == vismax) ? 20 : 3;
+            }
             for (i = 0; i < delay_count; i++)
                 nh_delay_output();
         }

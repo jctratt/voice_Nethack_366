@@ -493,6 +493,16 @@ xchar x, y;
         || kickedobj == uchain)
         return 0;
 
+    /* produce a brief fast shockwave whenever an object is kicked */
+    if (iflags.shockwave)
+        wake_nearto(x, y, 4); /* radius≈2, fast path triggered */
+
+    /* noisy kick: wake nearby monsters and show a fast ring effect */
+    if (iflags.shockwave) {
+        /* small loudness gives radius=2 which triggers fast animation */
+        wake_nearto(x, y, 4);
+    }
+
     if ((trap = t_at(x, y)) != 0) {
         if ((is_pit(trap->ttyp) && !Passes_walls) || trap->ttyp == WEB) {
             if (!trap->tseen)
@@ -1276,6 +1286,9 @@ dokick()
     if (rnl(35) < avrg_attrib + (!martial() ? 0 : ACURR(A_DEX))) {
         boolean shopdoor = *in_rooms(x, y, SHOPBASE) ? TRUE : FALSE;
         /* break the door */
+        /* loudness small but we want a fast animation for the crash */
+        if (iflags.shockwave)
+            wake_nearto(x, y, 4);
         if (maploc->doormask & D_TRAPPED) {
             if (flags.verbose)
                 You("kick the door.");

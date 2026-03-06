@@ -3061,12 +3061,15 @@ int x, y, distance;
     struct monst *mtmp;
     int radius, r;
     boolean was_asleep;
+    boolean fast;
 
     /* visual shockwave ring expanding from the noise source */
     if (distance > 0) {
         for (radius = 0; (radius + 1) * (radius + 1) <= distance; radius++)
             ;
-        shockwave_ring_effect(x, y, radius);
+        /* small radius events should animate quickly */
+        fast = (radius <= 2);
+        shockwave_ring_effect(x, y, radius, fast);
     }
 
     for (mtmp = fmon; mtmp; mtmp = mtmp->nmon) {

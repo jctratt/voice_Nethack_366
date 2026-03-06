@@ -69,7 +69,8 @@ int distance;
     /* visual shockwave ring from the instrument player */
     for (radius = 0; (radius + 1) * (radius + 1) <= distance; radius++)
         ;
-    shockwave_ring_effect(u.ux, u.uy, radius);
+    /* instrument noise uses normal-speed ring */
+    shockwave_ring_effect(u.ux, u.uy, radius, FALSE);
 
     for (mtmp = fmon; mtmp; mtmp = mtmp->nmon) {
         if (DEADMONSTER(mtmp))
