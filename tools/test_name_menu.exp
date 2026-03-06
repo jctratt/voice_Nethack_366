@@ -1,0 +1,58 @@
+#!/usr/bin/expect -f
+# Verify that "#name" submenu includes intrinsics and notes options
+# and that selecting them opens the appropriate menus.
+set timeout 40
+set nethack_bin "/home/neon/source/voice_Nethack_366/src/nethack"
+set player "name-menutest"
+set debug_log "/home/neon/vnh366/install/games/lib/nethackdir/nethack_debug.log"
+
+# start game
+spawn env TERM=xterm-256color $nethack_bin -u $player
+expect {
+    -re {Shall I call you|shall I call you} {
+        send "$player\r"
+        exp_continue
+    }
+    -re {pick the role of|pick the role} {
+        send "a\r"
+        exp_continue
+    }
+    -re {Are you.*\?} {
+        send "y\r"
+        exp_continue
+    }
+    -re {@} {
+        # in-game
+    }
+    timeout { puts "ERROR: timed out creating char"; exit 2 }
+}
+
+# helper to open #name and check for expected regexp
+proc check_name_option {opt regexp} {
+    expect "@"
+    send "#name\r"
+    expect {
+        -re "$regexp" {}
+        timeout { puts "ERROR: menu did not show $opt"; exit 3 }
+    }
+    # send the letter to open it then quit
+    send "$opt\rq\r"
+}
+
+# test intrinsics entry
+check_name_option I "intrinsic tracker"
+# test notes entry
+check_name_option N "Notes"
+# test price id entry
+check_name_option P "price identification"
+
+# quit game
+expect "@"
+send "#quit\r"
+expect {
+    -re "Really quit\?" { send "y\r" }
+    timeout {}
+}
+expect eof
+puts "OK: #name submenu test completed"
+exit 0

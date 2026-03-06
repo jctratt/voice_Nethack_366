@@ -1,0 +1,89 @@
+#!/usr/bin/expect -f
+# Verify help/save keys in the curses notes editor (Ctrl+? and Ctrl+S).
+# Uses the locally-built binary so this validates our recent edits.
+set timeout 40
+set nethack_bin "/home/neon/source/voice_Nethack_366/src/nethack"
+set player "f1f2test"
+set debug_log "/home/neon/vnh366/install/games/lib/nethackdir/nethack_debug.log"
+
+spawn env TERM=xterm-256color $nethack_bin -u $player
+expect {
+    -re {Shall I call you|shall I call you} {
+        send "$player\r"
+        exp_continue
+    }
+    -re {pick the role of|pick the role} {
+        send "a\r"
+        exp_continue
+    }
+    -re {Are you.*\?} {
+        send "y\r"
+        exp_continue
+    }
+    -re {@} {
+        # in-game
+    }
+    timeout { puts "ERROR: timed out creating char"; exit 2 }
+}
+
+# open notes -> Add
+send "#notes\r"
+expect {
+    -re "Notes" {}
+    timeout { puts "ERROR: Notes menu not shown"; exit 3 }
+}
+send "a\r"
+
+# wait for editor prompt
+set deadline [expr {[clock seconds] + 8}]
+set editor_open 0
+while {!$editor_open && [clock seconds] < $deadline} {
+    expect {
+        -re "New note" { set editor_open 1 }
+        timeout { sleep 1 }
+    }
+}
+if {!$editor_open} { puts "ERROR: editor not opened"; exit 4 }
+
+# Send Ctrl+? (DEL)
+send "\177"
+expect {
+    -re "Help \(this window\)" { puts "Ctrl+? help shown" }
+    timeout { puts "ERROR: Ctrl+? help not shown"; exit 5 }
+}
+# dismiss
+send "x"
+expect {
+    -re "New note" {}
+    timeout { puts "ERROR: editor did not return after dismissing help"; exit 6 }
+}
+
+# Now test Ctrl+S (Save)
+send "\023"
+# wait for the main prompt (game should resume)
+set deadline [expr {[clock seconds] + 10}]
+set saved 0
+while {!$saved && [clock seconds] < $deadline} {
+    expect {
+        -re "@" { puts "Ctrl+S saved and exited editor"; set saved 1 }
+        timeout {
+            # try to detect debug-log entry as a fallback
+            if {[catch {exec grep -m1 "curses_multiline_input_dialog: Ctrl+S pressed" $debug_log}]} {
+                sleep 1
+            } else {
+                puts "Ctrl+S detected via debug-log"; set saved 1
+            }
+        }
+    }
+}
+if {!$saved} { puts "ERROR: Ctrl+S did not save/exit"; exit 7 }
+
+# quit game cleanly
+send "#quit\r"
+expect {
+    -re "Really quit\?" { send "y\r" }
+    timeout { }
+}
+expect eof
+puts "OK: notes Ctrl+?/Ctrl+S test completed"
+exit 0

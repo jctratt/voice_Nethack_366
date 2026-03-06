@@ -103,10 +103,17 @@ struct monst *mtmp;
 
         switch (choice) {
         case 'y':
-            if (occtxt && *occtxt)
-                You("stop %s.", occtxt);
-            else
-                You("stop.");
+            /* user chose to interrupt; normally the message about stopping
+             * is emitted by stop_occupation().  However, digging is handled
+             * specially there (see check_occ_interrupt) and the occupation
+             * may be cleared without any output.  Preserve the notification
+             * for digging so the player gets feedback. */
+            if (is_digging()) {
+                if (occtxt && *occtxt)
+                    You("stop %s.", occtxt);
+                else
+                    You("stop.");
+            }
             return FALSE; /* stop occupation */
 
         case 'n':

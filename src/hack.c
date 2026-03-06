@@ -1803,6 +1803,37 @@ domove_core()
         return;
     }
 
+    /* Warn before stepping on water or lava without protection */
+    {
+        boolean warn = FALSE;
+        const char *hazard = NULL;
+        char qbuf[QBUFSZ];
+
+        if (!Levitation && !Flying && is_pool(x, y) 
+            && !Is_waterlevel(&u.uz) && !Underwater && !Swimming 
+            && !Wwalking && !Amphibious) {
+            warn = TRUE;
+            hazard = "water";
+        }
+
+        if (!Levitation && !Flying && is_lava(x, y) && !Fire_resistance) {
+            warn = TRUE;
+            hazard = "lava";
+        }
+
+        if (warn && hazard) {
+            /* Block movement into water/lava unless:
+               - user pressed 'm' (context.nopick, move without pickup),
+               - user pressed 'F' (context.forcefight, force fight/move),
+               - or player is confused, stunned, or blind (can't make good decisions)
+               Otherwise silently ignore the movement attempt */
+            if (!context.nopick && !context.forcefight && !Confusion && !Stunned && !Blind) {
+                nomul(0);
+                return;
+            }
+        }
+    }
+
     /* Move ball and chain.  */
     if (Punished)
         if (!drag_ball(x, y, &bc_control, &ballx, &bally, &chainx, &chainy,

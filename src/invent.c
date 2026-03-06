@@ -2049,7 +2049,14 @@ register const char *let, *word;
                 otmp->corpsenm = (int) cnt;
         }
     }
-    pline("Choice: %c", ilet);
+    /* report both the inventory letter and the object chosen so that
+     * any logging (e.g. for voice commands) has context about what was
+     * selected.  Previously only the letter was shown.
+     */
+    if (otmp)
+        pline("Choice: %c - %s", ilet, doname(otmp));
+    else
+        pline("Choice: %c", ilet);
     return otmp;
 }
 

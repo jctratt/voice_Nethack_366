@@ -47,3 +47,6 @@ Hi, AI, I'm user Jeff!
 
 ## ROADMAP.md
 - See `ROADMAP.md` for long-running context, priorities and housekeeping — keep `CLAUDE.md` intentionally short.
+
+## Terminal commands
+- prepend all your terminal commands with a space to avoid recording them in the terminal history.

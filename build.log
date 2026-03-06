@@ -1,0 +1,1381 @@
+( cd src ; make )
+make[1]: Entering directory '/home/neon/source/voice_Nethack_366/src'
+touch ../src/config.h-t
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL -c monst.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL -c objects.c
+make[2]: Entering directory '/home/neon/source/voice_Nethack_366/util'
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/dir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/dir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o makedefs.o makedefs.c
+cc -rdynamic -o makedefs makedefs.o ../src/monst.o ../src/objects.o
+make[2]: Leaving directory '/home/neon/source/voice_Nethack_366/util'
+make[2]: Entering directory '/home/neon/source/voice_Nethack_366/util'
+./makedefs -o
+make[2]: Leaving directory '/home/neon/source/voice_Nethack_366/util'
+make[2]: Entering directory '/home/neon/source/voice_Nethack_366/util'
+./makedefs -p
+make[2]: Leaving directory '/home/neon/source/voice_Nethack_366/util'
+touch ../src/hack.h-t
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o allmain.o allmain.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o alloc.o alloc.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o apply.o apply.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o artifact.o artifact.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o attrib.o attrib.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o ball.o ball.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o bones.o bones.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o botl.o botl.c
+botl.c: In function ‘status_hilite2str’:
+botl.c:3022:24: warning: ‘/’ directive writing 1 byte into a region of size between 0 and 255 [-Wformat-overflow=]
+ 3022 |     Sprintf(buf, "%s/%s/%s", initblstats[hl->fld].fldname, behavebuf, clrbuf);
+      |                        ^
+In file included from /usr/include/stdio.h:980,
+                 from ../include/global.h:9,
+                 from ../include/config.h:581,
+                 from ../include/hack.h:10,
+                 from botl.c:6:
+In function ‘sprintf’,
+    inlined from ‘status_hilite2str’ at botl.c:3022:5:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output 3 or more bytes (assuming 513) into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+botl.c: In function ‘status_hilite_linestr_gather_conditions’:
+botl.c:2920:48: warning: ‘%s’ directive writing up to 255 bytes into a region of size 245 [-Wformat-overflow=]
+ 2920 |                 Sprintf(condbuf, "condition/%s/%s",
+      |                                                ^~
+ 2921 |                         conditionbitmask2str(cond_maps[i].bm), clrbuf);
+      |                                                                ~~~~~~
+In function ‘sprintf’,
+    inlined from ‘status_hilite_linestr_gather_conditions’ at botl.c:2920:17:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output 12 or more bytes (assuming 267) into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+botl.c: In function ‘do_statusline2’:
+botl.c:248:37: warning: ‘%s’ directive writing up to 127 bytes into a region of size between 0 and 254 [-Wformat-overflow=]
+  248 |             Sprintf(newbot2, "%s %s %s %s %s", hlth, cond, dloc, expr, tmmv);
+      |                                     ^~                     ~~~~
+In function ‘sprintf’,
+    inlined from ‘do_statusline2’ at botl.c:248:13:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 5 and 640 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+botl.c: In function ‘do_statusline2’:
+botl.c:246:37: warning: ‘%s’ directive writing up to 127 bytes into a region of size between 0 and 254 [-Wformat-overflow=]
+  246 |             Sprintf(newbot2, "%s %s %s %s %s", dloc, hlth, cond, expr, tmmv);
+      |                                     ^~                     ~~~~
+In function ‘sprintf’,
+    inlined from ‘do_statusline2’ at botl.c:246:13:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 5 and 640 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+botl.c: In function ‘do_statusline2’:
+botl.c:244:37: warning: ‘%s’ directive writing up to 127 bytes into a region of size between 0 and 254 [-Wformat-overflow=]
+  244 |             Sprintf(newbot2, "%s %s %s %s %s", dloc, hlth, expr, cond, tmmv);
+      |                                     ^~                     ~~~~
+In function ‘sprintf’,
+    inlined from ‘do_statusline2’ at botl.c:244:13:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 5 and 640 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+botl.c: In function ‘do_statusline2’:
+botl.c:238:33: warning: ‘%s’ directive writing up to 127 bytes into a region of size between 0 and 254 [-Wformat-overflow=]
+  238 |         Sprintf(newbot2, "%s %s %s %s %s", dloc, hlth, expr, tmmv, cond);
+      |                                 ^~                     ~~~~
+In function ‘sprintf’,
+    inlined from ‘do_statusline2’ at botl.c:238:9:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 5 and 640 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+botl.c: In function ‘status_hilite_menu_add’:
+botl.c:3512:38: warning: ‘ or ’ directive writing 4 bytes into a region of size between 1 and 80 [-Wformat-overflow=]
+ 3512 |                     Sprintf(obuf, "%s or %s",
+      |                                      ^~~~
+In function ‘sprintf’,
+    inlined from ‘status_hilite_menu_add’ at botl.c:3512:21:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 5 and 163 bytes into a destination of size 80
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o cmd.o cmd.c
+cmd.c: In function ‘background_enlightenment’:
+cmd.c:1907:28: warning: ‘%s’ directive writing up to 255 bytes into a region of size 253 [-Wformat-overflow=]
+ 1907 |         Sprintf(buf, "%sin %s%s form", !final ? "currently " : "", tmpbuf,
+      |                            ^~                                      ~~~~~~
+In file included from /usr/include/stdio.h:980,
+                 from ../include/global.h:9,
+                 from ../include/config.h:581,
+                 from ../include/hack.h:10,
+                 from cmd.c:6:
+In function ‘sprintf’,
+    inlined from ‘background_enlightenment’ at cmd.c:1907:9:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output 9 or more bytes (assuming 264) into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+cmd.c: In function ‘background_enlightenment’:
+cmd.c:1907:28: warning: ‘%s’ directive writing up to 255 bytes into a region of size 243 [-Wformat-overflow=]
+ 1907 |         Sprintf(buf, "%sin %s%s form", !final ? "currently " : "", tmpbuf,
+      |                            ^~                                      ~~~~~~
+In function ‘sprintf’,
+    inlined from ‘background_enlightenment’ at cmd.c:1907:9:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output 19 or more bytes (assuming 274) into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+cmd.c: In function ‘background_enlightenment’:
+cmd.c:2024:33: warning: ‘%s’ directive writing up to 255 bytes into a region of size between 121 and 248 [-Wformat-overflow=]
+ 2024 |         Sprintf(buf, "in %s, on %s", dgnbuf, tmpbuf);
+      |                                 ^~           ~~~~~~
+In function ‘sprintf’,
+    inlined from ‘background_enlightenment’ at cmd.c:2024:9:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 9 and 391 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+cmd.c: In function ‘background_enlightenment’:
+cmd.c:2003:48: warning: ‘%s’ directive writing up to 255 bytes into a region of size between 223 and 233 [-Wformat-overflow=]
+ 2003 |         Sprintf(buf, "in the endgame, on the %s%s",
+      |                                                ^~
+ 2004 |                 !strncmp(tmpbuf, "Plane", 5) ? "Elemental " : "", tmpbuf);
+      |                                                                   ~~~~~~
+In function ‘sprintf’,
+    inlined from ‘background_enlightenment’ at cmd.c:2003:9:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 24 and 289 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+cmd.c: In function ‘extcmd_via_menu’:
+cmd.c:682:44: warning: ‘%s’ directive writing up to 127 bytes into a region of size 110 [-Wformat-overflow=]
+  682 |         Sprintf(prompt, "Extended Command: %s", cbuf);
+      |                                            ^~   ~~~~
+In function ‘sprintf’,
+    inlined from ‘extcmd_via_menu’ at cmd.c:682:9:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 19 and 146 bytes into a destination of size 128
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+cmd.c: In function ‘enlightenment’:
+cmd.c:1805:21: warning: ‘ the ’ directive writing 5 bytes into a region of size between 1 and 256 [-Wformat-overflow=]
+ 1805 |     Sprintf(buf, "%s the %s's attributes:", tmpbuf,
+      |                     ^~~~~
+In function ‘sprintf’,
+    inlined from ‘enlightenment’ at cmd.c:1805:5:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output 20 or more bytes (assuming 275) into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+cmd.c: In function ‘paranoid_query’:
+cmd.c:7165:30: warning: ‘%s’ directive writing up to 255 bytes into a region of size between 113 and 128 [-Wformat-overflow=]
+ 7165 |             Sprintf(qbuf, "%s%s %s", promptprefix, pbuf, responsetype);
+      |                              ^~                    ~~~~
+In function ‘sprintf’,
+    inlined from ‘paranoid_query’ at cmd.c:7165:13:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 10 and 282 bytes into a destination of size 128
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o dbridge.o dbridge.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o decl.o decl.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o detect.o detect.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o dig.o dig.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o display.o display.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o dlb.o dlb.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o do.o do.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o do_name.o do_name.c
+do_name.c: In function ‘getpos_menu’:
+do_name.c:671:37: warning: ‘__builtin___sprintf_chk’ may write a terminating nul past the end of the destination [-Wformat-overflow=]
+  671 |             Sprintf(fullbuf, "%s%s%s", firstmatch,
+      |                                     ^
+In file included from /usr/include/stdio.h:980,
+                 from ../include/global.h:9,
+                 from ../include/config.h:581,
+                 from ../include/hack.h:10,
+                 from do_name.c:6:
+In function ‘sprintf’,
+    inlined from ‘getpos_menu’ at do_name.c:671:13:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output 1 or more bytes (assuming 257) into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+do_name.c: In function ‘getpos’:
+do_name.c:257:31: warning: ‘%s’ directive writing up to 255 bytes into a region of size 249 [-Wformat-overflow=]
+  257 |         Sprintf(sbuf, "Type a %s when you are at the right place.", kbuf);
+      |                               ^~                                    ~~~~
+In function ‘sprintf’,
+    inlined from ‘getpos_help’ at do_name.c:257:9,
+    inlined from ‘getpos’ at do_name.c:854:17:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 41 and 296 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+do_name.c: In function ‘getpos’:
+do_name.c:257:31: warning: ‘%s’ directive writing up to 255 bytes into a region of size 249 [-Wformat-overflow=]
+  257 |         Sprintf(sbuf, "Type a %s when you are at the right place.", kbuf);
+      |                               ^~                                    ~~~~
+In function ‘sprintf’,
+    inlined from ‘getpos_help’ at do_name.c:257:9,
+    inlined from ‘getpos’ at do_name.c:854:17:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 41 and 296 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+do_name.c: In function ‘price_identify’:
+do_name.c:2836:61: warning: ‘%s’ directive output may be truncated writing up to 127 bytes into a region of size 120 [-Wformat-truncation=]
+ 2836 |             (void) snprintf(prompt, sizeof prompt, "Search: %s", searchbuf);
+      |                                                             ^~   ~~~~~~~~~
+In function ‘snprintf’,
+    inlined from ‘price_identify’ at do_name.c:2836:20:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:54:10: note: ‘__builtin___snprintf_chk’ output between 9 and 136 bytes into a destination of size 128
+   54 |   return __builtin___snprintf_chk (__s, __n, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   55 |                                    __glibc_objsize (__s), __fmt,
+      |                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   56 |                                    __va_arg_pack ());
+      |                                    ~~~~~~~~~~~~~~~~~
+do_name.c: In function ‘price_identify’:
+do_name.c:2849:86: warning: ‘%s’ directive output may be truncated writing up to 127 bytes into a region of size between 80 and 90 [-Wformat-truncation=]
+ 2849 |             (void) snprintf(dbg, sizeof dbg, "[priceid dbg] built nextwin=%d search='%s'", nextwin, searchbuf);
+      |                                                                                      ^~             ~~~~~~~~~
+In function ‘snprintf’,
+    inlined from ‘price_identify’ at do_name.c:2849:20:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:54:10: note: ‘__builtin___snprintf_chk’ output between 40 and 177 bytes into a destination of size 128
+   54 |   return __builtin___snprintf_chk (__s, __n, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   55 |                                    __glibc_objsize (__s), __fmt,
+      |                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   56 |                                    __va_arg_pack ());
+      |                                    ~~~~~~~~~~~~~~~~~
+do_name.c: In function ‘price_identify’:
+do_name.c:3009:85: warning: ‘%s’ directive output may be truncated writing up to 255 bytes into a region of size between 204 and 233 [-Wformat-truncation=]
+ 3009 |             char line[BUFSZ]; (void) snprintf(line, sizeof line, "%5ld  %6ld  %6ld  %s", base, price1, price2, iname);
+      |                                                                                     ^~                         ~~~~~
+In function ‘snprintf’,
+    inlined from ‘price_identify’ at do_name.c:3009:38:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:54:10: note: ‘__builtin___snprintf_chk’ output between 24 and 308 bytes into a destination of size 256
+   54 |   return __builtin___snprintf_chk (__s, __n, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   55 |                                    __glibc_objsize (__s), __fmt,
+      |                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   56 |                                    __va_arg_pack ());
+      |                                    ~~~~~~~~~~~~~~~~~
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o do_wear.o do_wear.c
+do_wear.c: In function ‘armor_or_accessory_off’:
+do_wear.c:1465:52: warning: ‘%s’ directive writing up to 127 bytes into a region of size 103 [-Wformat-overflow=]
+ 1465 |             Sprintf(why, " without taking off your %s first", what);
+      |                                                    ^~         ~~~~
+In file included from /usr/include/stdio.h:980,
+                 from ../include/global.h:9,
+                 from ../include/config.h:581,
+                 from ../include/hack.h:10,
+                 from do_wear.c:6:
+In function ‘sprintf’,
+    inlined from ‘armor_or_accessory_off’ at do_wear.c:1465:13:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 32 and 159 bytes into a destination of size 128
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o dog.o dog.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o dogmove.o dogmove.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o dokick.o dokick.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o dothrow.o dothrow.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o drawing.o drawing.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o dungeon.o dungeon.c
+dungeon.c: In function ‘print_mapseen’:
+dungeon.c:3068:33: warning: ‘%s’ directive writing up to 255 bytes into a region of size 249 [-Wformat-overflow=]
+ 3068 |         Sprintf(outbuf, " (play %s to open or close drawbridge)", tmp);
+      |                                 ^~                                ~~~
+In file included from /usr/include/stdio.h:980,
+                 from ../include/global.h:9,
+                 from ../include/config.h:581,
+                 from ../include/hack.h:10,
+                 from dungeon.c:6:
+In function ‘sprintf’,
+    inlined from ‘tunesuffix’ at dungeon.c:3068:9,
+    inlined from ‘print_mapseen’ at dungeon.c:3229:9:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 37 and 292 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+dungeon.c: In function ‘print_mapseen’:
+dungeon.c:3229:35: warning: ‘%s’ directive writing up to 255 bytes into a region of size 240 [-Wformat-overflow=]
+ 3229 |         Sprintf(buf, "%sThe castle%s.", PREFIX, tunesuffix(mptr, tmpbuf));
+      |                                   ^~
+In function ‘sprintf’,
+    inlined from ‘print_mapseen’ at dungeon.c:3229:9:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 18 and 273 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+dungeon.c: In function ‘print_mapseen’:
+dungeon.c:3284:40: warning: ‘%s’ directive writing up to 255 bytes into a region of size 242 [-Wformat-overflow=]
+ 3284 |                 Sprintf(buf, "%s%syou, %s%c", PREFIX, TAB, tmpbuf,
+      |                                        ^~                  ~~~~~~
+In function ‘sprintf’,
+    inlined from ‘print_mapseen’ at dungeon.c:3284:17:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 16 and 271 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o eat.o eat.c
+eat.c: In function ‘edibility_prompts’:
+eat.c:2354:25: warning: ‘ like ’ directive writing 6 bytes into a region of size between 1 and 256 [-Wformat-overflow=]
+ 2354 |         Sprintf(buf, "%s like %s could be tainted!  %s", foodsmell, it_or_they,
+      |                         ^~~~~~
+In file included from /usr/include/stdio.h:980,
+                 from ../include/global.h:9,
+                 from ../include/config.h:581,
+                 from ../include/hack.h:10,
+                 from eat.c:6:
+In function ‘sprintf’,
+    inlined from ‘edibility_prompts’ at eat.c:2354:9:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 27 and 536 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+eat.c: In function ‘edibility_prompts’:
+eat.c:2380:25: warning: ‘ like ’ directive writing 6 bytes into a region of size between 1 and 256 [-Wformat-overflow=]
+ 2380 |         Sprintf(buf, "%s like %s might be poisonous!  %s", foodsmell,
+      |                         ^~~~~~
+In function ‘sprintf’,
+    inlined from ‘edibility_prompts’ at eat.c:2380:9:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 29 and 538 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+eat.c: In function ‘edibility_prompts’:
+eat.c:2389:25: warning: ‘ like ’ directive writing 6 bytes into a region of size between 1 and 256 [-Wformat-overflow=]
+ 2389 |         Sprintf(buf, "%s like %s might have been poisoned.  %s", foodsmell,
+      |                         ^~~~~~
+In function ‘sprintf’,
+    inlined from ‘edibility_prompts’ at eat.c:2389:9:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 35 and 544 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+eat.c: In function ‘edibility_prompts’:
+eat.c:2395:25: warning: ‘ unhealthy.  ’ directive writing 13 bytes into a region of size between 1 and 256 [-Wformat-overflow=]
+ 2395 |         Sprintf(buf, "%s unhealthy.  %s", foodsmell, eat_it_anyway);
+      |                         ^~~~~~~~~~~~~
+In function ‘sprintf’,
+    inlined from ‘edibility_prompts’ at eat.c:2395:9:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 14 and 396 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+eat.c: In function ‘edibility_prompts’:
+eat.c:2402:25: warning: ‘ rather acidic.  ’ directive writing 17 bytes into a region of size between 1 and 256 [-Wformat-overflow=]
+ 2402 |         Sprintf(buf, "%s rather acidic.  %s", foodsmell, eat_it_anyway);
+      |                         ^~~~~~~~~~~~~~~~~
+In function ‘sprintf’,
+    inlined from ‘edibility_prompts’ at eat.c:2402:9:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 18 and 400 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+eat.c: In function ‘edibility_prompts’:
+eat.c:2410:25: warning: ‘ disgusting to you right now...’ directive writing 31 bytes into a region of size between 1 and 256 [-Wformat-overflow=]
+ 2410 |         Sprintf(buf, "%s disgusting to you right now.  %s", foodsmell,
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In function ‘sprintf’,
+    inlined from ‘edibility_prompts’ at eat.c:2410:9:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 32 and 414 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+eat.c: In function ‘edibility_prompts’:
+eat.c:2425:25: warning: ‘ foul and unfamiliar to you...’ directive writing 30 bytes into a region of size between 1 and 256 [-Wformat-overflow=]
+ 2425 |         Sprintf(buf, "%s foul and unfamiliar to you.  %s", foodsmell,
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In function ‘sprintf’,
+    inlined from ‘edibility_prompts’ at eat.c:2425:9:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 31 and 413 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+eat.c: In function ‘edibility_prompts’:
+eat.c:2445:25: warning: ‘ like ’ directive writing 6 bytes into a region of size between 1 and 256 [-Wformat-overflow=]
+ 2445 |         Sprintf(buf, "%s like %s could be tainted!  %s",
+      |                         ^~~~~~
+In function ‘sprintf’,
+    inlined from ‘edibility_prompts’ at eat.c:2445:9:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 27 and 536 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+eat.c: In function ‘edibility_prompts’:
+eat.c:2436:25: warning: ‘ unfamiliar to you.  ’ directive writing 21 bytes into a region of size between 1 and 256 [-Wformat-overflow=]
+ 2436 |         Sprintf(buf, "%s unfamiliar to you.  %s", foodsmell, eat_it_anyway);
+      |                         ^~~~~~~~~~~~~~~~~~~~~
+In function ‘sprintf’,
+    inlined from ‘edibility_prompts’ at eat.c:2436:9:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 22 and 404 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+eat.c: In function ‘edibility_prompts’:
+eat.c:2371:25: warning: ‘ like ’ directive writing 6 bytes into a region of size between 1 and 256 [-Wformat-overflow=]
+ 2371 |         Sprintf(buf, "%s like %s could be rotten! %s",  foodsmell, it_or_they,
+      |                         ^~~~~~
+In function ‘sprintf’,
+    inlined from ‘edibility_prompts’ at eat.c:2371:9:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 25 and 534 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+eat.c: In function ‘edibility_prompts’:
+eat.c:2362:25: warning: ‘ like ’ directive writing 6 bytes into a region of size between 1 and 256 [-Wformat-overflow=]
+ 2362 |         Sprintf(buf, "%s like %s could be something very dangerous!  %s",
+      |                         ^~~~~~
+In function ‘sprintf’,
+    inlined from ‘edibility_prompts’ at eat.c:2362:9:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 44 and 553 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o end.o end.c
+end.c: In function ‘list_vanquished’:
+end.c:1993:39: warning: ‘__builtin___sprintf_chk’ may write a terminating nul past the end of the destination [-Wformat-overflow=]
+ 1993 |                 Sprintf(buftoo, "%*s%s", pfx, "", buf);
+      |                                       ^
+In file included from /usr/include/stdio.h:980,
+                 from ../include/global.h:9,
+                 from ../include/config.h:581,
+                 from ../include/hack.h:10,
+                 from end.c:8:
+In function ‘sprintf’,
+    inlined from ‘list_vanquished’ at end.c:1993:17:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 1 and 261 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o engrave.o engrave.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o exper.o exper.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o explode.o explode.c
+explode.c: In function ‘explode’:
+explode.c:539:67: warning: ‘%s’ directive writing up to 255 bytes into a region of size 236 [-Wformat-overflow=]
+  539 |                     Sprintf(killer.name, "caught %sself in %s own %s", uhim(),
+      |                                                                   ^~
+In file included from /usr/include/stdio.h:980,
+                 from ../include/global.h:9,
+                 from ../include/config.h:581,
+                 from ../include/hack.h:10,
+                 from explode.c:5:
+In function ‘sprintf’,
+    inlined from ‘explode’ at explode.c:539:21:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output 21 or more bytes (assuming 276) into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o extralev.o extralev.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o files.o files.c
+files.c: In function ‘save_savefile_name’:
+files.c:982:12: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  982 |     (void) write(fd, (genericptr_t) SAVEF, sizeof(SAVEF));
+      |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+files.c: In function ‘docompress_file’:
+files.c:1400:16: warning: ignoring return value of ‘setgid’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+ 1400 |         (void) setgid(getgid());
+      |                ^~~~~~~~~~~~~~~~
+files.c:1401:16: warning: ignoring return value of ‘setuid’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+ 1401 |         (void) setuid(getuid());
+      |                ^~~~~~~~~~~~~~~~
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o fountain.o fountain.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o hack.o hack.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o hacklib.o hacklib.c
+hacklib.c: In function ‘yyyymmddhhmmss’:
+hacklib.c:1031:28: warning: ‘%02d’ directive writing between 2 and 11 bytes into a region of size between 4 and 11 [-Wformat-overflow=]
+ 1031 |     Sprintf(datestr, "%04ld%02d%02d%02d%02d%02d", datenum, lt->tm_mon + 1,
+      |                            ^~~~
+hacklib.c:1031:22: note: directive argument in the range [-2147483647, 2147483647]
+ 1031 |     Sprintf(datestr, "%04ld%02d%02d%02d%02d%02d", datenum, lt->tm_mon + 1,
+      |                      ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /usr/include/stdio.h:980,
+                 from ../include/global.h:9,
+                 from ../include/config.h:581,
+                 from ../include/hack.h:10,
+                 from hacklib.c:7:
+In function ‘sprintf’,
+    inlined from ‘yyyymmddhhmmss’ at hacklib.c:1031:5:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 15 and 67 bytes into a destination of size 15
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o invent.o invent.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o isaac64.o isaac64.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o light.o light.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o lock.o lock.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o mail.o mail.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o makemon.o makemon.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o mapglyph.o mapglyph.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o mcastu.o mcastu.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o mhitm.o mhitm.c
+mhitm.c: In function ‘hitmm’:
+mhitm.c:606:37: warning: ‘ squeezes’ directive writing 9 bytes into a region of size between 1 and 256 [-Wformat-overflow=]
+  606 |                     Sprintf(buf, "%s squeezes", magr_name);
+      |                                     ^~~~~~~~~
+In file included from /usr/include/stdio.h:980,
+                 from ../include/global.h:9,
+                 from ../include/config.h:581,
+                 from ../include/hack.h:10,
+                 from mhitm.c:6:
+In function ‘sprintf’,
+    inlined from ‘hitmm’ at mhitm.c:606:21:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 10 and 265 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+mhitm.c: In function ‘hitmm’:
+mhitm.c:593:33: warning: ‘ stings’ directive writing 7 bytes into a region of size between 1 and 256 [-Wformat-overflow=]
+  593 |                 Sprintf(buf, "%s stings", magr_name);
+      |                                 ^~~~~~~
+In function ‘sprintf’,
+    inlined from ‘hitmm’ at mhitm.c:593:17:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 8 and 263 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+mhitm.c: In function ‘hitmm’:
+mhitm.c:599:33: warning: ‘ touches’ directive writing 8 bytes into a region of size between 1 and 256 [-Wformat-overflow=]
+  599 |                 Sprintf(buf, "%s touches", magr_name);
+      |                                 ^~~~~~~~
+In function ‘sprintf’,
+    inlined from ‘hitmm’ at mhitm.c:599:17:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 9 and 264 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+mhitm.c: In function ‘hitmm’:
+mhitm.c:596:33: warning: ‘ butts’ directive writing 6 bytes into a region of size between 1 and 256 [-Wformat-overflow=]
+  596 |                 Sprintf(buf, "%s butts", magr_name);
+      |                                 ^~~~~~
+In function ‘sprintf’,
+    inlined from ‘hitmm’ at mhitm.c:596:17:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 7 and 262 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+mhitm.c: In function ‘hitmm’:
+mhitm.c:590:33: warning: ‘ bites’ directive writing 6 bytes into a region of size between 1 and 256 [-Wformat-overflow=]
+  590 |                 Sprintf(buf, "%s bites", magr_name);
+      |                                 ^~~~~~
+In function ‘sprintf’,
+    inlined from ‘hitmm’ at mhitm.c:590:17:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 7 and 262 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+mhitm.c: In function ‘hitmm’:
+mhitm.c:611:33: warning: ‘ hits’ directive writing 5 bytes into a region of size between 1 and 256 [-Wformat-overflow=]
+  611 |                 Sprintf(buf, "%s hits", magr_name);
+      |                                 ^~~~~
+In function ‘sprintf’,
+    inlined from ‘hitmm’ at mhitm.c:611:17:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 6 and 261 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o mhitu.o mhitu.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o minion.o minion.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o mklev.o mklev.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o mkmap.o mkmap.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o mkmaze.o mkmaze.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o mkobj.o mkobj.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o mkroom.o mkroom.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o mon.o mon.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o mondata.o mondata.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o monmove.o monmove.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o mplayer.o mplayer.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o mthrowu.o mthrowu.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o muse.o muse.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o music.o music.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o o_init.o o_init.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o objnam.o objnam.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o occinterrupt.o occinterrupt.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o options.o options.c
+options.c: In function ‘option_help’:
+options.c:7481:28: warning: ‘ - ’ directive writing 3 bytes into a region of size between 1 and 236 [-Wformat-overflow=]
+ 7481 |         Sprintf(buf, "%-20s - %s%c", buf2, compopt[i].descr,
+      |                            ^~~
+In file included from /usr/include/stdio.h:980,
+                 from ../include/global.h:9,
+                 from ../include/config.h:581,
+                 from ../include/hack.h:10,
+                 from options.c:18:
+In function ‘sprintf’,
+    inlined from ‘option_help’ at options.c:7481:9:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output 25 or more bytes (assuming 260) into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o pager.o pager.c
+pager.c: In function ‘do_screen_description’:
+pager.c:1117:38: warning: ‘%s’ directive writing up to 255 bytes into a region of size 254 [-Wformat-overflow=]
+ 1115 |             *firstmatch = look_buf;
+      |                           ~~~~~~~~    
+ 1116 |             if (*(*firstmatch)) {
+ 1117 |                 Sprintf(temp_buf, " (%s)", *firstmatch);
+      |                                      ^~
+In file included from /usr/include/stdio.h:980,
+                 from ../include/global.h:9,
+                 from ../include/config.h:581,
+                 from ../include/hack.h:10,
+                 from pager.c:9:
+In function ‘sprintf’,
+    inlined from ‘do_screen_description’ at pager.c:1117:17:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 4 and 259 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+pager.c: In function ‘do_screen_description’:
+pager.c:1123:44: warning: ‘%s’ directive writing up to 255 bytes into a region of size 248 [-Wformat-overflow=]
+ 1123 |                 Sprintf(temp_buf, " [seen: %s]", monbuf);
+      |                                            ^~    ~~~~~~
+In function ‘sprintf’,
+    inlined from ‘do_screen_description’ at pager.c:1123:17:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 10 and 265 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o pickup.o pickup.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o pline.o pline.c
+pline.c: In function ‘handle_voice_output’:
+pline.c:778:24: warning: ignoring return value of ‘system’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  778 |                 (void) system(sayit);
+      |                        ^~~~~~~~~~~~~
+pline.c:828:16: warning: ignoring return value of ‘system’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  828 |         (void) system(sayit);
+      |                ^~~~~~~~~~~~~
+pline.c:775:63: warning: ‘"’ directive output may be truncated writing 1 byte into a region of size between 0 and 1021 [-Wformat-truncation=]
+  775 |                     snprintf(sayit, sizeof(sayit), "%s %s \"%s\"", engine,
+      |                                                               ^~
+In file included from /usr/include/stdio.h:980,
+                 from ../include/global.h:9,
+                 from ../include/config.h:581,
+                 from ../include/hack.h:10,
+                 from pline.c:8:
+In function ‘snprintf’,
+    inlined from ‘handle_voice_output’ at pline.c:775:21:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:54:10: note: ‘__builtin___snprintf_chk’ output between 5 and 1026 bytes into a destination of size 1024
+   54 |   return __builtin___snprintf_chk (__s, __n, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   55 |                                    __glibc_objsize (__s), __fmt,
+      |                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   56 |                                    __va_arg_pack ());
+      |                                    ~~~~~~~~~~~~~~~~~
+pline.c: In function ‘handle_voice_output’:
+pline.c:772:63: warning: ‘%s’ directive output may be truncated writing up to 255 bytes into a region of size between 254 and 1020 [-Wformat-truncation=]
+  772 |                     snprintf(sayit, sizeof(sayit), "%s \"%s\" %s", engine,
+      |                                                               ^~
+  773 |                              expanded, flags.voice_command);
+      |                                        ~~~~~~~~~~~~~~~~~~~     
+In function ‘snprintf’,
+    inlined from ‘handle_voice_output’ at pline.c:772:21:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:54:10: note: ‘__builtin___snprintf_chk’ output between 5 and 1026 bytes into a destination of size 1024
+   54 |   return __builtin___snprintf_chk (__s, __n, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   55 |                                    __glibc_objsize (__s), __fmt,
+      |                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   56 |                                    __va_arg_pack ());
+      |                                    ~~~~~~~~~~~~~~~~~
+pline.c: In function ‘handle_voice_output’:
+pline.c:769:70: warning: ‘%s’ directive output may be truncated writing up to 255 bytes into a region of size between 247 and 1013 [-Wformat-truncation=]
+  769 |                     snprintf(sayit, sizeof(sayit), "echo \"%s\" | %s %s",
+      |                                                                      ^~
+  770 |                              expanded, engine, flags.voice_command);
+      |                                                ~~~~~~~~~~~~~~~~~~~    
+In function ‘snprintf’,
+    inlined from ‘handle_voice_output’ at pline.c:769:21:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:54:10: note: ‘__builtin___snprintf_chk’ output between 12 and 1033 bytes into a destination of size 1024
+   54 |   return __builtin___snprintf_chk (__s, __n, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   55 |                                    __glibc_objsize (__s), __fmt,
+      |                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   56 |                                    __va_arg_pack ());
+      |                                    ~~~~~~~~~~~~~~~~~
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o polyself.o polyself.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o potion.o potion.c
+potion.c: In function ‘dodip’:
+potion.c:1925:26: warning: ‘%s’ directive writing up to 127 bytes into a region of size 124 [-Wformat-overflow=]
+ 1925 |         Sprintf(qbuf, "%s%s into the %s?", Dip_,
+      |                          ^~
+In file included from /usr/include/stdio.h:980,
+                 from ../include/global.h:9,
+                 from ../include/config.h:581,
+                 from ../include/hack.h:10,
+                 from potion.c:6:
+In function ‘sprintf’,
+    inlined from ‘dodip’ at potion.c:1925:9:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output 16 or more bytes (assuming 143) into a destination of size 128
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+potion.c: In function ‘dodip’:
+potion.c:1915:26: warning: ‘%s’ directive writing up to 127 bytes into a region of size 124 [-Wformat-overflow=]
+ 1915 |         Sprintf(qbuf, "%s%s into the fountain?", Dip_,
+      |                          ^~
+In function ‘sprintf’,
+    inlined from ‘dodip’ at potion.c:1915:9:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 24 and 151 bytes into a destination of size 128
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+potion.c: In function ‘dodip’:
+potion.c:1945:24: warning: ‘%s’ directive writing up to 127 bytes into a region of size 124 [-Wformat-overflow=]
+ 1945 |     Sprintf(qbuf, "dip %s into", flags.verbose ? obuf : shortestname);
+      |                        ^~
+In function ‘sprintf’,
+    inlined from ‘dodip’ at potion.c:1945:5:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 10 and 137 bytes into a destination of size 128
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+potion.c: In function ‘potionhit’:
+potion.c:1406:41: warning: ‘__builtin___sprintf_chk’ may write a terminating nul past the end of the destination [-Wformat-overflow=]
+ 1406 |             Sprintf(saddle_glows, "%s %s", buf, aobjnam(saddle, "glow"));
+      |                                         ^
+In function ‘sprintf’,
+    inlined from ‘potionhit’ at potion.c:1406:13:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output 2 or more bytes (assuming 257) into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o pray.o pray.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o priest.o priest.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o quest.o quest.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o questpgr.o questpgr.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o read.o read.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o rect.o rect.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o region.o region.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o restore.o restore.c
+restore.c: In function ‘restgamestate’:
+restore.c:564:5: warning: implicit declaration of function ‘curses_debug_log’ [-Wimplicit-function-declaration]
+  564 |     curses_debug_log("RESTORE: restgamestate() called, about to read uid");
+      |     ^~~~~~~~~~~~~~~~
+restore.c: In function ‘get_plname_from_file’:
+restore.c:1343:12: warning: ignoring return value of ‘read’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+ 1343 |     (void) read(fd, (genericptr_t) &pltmpsiz, sizeof(pltmpsiz));
+      |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+restore.c:1344:12: warning: ignoring return value of ‘read’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+ 1344 |     (void) read(fd, (genericptr_t) plbuf, pltmpsiz);
+      |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o rip.o rip.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o rnd.o rnd.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o role.o role.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o rumors.o rumors.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o save.o save.c
+save.c: In function ‘savegamestate’:
+save.c:329:123: warning: implicit declaration of function ‘curses_debug_log’ [-Wimplicit-function-declaration]
+  329 |     { char dbg[256]; Sprintf(dbg, "SAVE: wrote u struct, note_count=%d, note_list=%p", u.note_count, (void*)u.note_list); curses_debug_log(dbg); }
+      |                                                                                                                           ^~~~~~~~~~~~~~~~
+save.c: In function ‘savestateinlock’:
+save.c:471:16: warning: ignoring return value of ‘read’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  471 |         (void) read(fd, (genericptr_t) &hpid, sizeof hpid);
+      |                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+save.c:488:16: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  488 |         (void) write(fd, (genericptr_t) &hackpid, sizeof hackpid);
+      |                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+save.c:492:20: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  492 |             (void) write(fd, (genericptr_t) &currlev, sizeof currlev);
+      |                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o shk.o shk.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o shknam.o shknam.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o sit.o sit.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o sounds.o sounds.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o sp_lev.o sp_lev.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o spell.o spell.c
+spell.c: In function ‘getspell’:
+spell.c:725:47: warning: ‘%s’ directive writing up to 255 bytes into a region of size 109 [-Wformat-overflow=]
+  725 |             Sprintf(qbuf, "Cast which spell? [%s *?] (press '%c' to view/reorder — this cancels casting)", lets, SPBOOK_SYM);
+      |                                               ^~                                                           ~~~~
+In file included from /usr/include/stdio.h:980,
+                 from ../include/global.h:9,
+                 from ../include/config.h:581,
+                 from ../include/hack.h:10,
+                 from spell.c:5:
+In function ‘sprintf’,
+    inlined from ‘getspell’ at spell.c:725:13:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 77 and 332 bytes into a destination of size 128
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o sys.o sys.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o steal.o steal.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o steed.o steed.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o teleport.o teleport.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o timeout.o timeout.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o topten.o topten.c
+topten.c: In function ‘outentry’:
+topten.c:931:32: warning: ‘%s’ directive writing up to 255 bytes into a region of size 240 [-Wformat-overflow=]
+  931 |         Sprintf(linebuf, "%15s %s", "", linebuf3);
+      |                                ^~       ~~~~~~~~
+In file included from /usr/include/stdio.h:980,
+                 from ../include/global.h:9,
+                 from ../include/config.h:581,
+                 from ../include/hack.h:10,
+                 from topten.c:6:
+In function ‘sprintf’,
+    inlined from ‘outentry’ at topten.c:931:9:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 17 and 272 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o track.o track.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o trap.o trap.c
+trap.c: In function ‘untrap’:
+trap.c:4445:58: warning: ‘%s’ directive writing up to 255 bytes into a region of size 88 [-Wformat-overflow=]
+ 4445 |                         qbuf, "There %s and %s here.  %s %s?",
+      |                                                          ^~
+......
+ 4448 |                         (ttmp->ttyp == WEB) ? "Remove" : "Disarm", the_trap);
+      |                                                                    ~~~~~~~~
+In file included from /usr/include/stdio.h:980,
+                 from ../include/global.h:9,
+                 from ../include/config.h:581,
+                 from ../include/hack.h:10,
+                 from trap.c:6:
+In function ‘sprintf’,
+    inlined from ‘untrap’ at trap.c:4444:21:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output 42 or more bytes (assuming 297) into a destination of size 128
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o u_init.o u_init.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o notes.o notes.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o uhitm.o uhitm.c
+uhitm.c: In function ‘hmon_hitmon’:
+uhitm.c:1270:47: warning: ‘%s’ directive writing up to 255 bytes into a region of size between 244 and 251 [-Wformat-overflow=]
+ 1270 |                 Sprintf(silverobjbuf, "Your %s%s %s",
+      |                                               ^~
+ 1271 |                         strstri(saved_oname, "silver") ? "" : "silver ",
+ 1272 |                         saved_oname, vtense(saved_oname, "sear"));
+      |                         ~~~~~~~~~~~            
+In file included from /usr/include/stdio.h:980,
+                 from ../include/global.h:9,
+                 from ../include/config.h:581,
+                 from ../include/hack.h:10,
+                 from uhitm.c:6:
+In function ‘sprintf’,
+    inlined from ‘hmon_hitmon’ at uhitm.c:1270:17:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output 7 or more bytes (assuming 269) into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o vault.o vault.c
+make[2]: Entering directory '/home/neon/source/voice_Nethack_366/util'
+./makedefs -z
+make[2]: Leaving directory '/home/neon/source/voice_Nethack_366/util'
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o vision.o vision.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o vis_tab.o vis_tab.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o weapon.o weapon.c
+weapon.c: In function ‘enhance_weapon_skill’:
+weapon.c:1328:47: warning: ‘%s’ directive writing up to 255 bytes into a region of size between 249 and 253 [-Wformat-overflow=]
+ 1328 |                         Sprintf(buf, " %s%s\t[%s]", prefix, P_NAME(i),
+      |                                               ^~
+ 1329 |                                 sklnambuf);
+      |                                 ~~~~~~~~~      
+In file included from /usr/include/stdio.h:980,
+                 from ../include/global.h:9,
+                 from ../include/config.h:581,
+                 from ../include/hack.h:10,
+                 from weapon.c:11:
+In function ‘sprintf’,
+    inlined from ‘enhance_weapon_skill’ at weapon.c:1328:25:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output 5 or more bytes (assuming 264) into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+weapon.c: In function ‘enhance_weapon_skill’:
+weapon.c:1325:49: warning: ‘%s’ directive writing up to 255 bytes into a region of size between 248 and 252 [-Wformat-overflow=]
+ 1325 |                         Sprintf(buf, " %s %-*s [%s]", prefix, longest,
+      |                                                 ^~
+ 1326 |                                 P_NAME(i), sklnambuf);
+      |                                            ~~~~~~~~~
+In function ‘sprintf’,
+    inlined from ‘enhance_weapon_skill’ at weapon.c:1325:25:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output 6 or more bytes (assuming 265) into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+weapon.c: In function ‘enhance_weapon_skill’:
+weapon.c:1320:46: warning: ‘%s’ directive writing up to 255 bytes into a region of size between 250 and 254 [-Wformat-overflow=]
+ 1320 |                         Sprintf(buf, " %s%s\t%s\t%5d(%4d)", prefix, P_NAME(i),
+      |                                              ^~
+ 1321 |                                 sklnambuf, P_ADVANCE(i),
+      |                                 ~~~~~~~~~     
+weapon.c:1320:38: note: directive argument in the range [0, 65535]
+ 1320 |                         Sprintf(buf, " %s%s\t%s\t%5d(%4d)", prefix, P_NAME(i),
+      |                                      ^~~~~~~~~~~~~~~~~~~~~
+weapon.c:1320:38: note: directive argument in the range [-325120, 327680]
+In function ‘sprintf’,
+    inlined from ‘enhance_weapon_skill’ at weapon.c:1320:25:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output 15 or more bytes (assuming 277) into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+weapon.c: In function ‘enhance_weapon_skill’:
+weapon.c:1316:47: warning: ‘%-12s’ directive writing between 12 and 255 bytes into a region of size between 250 and 254 [-Wformat-overflow=]
+ 1316 |                         Sprintf(buf, " %s%-*s %-12s %5d(%4d)", prefix,
+      |                                               ^~~~~
+ 1317 |                                 longest, P_NAME(i), sklnambuf, P_ADVANCE(i),
+      |                                                     ~~~~~~~~~
+weapon.c:1316:38: note: directive argument in the range [0, 65535]
+ 1316 |                         Sprintf(buf, " %s%-*s %-12s %5d(%4d)", prefix,
+      |                                      ^~~~~~~~~~~~~~~~~~~~~~~~
+weapon.c:1316:38: note: directive argument in the range [-325120, 327680]
+In function ‘sprintf’,
+    inlined from ‘enhance_weapon_skill’ at weapon.c:1316:25:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output 27 or more bytes (assuming 277) into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o were.o were.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o wield.o wield.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o windows.o windows.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o wizard.o wizard.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o worm.o worm.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o worn.o worn.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o write.o write.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o zap.o zap.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL -c -o posixregex.o ../sys/share/posixregex.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL -c -o ioctl.o ../sys/share/ioctl.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL -c -o unixmain.o ../sys/unix/unixmain.c
+../sys/unix/unixmain.c: In function ‘chdirx’:
+../sys/unix/unixmain.c:494:16: warning: ignoring return value of ‘setgid’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  494 |         (void) setgid(getgid());
+      |                ^~~~~~~~~~~~~~~~
+../sys/unix/unixmain.c:495:16: warning: ignoring return value of ‘setuid’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  495 |         (void) setuid(getuid()); /* Ron Wessels */
+      |                ^~~~~~~~~~~~~~~~
+../sys/unix/unixmain.c: In function ‘sys_random_seed’:
+../sys/unix/unixmain.c:793:9: warning: ignoring return value of ‘fread’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  793 |         fread(&seed, sizeof (long), 1, fptr);
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL -c -o unixtty.o ../sys/share/unixtty.c
+../sys/share/unixtty.c: In function ‘linux_mapon’:
+../sys/share/unixtty.c:426:9: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  426 |         write(1, "\033(B", 3);
+      |         ^~~~~~~~~~~~~~~~~~~~~
+../sys/share/unixtty.c: In function ‘linux_mapoff’:
+../sys/share/unixtty.c:436:9: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  436 |         write(1, "\033(U", 3);
+      |         ^~~~~~~~~~~~~~~~~~~~~
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL -c -o unixunix.o ../sys/unix/unixunix.c
+../sys/unix/unixunix.c: In function ‘child’:
+../sys/unix/unixunix.c:307:16: warning: ignoring return value of ‘setgid’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  307 |         (void) setgid(getgid());
+      |                ^~~~~~~~~~~~~~~~
+../sys/unix/unixunix.c:308:16: warning: ignoring return value of ‘setuid’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  308 |         (void) setuid(getuid());
+      |                ^~~~~~~~~~~~~~~~
+../sys/unix/unixunix.c:310:16: warning: ignoring return value of ‘chdir’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  310 |         (void) chdir(getenv("HOME"));
+      |                ^~~~~~~~~~~~~~~~~~~~~
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL -c -o unixres.o ../sys/unix/unixres.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL -c -o getline.o ../win/tty/getline.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL -c -o termcap.o ../win/tty/termcap.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL -c -o topl.o ../win/tty/topl.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL -c -o wintty.o ../win/tty/wintty.c
+../win/tty/wintty.c:3709:29: warning: excess elements in array initializer
+ 3709 |       BL_CAP, BL_CONDITION, BL_FLUSH },
+      |                             ^~~~~~~~
+../win/tty/wintty.c:3709:29: note: (near initialization for ‘twolineorder[1]’)
+../win/tty/wintty.c: In function ‘tty_player_selection’:
+../win/tty/wintty.c:947:30: warning: ‘%s’ directive writing up to 127 bytes into a region of size between 95 and 126 [-Wformat-overflow=]
+  947 |         Sprintf(pbuf, "%s, %s%s %s %s", plname, aligns[ALGN].adj, plbuf,
+      |                              ^~                                   ~~~~~
+In file included from /usr/include/stdio.h:980,
+                 from ../include/global.h:9,
+                 from ../include/config.h:581,
+                 from ../include/hack.h:10,
+                 from ../win/tty/wintty.c:15:
+In function ‘sprintf’,
+    inlined from ‘tty_player_selection’ at ../win/tty/wintty.c:947:9:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output 5 or more bytes (assuming 163) into a destination of size 128
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL -c -o cursmain.o ../win/curses/cursmain.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL -c -o curswins.o ../win/curses/curswins.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL -c -o cursmisc.o ../win/curses/cursmisc.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL -c -o cursdial.o ../win/curses/cursdial.c
+../win/curses/cursdial.c: In function ‘menu_display_page’:
+../win/curses/cursdial.c:2489:105: warning: ‘%.80s’ directive output may be truncated writing up to 80 bytes into a region of size between 52 and 72 [-Wformat-truncation=]
+ 2489 |             (void) snprintf(dbg, sizeof dbg, "[curses dbg] processing item line_num=%d page_num=%d str='%.80s'",
+      |                                                                                                         ^~~~~
+In file included from /usr/include/stdio.h:980,
+                 from /usr/include/curses.h:232,
+                 from ../win/curses/cursdial.c:6:
+In function ‘snprintf’,
+    inlined from ‘menu_display_page’ at ../win/curses/cursdial.c:2489:20:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:54:10: note: ‘__builtin___snprintf_chk’ output between 58 and 158 bytes into a destination of size 128
+   54 |   return __builtin___snprintf_chk (__s, __n, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   55 |                                    __glibc_objsize (__s), __fmt,
+      |                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   56 |                                    __va_arg_pack ());
+      |                                    ~~~~~~~~~~~~~~~~~
+../win/curses/cursdial.c: In function ‘curses_display_nhmenu_nonblocking’:
+../win/curses/cursdial.c:1942:101: warning: ‘%.80s’ directive output may be truncated writing up to 80 bytes into a region of size between 65 and 75 [-Wformat-truncation=]
+ 1942 |             (void) snprintf(dbg, sizeof dbg, "[curses dbg] fast-path single-header menu wid=%d str='%.80s'",
+      |                                                                                                     ^~~~~
+In function ‘snprintf’,
+    inlined from ‘curses_display_nhmenu_nonblocking’ at ../win/curses/cursdial.c:1942:20:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:54:10: note: ‘__builtin___snprintf_chk’ output between 55 and 145 bytes into a destination of size 128
+   54 |   return __builtin___snprintf_chk (__s, __n, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   55 |                                    __glibc_objsize (__s), __fmt,
+      |                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   56 |                                    __va_arg_pack ());
+      |                                    ~~~~~~~~~~~~~~~~~
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL -c -o cursstat.o ../win/curses/cursstat.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL -c -o cursinit.o ../win/curses/cursinit.c
+../win/curses/cursinit.c: In function ‘curses_choose_character’:
+../win/curses/cursinit.c:455:26: warning: ‘__builtin___sprintf_chk’ may write a terminating nul past the end of the destination [-Wformat-overflow=]
+  455 |     sprintf(choice, "%s%c", tmpchoice, '\033');
+      |                          ^
+In file included from /usr/include/stdio.h:980,
+                 from /usr/include/curses.h:232,
+                 from ../win/curses/cursinit.c:6:
+In function ‘sprintf’,
+    inlined from ‘curses_choose_character’ at ../win/curses/cursinit.c:455:5:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 2 and 129 bytes into a destination of size 128
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL -c -o cursmesg.o ../win/curses/cursmesg.c
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL -c -o cursinvt.o ../win/curses/cursinvt.c
+/bin/sh ../sys/unix/gitinfo.sh 1 #before 'makedefs -v'
+dat/gitinfo.txt created, githash=e1061600bca0eb57cc2e1bbabfd0974bb60e7dc5
+../util/makedefs -v
+cc -g -O -I../include -DNOTPARMDECL -DDLB -DCOMPRESS=\"/bin/gzip\" -DCOMPRESS_EXTENSION=\".gz\" -DSYSCF -DSYSCF_FILE=\"/home/neon/vnh366/install/games/lib/nethackdir/sysconf\" -DSECURE -DTIMED_DELAY -DHACKDIR=\"/home/neon/vnh366/install/games/lib/nethackdir\" -DDUMPLOG -DDEBUG -DCONFIG_ERROR_SECURE=FALSE -DCURSES_GRAPHICS -DEDIT_GETLIN -DSCORE_ON_BOTL   -c -o version.o version.c
+version.c: In function ‘early_version_info’:
+version.c:187:24: warning: ‘__builtin___sprintf_chk’ may write a terminating nul past the end of the destination [-Wformat-overflow=]
+  187 |     Sprintf(buf2, "%s\n", buf);
+      |                        ^
+In file included from /usr/include/stdio.h:980,
+                 from ../include/global.h:9,
+                 from ../include/config.h:581,
+                 from ../include/hack.h:10,
+                 from version.c:6:
+In function ‘sprintf’,
+    inlined from ‘early_version_info’ at version.c:187:5:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 2 and 257 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+version.c: In function ‘early_version_info’:
+version.c:187:24: warning: ‘__builtin___sprintf_chk’ may write a terminating nul past the end of the destination [-Wformat-overflow=]
+  187 |     Sprintf(buf2, "%s\n", buf);
+      |                        ^
+In function ‘sprintf’,
+    inlined from ‘early_version_info’ at version.c:187:5:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 2 and 257 bytes into a destination of size 256
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+Linking nethack.
+cc -rdynamic -o nethack monst.o objects.o allmain.o alloc.o apply.o artifact.o attrib.o ball.o bones.o botl.o cmd.o dbridge.o decl.o detect.o dig.o display.o dlb.o do.o do_name.o do_wear.o dog.o dogmove.o dokick.o dothrow.o drawing.o dungeon.o eat.o end.o engrave.o exper.o explode.o extralev.o files.o fountain.o hack.o hacklib.o invent.o isaac64.o light.o lock.o mail.o makemon.o mapglyph.o mcastu.o mhitm.o mhitu.o minion.o mklev.o mkmap.o mkmaze.o mkobj.o mkroom.o mon.o mondata.o monmove.o mplayer.o mthrowu.o muse.o music.o o_init.o objnam.o occinterrupt.o options.o pager.o pickup.o pline.o polyself.o potion.o pray.o priest.o quest.o questpgr.o read.o rect.o region.o restore.o rip.o rnd.o role.o rumors.o save.o shk.o shknam.o sit.o sounds.o sp_lev.o spell.o sys.o steal.o steed.o teleport.o timeout.o topten.o track.o trap.o u_init.o notes.o uhitm.o vault.o vision.o vis_tab.o weapon.o were.o wield.o windows.o wizard.o worm.o worn.o write.o zap.o posixregex.o  ioctl.o unixmain.o unixtty.o unixunix.o unixres.o getline.o termcap.o topl.o wintty.o cursmain.o curswins.o cursmisc.o cursdial.o cursstat.o cursinit.o cursmesg.o cursinvt.o  version.o -lncurses -ltinfo -lncurses 
+/usr/bin/ld: save.o: warning: relocation against `quiverorder_ignore_type' in read-only section `.text'
+/usr/bin/ld: cmd.o:(.data.rel+0xd68): undefined reference to `dosetquiver'
+/usr/bin/ld: dothrow.o: in function `quiver_slot_excluded':
+/home/neon/source/voice_Nethack_366/src/dothrow.c:72:(.text+0x9e): undefined reference to `quiverorder_ignore_invlet'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/dothrow.c:74:(.text+0xec): undefined reference to `quiver_ignoreindx'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/dothrow.c:74:(.text+0xfc): undefined reference to `quiver_ignorecnt'
+/usr/bin/ld: dothrow.o: in function `autoquiver':
+/home/neon/source/voice_Nethack_366/src/dothrow.c:368:(.text+0x5f8b): undefined reference to `select_quiver_candidate_invlet_first'
+/usr/bin/ld: invent.o: in function `qc_text_rank':
+/home/neon/source/voice_Nethack_366/src/invent.c:460:(.text+0xe9a): undefined reference to `quiverorder_otypes'
+/usr/bin/ld: invent.o: in function `qc_cmp':
+/home/neon/source/voice_Nethack_366/src/invent.c:540:(.text+0x11f3): undefined reference to `quiverorder_invlet'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/invent.c:560:(.text+0x127b): undefined reference to `quiver_ordercnt'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/invent.c:560:(.text+0x1286): undefined reference to `quiver_orderindx'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/invent.c:573:(.text+0x1304): undefined reference to `quiver_ordercnt'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/invent.c:576:(.text+0x135d): undefined reference to `quiver_ordercnt'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/invent.c:577:(.text+0x136c): undefined reference to `quiver_ordercnt'
+/usr/bin/ld: invent.o: in function `update_inventory':
+/home/neon/source/voice_Nethack_366/src/invent.c:2596:(.text+0x1e3b): undefined reference to `quiver_sync_readied_slot'
+/usr/bin/ld: invent.o: in function `display_pickinv':
+/home/neon/source/voice_Nethack_366/src/invent.c:2859:(.text+0x48a5): undefined reference to `quiver_obj_is_excluded'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/invent.c:3015:(.text+0x4e25): undefined reference to `quiver_obj_is_excluded'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/invent.c:3016:(.text+0x4e2f): undefined reference to `quiver_ordercnt'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/invent.c:3016:(.text+0x4e3a): undefined reference to `quiver_orderindx'
+/usr/bin/ld: invent.o: in function `display_inventory':
+/home/neon/source/voice_Nethack_366/src/invent.c:3117:(.text+0x55cc): undefined reference to `quiver_sync_readied_slot'
+/usr/bin/ld: options.o: in function `rebuild_quiver_order_from_split':
+/home/neon/source/voice_Nethack_366/src/options.c:1485:(.text+0x1aae): undefined reference to `quiverorder_ignore_type'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/options.c:1488:(.text+0x1acb): undefined reference to `quiverorder_otypes'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/options.c:1494:(.text+0x1b39): undefined reference to `quiver_orderindx'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/options.c:1496:(.text+0x1b4f): undefined reference to `quiver_orderindx'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/options.c:1497:(.text+0x1b59): undefined reference to `quiver_ordercnt'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/options.c:1499:(.text+0x1b60): undefined reference to `quiver_ignoreindx'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/options.c:1501:(.text+0x1b76): undefined reference to `quiver_ignoreindx'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/options.c:1502:(.text+0x1b82): undefined reference to `quiver_ignorecnt'
+/usr/bin/ld: options.o: in function `current_quiver_excluded':
+/home/neon/source/voice_Nethack_366/src/options.c:747:(.text+0x1b95): undefined reference to `quiverorder_ignore_invlet'
+/usr/bin/ld: options.o: in function `get_compopt_value':
+/home/neon/source/voice_Nethack_366/src/options.c:6940:(.text+0x38e3): undefined reference to `quiverorder_otypes'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/options.c:6945:(.text+0x3924): undefined reference to `quiverorder_invlet'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/options.c:6950:(.text+0x3965): undefined reference to `quiverorder_ignore_type'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/options.c:6955:(.text+0x39a6): undefined reference to `quiverorder_ignore_invlet'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/options.c:6964:(.text+0x39ea): undefined reference to `quiver_ordercnt'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/options.c:6964:(.text+0x39f5): undefined reference to `quiver_orderindx'
+/usr/bin/ld: options.o: in function `parseoptions':
+/home/neon/source/voice_Nethack_366/src/options.c:4104:(.text+0x8e75): undefined reference to `quiverorder_otypes'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/options.c:4119:(.text+0x8f1c): undefined reference to `quiverorder_invlet'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/options.c:4134:(.text+0x8fc5): undefined reference to `quiverorder_ignore_type'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/options.c:4149:(.text+0x906c): undefined reference to `quiverorder_ignore_invlet'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/options.c:4185:(.text+0x9151): undefined reference to `quiverorder_otypes'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/options.c:4185:(.text+0x9195): undefined reference to `quiverorder_otypes'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/options.c:4185:(.text+0xb402): undefined reference to `quiverorder_otypes'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/options.c:4187:(.text+0xb418): undefined reference to `quiverorder_invlet'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/options.c:4189:(.text+0xb42e): undefined reference to `quiverorder_ignore_type'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/options.c:4190:(.text+0xb43d): undefined reference to `quiverorder_ignore_invlet'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/options.c:4185:(.text+0xb45b): undefined reference to `quiverorder_otypes'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/options.c:4185:(.text+0xb469): undefined reference to `quiverorder_otypes'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/options.c:4185:(.text+0xb48d): undefined reference to `quiverorder_otypes'
+/usr/bin/ld: options.o: in function `get_quiver_option_current':
+/home/neon/source/voice_Nethack_366/src/options.c:1208:(.text+0xe5f4): undefined reference to `quiverorder_otypes'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/options.c:1212:(.text+0xe636): undefined reference to `quiverorder_invlet'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/options.c:1197:(.text+0xe672): undefined reference to `quiverorder_otypes'
+/usr/bin/ld: options.o: in function `show_quiver_rc_block':
+/home/neon/source/voice_Nethack_366/src/options.c:1450:(.text+0xe855): undefined reference to `quiverorder_otypes'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/options.c:1456:(.text+0xe8aa): undefined reference to `quiverorder_invlet'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/options.c:1462:(.text+0xe8ff): undefined reference to `quiverorder_ignore_type'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/options.c:1468:(.text+0xe954): undefined reference to `quiverorder_ignore_invlet'
+/usr/bin/ld: options.o: in function `get_quiver_option_current':
+/home/neon/source/voice_Nethack_366/src/options.c:1199:(.text+0xe9cf): undefined reference to `quiverorder_invlet'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/options.c:1201:(.text+0xe9eb): undefined reference to `quiverorder_ignore_type'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/options.c:1203:(.text+0xea07): undefined reference to `quiverorder_ignore_invlet'
+/usr/bin/ld: pickup.o: in function `pick_obj':
+/home/neon/source/voice_Nethack_366/src/pickup.c:1759:(.text+0x3c3a): undefined reference to `quiver_ordercnt'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/pickup.c:1767:(.text+0x3c80): undefined reference to `quiver_ordercnt'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/pickup.c:1767:(.text+0x3ca5): undefined reference to `quiver_ordercnt'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/pickup.c:1759:(.text+0x3d58): undefined reference to `quiver_ordercnt'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/pickup.c:1763:(.text+0x3d62): undefined reference to `quiver_orderindx'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/pickup.c:1767:(.text+0x3dc7): undefined reference to `quiver_ordercnt'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/pickup.c:1768:(.text+0x3dd8): undefined reference to `quiver_orderindx'
+/usr/bin/ld: restore.o: in function `restgamestate':
+/home/neon/source/voice_Nethack_366/src/restore.c:759:(.text+0x138c): undefined reference to `quiver_ordercnt'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/restore.c:760:(.text+0x1399): undefined reference to `quiver_ordercnt'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/restore.c:765:(.text+0x13a8): undefined reference to `quiver_orderindx'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/restore.c:768:(.text+0x13c0): undefined reference to `quiver_ignoreindx'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/restore.c:770:(.text+0x13d1): undefined reference to `quiver_ignoreindx'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/restore.c:772:(.text+0x13db): undefined reference to `quiver_ignorecnt'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/restore.c:773:(.text+0x13eb): undefined reference to `quiver_ignorecnt'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/restore.c:774:(.text+0x13f8): undefined reference to `quiver_ignorecnt'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/restore.c:781:(.text+0x1407): undefined reference to `quiverorder_otypes'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/restore.c:783:(.text+0x1418): undefined reference to `quiverorder_invlet'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/restore.c:785:(.text+0x1429): undefined reference to `quiverorder_ignore_type'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/restore.c:787:(.text+0x143a): undefined reference to `quiverorder_ignore_invlet'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/restore.c:789:(.text+0x1452): undefined reference to `quiverorder_otypes'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/restore.c:790:(.text+0x1460): undefined reference to `quiverorder_invlet'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/restore.c:791:(.text+0x146e): undefined reference to `quiverorder_ignore_type'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/restore.c:792:(.text+0x147c): undefined reference to `quiverorder_ignore_invlet'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/restore.c:761:(.text+0x16b2): undefined reference to `quiver_orderindx'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/restore.c:762:(.text+0x16b8): undefined reference to `quiver_ordercnt'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/restore.c:775:(.text+0x16e1): undefined reference to `quiver_ignoreindx'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/restore.c:777:(.text+0x16e7): undefined reference to `quiver_ignorecnt'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/restore.c:794:(.text+0x1701): undefined reference to `quiver_ignoreindx'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/restore.c:796:(.text+0x1712): undefined reference to `quiver_ignoreindx'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/restore.c:798:(.text+0x171c): undefined reference to `quiver_ignorecnt'
+/usr/bin/ld: save.o: in function `savegamestate':
+/home/neon/source/voice_Nethack_366/src/save.c:393:(.text+0x13a7): undefined reference to `quiver_ordercnt'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/save.c:394:(.text+0x13b4): undefined reference to `quiver_ordercnt'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/save.c:394:(.text+0x13bf): undefined reference to `quiver_orderindx'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/save.c:399:(.text+0x14e7): undefined reference to `quiver_ignorecnt'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/save.c:400:(.text+0x14f4): undefined reference to `quiver_ignorecnt'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/save.c:400:(.text+0x14ff): undefined reference to `quiver_ignoreindx'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/save.c:403:(.text+0x1515): undefined reference to `quiverorder_otypes'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/save.c:404:(.text+0x1523): undefined reference to `quiverorder_invlet'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/save.c:405:(.text+0x1531): undefined reference to `quiverorder_ignore_type'
+/usr/bin/ld: /home/neon/source/voice_Nethack_366/src/save.c:406:(.text+0x153f): undefined reference to `quiverorder_ignore_invlet'
+/usr/bin/ld: wield.o: in function `setuqwep':
+/home/neon/source/voice_Nethack_366/src/wield.c:231:(.text+0x759): undefined reference to `quiver_obj_is_excluded'
+/usr/bin/ld: warning: creating DT_TEXTREL in a PIE
+collect2: error: ld returned 1 exit status
+make[1]: *** [Makefile:606: Sysunix] Error 1
+make[1]: Leaving directory '/home/neon/source/voice_Nethack_366/src'
+make: *** [Makefile:170: nethack] Error 2
