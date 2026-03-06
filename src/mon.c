@@ -3067,9 +3067,7 @@ int x, y, distance;
     if (distance > 0) {
         for (radius = 0; (radius + 1) * (radius + 1) <= distance; radius++)
             ;
-        /* small radius events should animate quickly */
-        fast = (radius <= 2);
-        shockwave_ring_effect(x, y, radius, fast);
+        shockwave_ring_effect(x, y, radius, FALSE);
     }
 
     for (mtmp = fmon; mtmp; mtmp = mtmp->nmon) {
