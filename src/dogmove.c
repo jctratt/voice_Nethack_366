@@ -272,19 +272,21 @@ xchar *nx, *ny;
                         ; /* ok */
                     else
                         continue; /* impassable */
-                } else if (IS_DOOR(rtyp)) {
+                } else if (IS_DOOR(rtyp) || rtyp == SDOOR) {
                     if (levl[tx][ty].doormask & (D_CLOSED | D_LOCKED)) {
                         if (!can_phase && !can_ooze && !can_open)
                             continue; /* can't deal with closed door */
                     }
                     /* diagonal move into/out of a doorway with door? */
                     if (dx8[dir] && dy8[dir]) {
-                        /* entering a non-doorless door diagonally is illegal */
-                        if (levl[tx][ty].doormask & ~D_BROKEN)
+                        /* entering a doorway diagonally is only allowed if the door
+                           is completely gone (NODOOR or BROKEN) */
+                        if (levl[tx][ty].doormask != D_NODOOR && levl[tx][ty].doormask != D_BROKEN)
                             continue;
                         /* leaving from a doorway diagonally likewise */
-                        if (IS_DOOR(levl[cx][cy].typ)
-                            && (levl[cx][cy].doormask & ~D_BROKEN))
+                        int ctyp = levl[cx][cy].typ;
+                        if ((IS_DOOR(ctyp) || ctyp == SDOOR)
+                            && levl[cx][cy].doormask != D_NODOOR && levl[cx][cy].doormask != D_BROKEN)
                             continue;
                     }
                 }
@@ -305,6 +307,29 @@ xchar *nx, *ny;
                     && bad_rock(mdat, cx, ty)
                     && bad_rock(mdat, tx, cy))
                     continue;
+
+                /* diagonal door check: can't move diagonally through a door
+                   unless it's completely gone (NODOOR or BROKEN).
+                   Check both adjacent squares that the diagonal move passes through.
+                   Also blocks secret doors (SDOOR). */
+                if (dx8[dir] && dy8[dir]) {
+                    /* Check the square to the right/left of the diagonal move */
+                    int htyp = levl[cx + dx8[dir]][cy].typ;
+                    if (IS_DOOR(htyp) || htyp == SDOOR) {
+                        struct rm *door_lev = &levl[cx + dx8[dir]][cy];
+                        /* Only NODOOR (0) and BROKEN (1) allow diagonal passage */
+                        if (door_lev->doormask != D_NODOOR && door_lev->doormask != D_BROKEN)
+                            continue; /* door blocks diagonal */
+                    }
+                    /* Check the square above/below the diagonal move */
+                    int vtyp = levl[cx][cy + dy8[dir]].typ;
+                    if (IS_DOOR(vtyp) || vtyp == SDOOR) {
+                        struct rm *door_lev = &levl[cx][cy + dy8[dir]];
+                        /* Only NODOOR (0) and BROKEN (1) allow diagonal passage */
+                        if (door_lev->doormask != D_NODOOR && door_lev->doormask != D_BROKEN)
+                            continue; /* door blocks diagonal */
+                    }
+                }
 
                 /* reverse direction: the direction from tx,ty back to cx,cy */
                 rdir = (dir + 4) % 8;
