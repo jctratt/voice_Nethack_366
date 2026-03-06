@@ -4,6 +4,8 @@ Commits since `README.md` was last updated (commit c012979 — 2025-03-05):
 
 - UNCOMMITTED 2026-03-06 Jeff Tratt — CHANGE: ATHAME replaces QUARTERSTAFF as the default wizard's weapon and in relevant spawn logic; added documentation comment in `src/u_init.c` and updated data notes.
 
+- UNCOMMITTED 2026-03-06 Jeff Tratt — TWEAK: Wizard dagger skill bumped from Expert to Master; noted in `src/u_init.c`.
+
 - UNCOMMITTED 2026-02-24 Jeff Tratt — FEATURE: #force doubles as quick quiver when not standing on a container
   - If no lockable box or chest is underfoot, issuing `#force` now selects the
     highest-priority quiver item (honoring invlet/otype ordering); the chosen

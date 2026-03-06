@@ -544,7 +544,8 @@ static const struct def_skill Skill_V[] = {
     { P_NONE, 0 }
 };
 static const struct def_skill Skill_W[] = {
-    { P_DAGGER, P_EXPERT },
+    /* Wizards are elite with daggers; raised to Master level 2026-03-06 */
+    { P_DAGGER, P_MASTER },
     { P_KNIFE, P_SKILLED },
     { P_AXE, P_SKILLED },
     { P_SHORT_SWORD, P_BASIC },
