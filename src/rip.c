@@ -101,6 +101,32 @@ time_t when;
         dp[x] = dupstr(rip_txt[x]);
     dp[x] = (char *) 0;
 
+    /* Replace PEACE with PIECES if player died (not ascended/escaped) */
+    if (how != ASCENDED && how != ESCAPED) {
+        /* Find and replace "PEACE" with "PIECES" on line 4 (index 4) */
+        char *peace_ptr = strstr(dp[4], "PEACE");
+        if (peace_ptr) {
+            /* PEACE is 5 chars, PIECES is 6 chars - need to remove one space
+               to keep the line width the same. We'll remove the space after PEACE. */
+            char newline[256];
+            int pos = peace_ptr - dp[4];
+
+            /* Copy everything before PEACE */
+            strncpy(newline, dp[4], pos);
+            newline[pos] = '\0';
+            /* Add PIECES */
+            strcat(newline, "PIECES");
+            /* Skip one space after PEACE and add the rest */
+            if (peace_ptr[5] == ' ') {
+                strcat(newline, peace_ptr + 6);  /* Skip the space after PEACE */
+            } else {
+                strcat(newline, peace_ptr + 5);  /* No space to skip */
+            }
+            free((genericptr_t) dp[4]);
+            dp[4] = dupstr(newline);
+        }
+    }
+
     /* Put name on stone */
     Sprintf(buf, "%s", plname);
     buf[STONE_LINE_LEN] = 0;
