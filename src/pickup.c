@@ -442,13 +442,15 @@ boolean
 allow_category(obj)
 struct obj *obj;
 {
-    /* drop_ignore_gems only suppresses gems/rocks when the filter
-       the player has chosen is solely "unknown BUC" (i.e. +X).  in all
-       other situations they remain selectable.  we implement that here
-       before any other filtering so that an otherwise matching gem/rock
-       can still be rejected. */
+    /* drop_ignore_gems only suppresses gems/rocks (and now coins) when
+       the filter the player has chosen is solely "unknown BUC" (i.e. +X).
+       In all other situations they remain selectable.  We implement that
+       here before any other filtering so that an otherwise matching gem,
+       rock, or coin can still be rejected by a subsequent test.  Coins are
+       added because they behave like weightless clutter and ought to be
+       excluded from the BUC filter when the option is active. */
     if (flags.drop_ignore_gems && bucx_filter && !class_filter
-        && (obj->oclass == GEM_CLASS || obj->oclass == ROCK_CLASS))
+        && (obj->oclass == GEM_CLASS || obj->oclass == ROCK_CLASS || obj->oclass == COIN_CLASS))
         return FALSE;
 
     /* For coins, if any class filter is specified, accept if coins
@@ -1071,10 +1073,29 @@ boolean FDECL((*allow), (OBJ_P)); /* allow function */
                         accelerator = '$';
                     }
 
-                add_menu(win, obj_to_glyph(curr, rn2_on_display_rng), &any,
-                         accelerator,
-                         def_oc_syms[(int) objects[curr->otyp].oc_class].sym,
-                         ATR_NONE, doname_with_price(curr), MENU_UNSELECTED);
+                {
+                    /* Build the label text; doname_with_price() never
+                       includes weight, so append it here when the
+                       inventory-weight option is active.  This mirrors
+                       the behavior of display_inventory() and xprname()
+                       so that apply/loot menus look consistent with the
+                       regular inventory list. */
+                    char lab[BUFSZ];
+
+                    Strcpy(lab, doname_with_price(curr));
+                    if (flags.invweight) {
+                        long total_wt = (long) curr->owt;
+                        long per_wt = (curr->quan > 1) ? (total_wt / curr->quan) : total_wt;
+                        if (curr->quan > 1 && total_wt > 0)
+                            Sprintf(eos(lab), " [%ldx%ld]", total_wt, per_wt);
+                        else if (total_wt > 0)
+                            Sprintf(eos(lab), " [%ld]", total_wt);
+                    }
+                    add_menu(win, obj_to_glyph(curr, rn2_on_display_rng), &any,
+                             accelerator,
+                             def_oc_syms[(int) objects[curr->otyp].oc_class].sym,
+                             ATR_NONE, lab, MENU_UNSELECTED);
+                }
                 }
 #ifdef STICKY_OBJECTS
            sticky_inv_hack = 0;

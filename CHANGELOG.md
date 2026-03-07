@@ -7,7 +7,7 @@ Commits since `README.md` was last updated (commit c012979 — 2025-03-05):
 - UNCOMMITTED 2026-03-06 Jeff Tratt — TWEAK: Wizard dagger skill bumped from Expert to Master; noted in `src/u_init.c`.
 
 - UNCOMMITTED 2026-03-06 Jeff Tratt — PERF: shockwave_ring_effect gains fast mode for small radii.  Kicking objects and doors now invoke a short fast shockwave (radius 2) directly; wake_nearto itself continues to use the normal animation.  Kicks now call `wake_nearto(...,0)` to avoid drawing the slow ring before the fast one.
-
+- UNCOMMITTED 2026-03-07 Jeff Tratt — UI: when `OPTIONS=invweight` is enabled, also display per-item/total weight annotations in inventory-style menus that appear during `apply` and `loot` commands (including the looting submenu and `getobj`/`ggetobj` menus).  Labels use the same `[TOTALxITEM]` format as the main inventory.  This completes the original feature by extending visibility to selection dialogs.
 - UNCOMMITTED 2026-02-24 Jeff Tratt — FEATURE: #force doubles as quick quiver when not standing on a container
   - If no lockable box or chest is underfoot, issuing `#force` now selects the
     highest-priority quiver item (honoring invlet/otype ordering); the chosen

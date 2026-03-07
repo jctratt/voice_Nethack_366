@@ -2701,6 +2701,30 @@ long quan;
           xprname(obj, (char *) 0, obj_to_let(obj), TRUE, 0L, quan));
 }
 
+/*
+ * Generate a display string for an object in menus and messages.  This is
+ * the workhorse used by inventory listings, the various getobj()/ggetobj()
+ * and askchain() menus, apply-type dialogs and other routines that need a
+ * human-readable name prefixed by an inventory letter or other symbol.
+ *
+ * Parameters:
+ *   obj   - object to name (may be NULL when 'txt' provides the text)
+ *   txt   - optional override text, typically a short descriptor such as
+ *           "fingers" or "Total:".  If non-NULL it replaces the usual
+ *           doname(obj) output.
+ *   let   - letter used as prefix in the menu (invlet, HANDS_SYM, '*' for
+ *           total lines, etc.).
+ *   dot   - append a period to the end of the string; also controls use of
+ *           inventory letter when a cost is present (Iu vs Ix format).
+ *   cost  - cost field for shop/unpaid displays; if non-zero, the output is
+ *           formatted as an Iu/Ix line with the cost and currency.
+ *   quan  - override quantity (objects may be split/merged); if non-zero,
+ *           this value is shown instead of obj->quan.
+ *
+ * The return value points to a static buffer which the caller may use
+ * immediately; subsequent calls will overwrite it.  Weight annotations
+ * (OPTIONS=invweight) and pricing details are appended by this routine.
+ */
 char *
 xprname(obj, txt, let, dot, cost, quan)
 struct obj *obj;
@@ -2750,6 +2774,29 @@ long quan;       /* if non-0, print this quantity, not obj->quan */
     }
     if (savequan)
         obj->quan = savequan;
+
+    /*
+     * When OPTIONS=invweight is enabled, append a per-item/total weight
+     * annotation to the name for any object we are formatting.  This
+     * affects inventory menus (getobj and friends), apply menus and
+     * similar listings where xprname() is used.  We avoid doing this when a
+     * cost is being shown because shop or unpaid messages already carry a
+     * numeric value and adding weight would clutter the output.
+     */
+    if (flags.invweight && obj && obj->owt > 0 && cost == 0L) {
+        long total_wt = (long) obj->owt;
+        long per_wt = (obj->quan > 1) ? (total_wt / obj->quan) : total_wt;
+        char wtbuf[32];
+
+        if (obj->quan > 1 && total_wt > 0)
+            Sprintf(wtbuf, " [%ldx%ld]", total_wt, per_wt);
+        else if (total_wt > 0)
+            Sprintf(wtbuf, " [%ld]", total_wt);
+        else
+            wtbuf[0] = '\0';
+        if (wtbuf[0])
+            Strcat(li, wtbuf);
+    }
 
     return li;
 }
