@@ -1478,13 +1478,13 @@ docallcmd()
              "record an annotation for the current level", MENU_UNSELECTED);
 
     /* new submenu entries added February 2026 */
-    any.a_char = 'I'; /* group accelerator 'C' */
+    any.a_char = 't'; /* group accelerator 'C' */
     add_menu(win, NO_GLYPH, &any, abc ? 0 : any.a_char, 'C', ATR_NONE,
              "open intrinsic tracker menu", MENU_UNSELECTED);
-    any.a_char = 'N'; /* group accelerator 'C' */
+    any.a_char = 'n'; /* group accelerator 'C' */
     add_menu(win, NO_GLYPH, &any, abc ? 0 : any.a_char, 'C', ATR_NONE,
              "open notes menu", MENU_UNSELECTED);
-    any.a_char = 'P'; /* group accelerator 'C' */
+    any.a_char = 'p'; /* group accelerator 'C' */
     add_menu(win, NO_GLYPH, &any, abc ? 0 : any.a_char, 'C', ATR_NONE,
              "price identification", MENU_UNSELECTED);
 
@@ -1539,13 +1539,13 @@ docallcmd()
     case 'a': /* annotate level */
         donamelevel();
         break;
-    case 'I': /* open intrinsic tracker from name menu */
+    case 't': /* open intrinsic tracker from name menu */
         dointrinsicsmenu();
         break;
-    case 'N': /* open notes manager from name menu */
+    case 'n': /* open notes manager from name menu */
         donotes();
         break;
-    case 'P': /* run price identification from name menu */
+    case 'p': /* run price identification from name menu */
         price_identify();
         break;
     }

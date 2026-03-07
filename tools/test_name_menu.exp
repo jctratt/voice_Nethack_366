@@ -40,11 +40,11 @@ proc check_name_option {opt regexp} {
 }
 
 # test intrinsics entry
-check_name_option I "intrinsic tracker"
+check_name_option t "intrinsic tracker"
 # test notes entry
-check_name_option N "Notes"
+check_name_option n "Notes"
 # test price id entry
-check_name_option P "price identification"
+check_name_option p "price identification"
 
 # quit game
 expect "@"

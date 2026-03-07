@@ -25,11 +25,11 @@ Commits since `README.md` was last updated (commit c012979 — 2025-03-05):
   - Code changes: `src/display.c` (new animation), `src/mon.c` (hook in `wake_nearto()`), `src/music.c` (hook in `awaken_monsters()`), `src/monmove.c` (walking sparkle), plus option registration and `include/flag.h`/`extern.h` updates.
 
 - UNCOMMITTED 2026-02-22 Jeff Tratt — UI: add price identification to `#name` submenu
-  - `#name` now has a `P` entry which invokes the existing `price_identify` command, alongside the previously added intrinsics and notes shortcuts.
+  - `#name` now has a `p` entry which invokes the existing `price_identify` command; intrinsics and notes shortcuts are also available as `t` and `n` respectively.
   - Updated automated tests (`test_simple.sh`, `tools/test_name_menu.exp`) and documentation references accordingly.
 
 - UNCOMMITTED 2026-02-19 Jeff Tratt — UI: add intrinsic tracker and notes commands to `#name` submenu
-  - `#name` (and its `N`/`C` key) now shows two additional entries: `I` opens the intrinsics tracker, `N` opens the personal notes manager.
+  - `#name` (and its `N`/`C` key) now shows two additional entries: `t` opens the intrinsics tracker, `n` opens the personal notes manager.
   - Prompt text updated to "What do you want to do?" and documentation adjusted.
   - Wish input now uses the #name dialog for improved editing (prompt remains "For what do you wish?").
   - Added shorthand handling so wishing for "gdsm" or "sdsm" expands to the

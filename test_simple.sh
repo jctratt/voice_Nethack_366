@@ -18,22 +18,22 @@ y
 shock resistance
 
 # exercise #name submenu: intrinsics, notes, and price id
-# open name menu, select I then quit
+# open name menu, select t then quit
 # (the game will log the intrinsics menu header)
-# open again, select N then quit
+# open again, select n then quit
 # (the game will log the notes menu header)
-# open again, select P then quit
+# open again, select p then quit
 # (the game will log the price-id chooser header)
 # an actual note follows to exercise #notes itself
 #
 #name
-I
+t
 q
 #name
-N
+n
 q
 #name
-P
+p
 q
 
 # now exercise notes command directly
