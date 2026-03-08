@@ -366,6 +366,7 @@ curses_putch(winid wid, int x, int y, int ch, int color, int attr)
 {
     static boolean map_initted = FALSE;
     int sx, sy, ex, ey;
+    int mapx, mapy;
     boolean border = curses_window_has_border(wid);
     nethack_char nch;
 /*
@@ -383,6 +384,8 @@ curses_putch(winid wid, int x, int y, int ch, int color, int attr)
     }
 
     --x; /* map column [0] is not used; draw column [1] in first screen col */
+    mapx = x;
+    mapy = y;
     map[y][x].ch = ch;
     map[y][x].color = color;
     map[y][x].attr = attr;
@@ -391,14 +394,14 @@ curses_putch(winid wid, int x, int y, int ch, int color, int attr)
 
     /* Draw if within visible boundaries, or if outside but still within map bounds
        (for temporary effects like soundwaves that should extend into unseen terrain) */
-    if ((x >= 0) && (x < COLNO) && (y >= 0) && (y < ROWNO)) {
+    if ((mapx >= 0) && (mapx < COLNO) && (mapy >= 0) && (mapy < ROWNO)) {
         if (border) {
             x++;
             y++;
         }
 
         /* Check if position is within the visible window */
-        if ((x - 1 >= sx) && (x - 1 <= ex) && (y >= sy) && (y <= ey)) {
+        if ((mapx >= sx) && (mapx <= ex) && (mapy >= sy) && (mapy <= ey)) {
             write_char(mapwin, x - sx, y - sy, nch);
         }
         /* For positions outside visible area, we still store them in the map array

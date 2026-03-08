@@ -2,6 +2,12 @@
 
 Commits since `README.md` was last updated (commit c012979 — 2025-03-05):
 
+- UNCOMMITTED 2026-03-08 Jeff Tratt — FIX: curses bottom-row map rendering and shockwave restore corruption
+  - Fix a bordered-curses off-by-one in `win/curses/curswins.c:curses_putch()`: visibility was being checked after converting map coordinates into border-adjusted screen coordinates, so ordinary incremental redraws could skip the bottom map row even when the map fully fit the terminal.
+  - This manifested as missing bottom walls and shockwave effects apparently "blanking" the bottom line; resizing or triggering a full redraw could temporarily make the row reappear.
+  - Also fix `win/curses/cursmain.c:curses_draw_glyph_colored()` so temporary colored overlays draw directly to the curses window instead of polluting the persistent curses map cache used for later redraws.
+  - Files: `win/curses/curswins.c`, `win/curses/cursmain.c`.
+
 - UNCOMMITTED 2026-03-06 Jeff Tratt — CHANGE: ATHAME replaces QUARTERSTAFF as the default wizard's weapon and in relevant spawn logic; added documentation comment in `src/u_init.c` and updated data notes.
 
 - UNCOMMITTED 2026-03-06 Jeff Tratt — TWEAK: Wizard dagger skill bumped from Expert to Master; noted in `src/u_init.c`.

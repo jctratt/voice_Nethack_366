@@ -714,15 +714,40 @@ curses_draw_glyph_colored(winid wid, XCHAR_P x, XCHAR_P y, int glyph,
 {
     int ch;
     unsigned int special;
+    int sx, sy, ex, ey;
+    int bspace;
+    int scrx, scry;
     /* Map glyph to character and ignore the glyph's normal color by
        using a temporary color variable so the caller's requested color
        remains intact. */
     int tmpcolor;
+
+    if (wid != MAP_WIN)
+        return;
+
     mapglyph(glyph, &ch, &tmpcolor, &special, x, y, 0);
     if (SYMHANDLING(H_DEC))
         ch = curses_convert_glyph(ch, glyph);
-    /* Use the caller-provided color and attribute for overlays. */
-    curses_putch(wid, x, y, ch, color, attr);
+
+    /* Temporary overlays must not update the curses map cache; doing so
+       pollutes remembered terrain for later redraws. */
+    (void) curses_map_borders(&sx, &sy, &ex, &ey, -1, -1);
+    if (x < sx || x > ex || y < sy || y > ey)
+        return;
+
+    bspace = curses_window_has_border(MAP_WIN) ? 1 : 0;
+    scrx = (x - 1) - sx + bspace;
+    scry = y - sy + bspace;
+
+    curses_toggle_color_attr(mapwin, color, attr, ON);
+#ifdef PDCURSES
+    mvwaddrawch(mapwin, scry, scrx, ch);
+#else
+    mvwaddch(mapwin, scry, scrx, ch);
+#endif
+    curses_toggle_color_attr(mapwin, color, attr, OFF);
+    wnoutrefresh(mapwin);
+    doupdate();
 }
 
 /*
