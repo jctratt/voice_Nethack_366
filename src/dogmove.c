@@ -16,6 +16,13 @@ STATIC_DCL struct monst *FDECL(find_targ, (struct monst *, int, int, int));
 STATIC_OVL int FDECL(find_friends, (struct monst *, struct monst *, int));
 STATIC_DCL struct monst *FDECL(best_target, (struct monst *));
 STATIC_DCL long FDECL(score_targ, (struct monst *, struct monst *));
+STATIC_DCL struct monst *FDECL(adjacent_marked_target, (struct monst *));
+STATIC_DCL struct monst *FDECL(best_player_threat,
+                               (struct monst *, int, int, int));
+STATIC_DCL long FDECL(score_player_threat,
+                      (struct monst *, struct monst *, int, int, int));
+STATIC_DCL boolean FDECL(pet_safe_melee_target,
+                         (struct monst *, struct monst *));
 STATIC_DCL boolean FDECL(can_reach_location, (struct monst *, XCHAR_P,
                                               XCHAR_P, XCHAR_P, XCHAR_P));
 STATIC_DCL boolean FDECL(could_reach_item, (struct monst *, XCHAR_P, XCHAR_P));
@@ -244,6 +251,9 @@ STATIC_VAR xchar gtyp, gx, gy; /* type and position of dog's current goal */
 STATIC_DCL struct monst *FDECL(best_target_from_origin, (struct monst *, int, int, int));
 STATIC_DCL struct monst *FDECL(find_targ_from_origin, (struct monst *, int, int, int, int, int));
 
+STATIC_DCL boolean FDECL(pet_bfs_to_coord,
+                         (struct monst *, xchar, xchar, xchar *, xchar *,
+                          int *));
 STATIC_DCL boolean FDECL(pet_bfs_to_player,
                          (struct monst *, xchar *, xchar *, int *));
 
@@ -441,6 +451,143 @@ int *pathdist;
     }
 
     return FALSE; /* no path found */
+}
+
+/*
+ * pet_bfs_to_coord: BFS shortest-path from an arbitrary destination square
+ * to the pet, returning the pet's next step toward that destination.
+ * This is used for explicit marked-target pursuit so pets commit to a real
+ * route rather than just local heuristic nudging.
+ */
+STATIC_OVL boolean
+pet_bfs_to_coord(mtmp, tx0, ty0, nx, ny, pathdist)
+struct monst *mtmp;
+xchar tx0, ty0;
+xchar *nx, *ny;
+int *pathdist;
+{
+    static const int dx8[8] = { -1, -1,  0,  1, 1, 1, 0, -1 };
+    static const int dy8[8] = {  0, -1, -1, -1, 0, 1, 1,  1 };
+
+    xchar pred[COLNO][ROWNO];
+    xchar stepx[2][COLNO * ROWNO];
+    xchar stepy[2][COLNO * ROWNO];
+
+    struct permonst *mdat = mtmp->data;
+    boolean can_open  = (!nohands(mdat) && !verysmall(mdat));
+    boolean can_phase = passes_walls(mdat);
+    boolean can_ooze  = amorphous(mdat);
+    int n, nn, set, i, dir, depth;
+    int mx = mtmp->mx, my = mtmp->my;
+    int px = tx0, py = ty0;
+    int cx, cy;
+
+    if (mx == px && my == py)
+        return FALSE;
+
+    if (pathdist)
+        *pathdist = 0;
+
+    (void) memset((genericptr_t) pred, 0, sizeof pred);
+
+    stepx[0][0] = px;
+    stepy[0][0] = py;
+    pred[px][py] = 9;
+    n = 1;
+    set = 0;
+    depth = 0;
+
+    while (n > 0) {
+        nn = 0;
+        for (i = 0; i < n; i++) {
+            cx = stepx[set][i];
+            cy = stepy[set][i];
+
+            for (dir = 0; dir < 8; dir++) {
+                int tx = cx + dx8[dir];
+                int ty = cy + dy8[dir];
+                int rdir;
+                int rtyp;
+
+                if (!isok(tx, ty))
+                    continue;
+                if (pred[tx][ty])
+                    continue;
+
+                rtyp = levl[tx][ty].typ;
+
+                if (IS_ROCK(rtyp)) {
+                    if (can_phase && may_passwall(tx, ty))
+                        ;
+                    else if (rtyp == IRONBARS && passes_bars(mdat))
+                        ;
+                    else
+                        continue;
+                } else if (IS_DOOR(rtyp) || rtyp == SDOOR) {
+                    if (levl[tx][ty].doormask & (D_CLOSED | D_LOCKED)) {
+                        if (!can_phase && !can_ooze && !can_open)
+                            continue;
+                    }
+                    if (pet_illegal_door_diagonal((xchar) cx, (xchar) cy,
+                                                  (xchar) tx, (xchar) ty))
+                        continue;
+                }
+                if (is_pool(tx, ty) && !is_swimmer(mdat)
+                    && !is_flyer(mdat) && !is_floater(mdat)
+                    && !is_clinger(mdat))
+                    continue;
+                if (is_lava(tx, ty) && !likes_lava(mdat)
+                    && !is_flyer(mdat) && !is_floater(mdat)
+                    && !is_clinger(mdat))
+                    continue;
+                if (sobj_at(BOULDER, tx, ty) && !throws_rocks(mdat))
+                    continue;
+                if (dx8[dir] && dy8[dir]
+                    && bad_rock(mdat, cx, ty)
+                    && bad_rock(mdat, tx, cy))
+                    continue;
+
+                if (dx8[dir] && dy8[dir]) {
+                    int htyp = levl[cx + dx8[dir]][cy].typ;
+                    if (IS_DOOR(htyp) || htyp == SDOOR) {
+                        struct rm *door_lev = &levl[cx + dx8[dir]][cy];
+                        if (door_lev->doormask != D_NODOOR
+                            && door_lev->doormask != D_BROKEN)
+                            continue;
+                    }
+                    {
+                        int vtyp = levl[cx][cy + dy8[dir]].typ;
+                        if (IS_DOOR(vtyp) || vtyp == SDOOR) {
+                            struct rm *door_lev = &levl[cx][cy + dy8[dir]];
+                            if (door_lev->doormask != D_NODOOR
+                                && door_lev->doormask != D_BROKEN)
+                                continue;
+                        }
+                    }
+                }
+
+                rdir = (dir + 4) % 8;
+                pred[tx][ty] = rdir + 1;
+
+                if (tx == mx && ty == my) {
+                    if (pathdist)
+                        *pathdist = depth + 1;
+                    *nx = mx + dx8[rdir];
+                    *ny = my + dy8[rdir];
+                    return TRUE;
+                }
+
+                stepx[1 - set][nn] = tx;
+                stepy[1 - set][nn] = ty;
+                nn++;
+            }
+        }
+        n = nn;
+        set = 1 - set;
+        depth++;
+    }
+
+    return FALSE;
 }
 
 boolean
@@ -874,7 +1021,8 @@ int after, udist, whappr;
                             continue;
                         /* If the player can see a hostile within PET_TARGET_RADIUS,
                            don't let APPORT beat that hostile. */
-                        if (best_target_from_origin(mtmp, u.ux, u.uy, PET_TARGET_RADIUS))
+                        if (best_player_threat(mtmp, u.ux, u.uy,
+                                               PET_TARGET_RADIUS))
                             continue;
                         gx = nx;
                         gy = ny;
@@ -1076,6 +1224,179 @@ int ox, oy, radius;
     return best_targ;
 }
 
+/* rank a hostile by how urgently it threatens the player-side origin,
+   rather than by whether it is a good pet ranged-attack target */
+STATIC_OVL long
+score_player_threat(mtmp, mtarg, ox, oy, radius)
+struct monst *mtmp, *mtarg;
+int ox, oy, radius;
+{
+    long score = 0L;
+    int player_dist;
+    boolean player_has_elbereth;
+    boolean marked_target;
+
+    if (!mtmp || !mtarg)
+        return -5000L;
+    if (mtarg == &youmonst || mtarg->mtame)
+        return -5000L;
+    if (mtarg->data->msound == MS_LEADER
+        || mtarg->data->msound == MS_GUARDIAN)
+        return -5000L;
+    marked_target = (boolean) mtarg->marked_for_pet;
+    if (mtarg->mpeaceful && !Conflict && !marked_target)
+        return -5000L;
+
+    player_dist = distmin(mtarg->mx, mtarg->my, ox, oy);
+    if (player_dist > radius)
+        return -5000L;
+
+    if (!mtarg->mpeaceful || Conflict || marked_target)
+        score += 800L;
+    if (marked_target)
+        score += 5000L;
+
+    player_has_elbereth = (boolean) (ox == u.ux && oy == u.uy
+                                     && sengr_at("Elbereth", ox, oy, TRUE));
+    if (player_has_elbereth && !onscary(ox, oy, mtarg))
+        score += 1000L;
+
+    /* proximity to the player dominates; monster strength and ranged
+       capability are secondary tie-breakers */
+    score += (long) (radius - player_dist + 1) * 200L;
+    if (player_dist <= 1)
+        score += 1200L;
+    else if (player_dist == 2)
+        score += 300L;
+
+    score += (long) mtarg->m_lev * 30L;
+    score += (long) mtarg->mhp / 4L;
+
+    if (mtarg->data->mattk[0].aatyp == AT_NONE)
+        score -= 200L;
+    if (mtarg->mflee)
+        score -= 200L;
+    if (mtarg->msleeping || !mtarg->mcanmove)
+        score -= 300L;
+    if (mtarg->mconf)
+        score -= 50L;
+
+    if (attacktype(mtarg->data, AT_MAGC))
+        score += 250L;
+    if (attacktype(mtarg->data, AT_BREA))
+        score += 200L;
+    if (attacktype(mtarg->data, AT_GAZE))
+        score += 150L;
+    if (attacktype(mtarg->data, AT_SPIT))
+        score += 120L;
+    if (attacktype(mtarg->data, AT_WEAP))
+        score += 80L;
+
+    return score;
+}
+
+STATIC_OVL struct monst *
+adjacent_marked_target(mtmp)
+struct monst *mtmp;
+{
+    int dx, dy;
+
+    if (!mtmp)
+        return (struct monst *) 0;
+
+    for (dy = -1; dy <= 1; ++dy) {
+        for (dx = -1; dx <= 1; ++dx) {
+            struct monst *mt;
+            int tx, ty;
+
+            if (!dx && !dy)
+                continue;
+            tx = mtmp->mx + dx;
+            ty = mtmp->my + dy;
+            if (!isok(tx, ty))
+                continue;
+            mt = m_at(tx, ty);
+            if (!mt || !mt->marked_for_pet || mt->mtame || mt == &youmonst)
+                continue;
+            return mt;
+        }
+    }
+    return (struct monst *) 0;
+}
+
+STATIC_OVL struct monst *
+best_player_threat(mtmp, ox, oy, radius)
+struct monst *mtmp;
+int ox, oy, radius;
+{
+    long bestscore = -5000L, currscore;
+    struct monst *best_targ = (struct monst *) 0, *mt;
+    int rx, ry, r2;
+
+    if (!mtmp)
+        return (struct monst *) 0;
+
+    r2 = radius * radius;
+    for (rx = ox - radius; rx <= ox + radius; ++rx) {
+        for (ry = oy - radius; ry <= oy + radius; ++ry) {
+            boolean pet_sees_mon, player_sees_mon;
+            int dx, dy;
+
+            if (!isok(rx, ry))
+                continue;
+            dx = rx - ox;
+            dy = ry - oy;
+            if (dx * dx + dy * dy > r2)
+                continue;
+
+            mt = m_at(rx, ry);
+            if (!mt)
+                continue;
+
+            player_sees_mon = canspotmon(mt);
+            pet_sees_mon = (boolean) (m_cansee(mtmp, rx, ry)
+                                      && (!mt->minvis
+                                          || perceives(mtmp->data))
+                                      && !mt->mundetected);
+            if (!player_sees_mon && !pet_sees_mon)
+                continue;
+
+            currscore = score_player_threat(mtmp, mt, ox, oy, radius);
+            if (currscore > bestscore) {
+                bestscore = currscore;
+                best_targ = mt;
+            }
+        }
+    }
+
+    if (bestscore < 0L)
+        return (struct monst *) 0;
+    return best_targ;
+}
+
+STATIC_OVL boolean
+pet_safe_melee_target(mtmp, mtmp2)
+struct monst *mtmp, *mtmp2;
+{
+    if (!mtmp || !mtmp2)
+        return FALSE;
+
+    if ((int) mtmp2->m_lev >= (int) mtmp->m_lev + 2
+        || (mtmp2->data == &mons[PM_FLOATING_EYE] && rn2(10)
+            && mtmp->mcansee && haseyes(mtmp->data) && mtmp2->mcansee
+            && (perceives(mtmp->data) || !mtmp2->minvis))
+        || (mtmp2->data == &mons[PM_GELATINOUS_CUBE] && rn2(10))
+        || (max_passive_dmg(mtmp2, mtmp) >= mtmp->mhp)
+        || ((mtmp->mhp * 4 < mtmp->mhpmax
+             || mtmp2->data->msound == MS_GUARDIAN
+             || mtmp2->data->msound == MS_LEADER) && mtmp2->mpeaceful
+            && !Conflict && !mtmp2->marked_for_pet)
+        || (touch_petrifies(mtmp2->data) && !resists_ston(mtmp)))
+        return FALSE;
+
+    return TRUE;
+}
+
 STATIC_OVL int
 find_friends(mtmp, mtarg, maxdist)
 struct monst *mtmp, *mtarg;
@@ -1180,6 +1501,8 @@ struct monst *mtmp, *mtarg;
         /* Target hostile monsters in preference to peaceful ones */
         if (!mtarg->mpeaceful)
             score += 10;
+        if (mtarg->marked_for_pet && (!mtarg->mpeaceful || Conflict))
+            score += 5000L;
         /* Is the monster passive? Don't waste energy on it, if so */
         if (mtarg->data->mattk[0].aatyp == AT_NONE)
             score -= 1000;
@@ -1292,8 +1615,11 @@ int after; /* this is extra fast monster movement */
     boolean did_interpose = FALSE; /* set when pet explicitly interposes */
     boolean have_interpose_goal = FALSE;
     boolean force_rejoin = FALSE;
+    boolean force_marked_pursuit = FALSE;
     boolean have_player_path = FALSE;
+    boolean have_marked_path = FALSE;
     xchar bfs_nx = 0, bfs_ny = 0;
+    xchar marked_bfs_nx = 0, marked_bfs_ny = 0;
     xchar nix, niy;      /* position mtmp is (considering) moving to */
     register int nx, ny; /* temporary coordinates */
     xchar cnt, uncursedcnt, chcnt;
@@ -1350,6 +1676,8 @@ int after; /* this is extra fast monster movement */
         have_player_path = pet_bfs_to_player(mtmp, &bfs_nx, &bfs_ny,
                                              &player_pathdist);
 
+    pursue_mon = adjacent_marked_target(mtmp);
+
     /* Hard rejoin mode should use actual path length, not straight-line
        distance.  That keeps corridor-separated pets focused on catching
        up until they are genuinely back near the player in walkable steps.
@@ -1365,43 +1693,10 @@ int after; /* this is extra fast monster movement */
         }
     }
 
-    /* choose a monster to pursue (player-centered preferred)
-       - prefer straight-line player-origin targets (existing behavior)
-       - if none found on those lines, search radially around the player
-         (within PET_TARGET_RADIUS) for any player-visible hostile and pick
-         the best-scoring one so pets don't ignore nearby threats that are
-         off-axis relative to the player. */
-    pursue_mon = best_target_from_origin(mtmp, u.ux, u.uy, PET_TARGET_RADIUS);
-
-    if (!pursue_mon) {
-        long bestscore = -40000L;
-        struct monst *bestm = (struct monst *)0;
-        int rx, ry, r2 = PET_TARGET_RADIUS * PET_TARGET_RADIUS;
-
-        for (rx = u.ux - PET_TARGET_RADIUS; rx <= u.ux + PET_TARGET_RADIUS; ++rx) {
-            for (ry = u.uy - PET_TARGET_RADIUS; ry <= u.uy + PET_TARGET_RADIUS; ++ry) {
-                if (!isok(rx, ry))
-                    continue;
-                int dx = rx - u.ux, dy = ry - u.uy;
-                if (dx * dx + dy * dy > r2)
-                    continue;
-                if (!(cansee(rx, ry) || m_cansee(mtmp, rx, ry)))
-                    continue; /* neither player nor pet can see this square */
-                {
-                    struct monst *mt = m_at(rx, ry);
-                    if (!mt)
-                        continue;
-                    long sc = score_targ(mtmp, mt);
-                    if (sc > bestscore) {
-                        bestscore = sc;
-                        bestm = mt;
-                    }
-                }
-            }
-        }
-        if (bestscore >= 0L)
-            pursue_mon = bestm;
-    }
+     /* choose a monster to pursue using player-facing threat ranking rather
+         than pet ranged-attack scoring */
+     if (!pursue_mon)
+          pursue_mon = best_player_threat(mtmp, u.ux, u.uy, PET_TARGET_RADIUS);
 
     if (!pursue_mon) {
         /* For tame pets, avoid selecting pet-local targets when already
@@ -1413,16 +1708,51 @@ int after; /* this is extra fast monster movement */
 
     if (pursue_mon && mtmp->mtame) {
         int pthreat = dist2(pursue_mon->mx, pursue_mon->my, u.ux, u.uy);
+        boolean marked_target = (boolean) pursue_mon->marked_for_pet;
         /* Only let tame pets pursue targets that are actually near the
            player.  Otherwise, prioritize rejoining the player. */
-        if (pthreat > 16)
+        if (!marked_target && pthreat > 16)
+            pursue_mon = (struct monst *) 0;
+        else if (marked_target
+                 && pthreat > PET_TARGET_RADIUS * PET_TARGET_RADIUS)
             pursue_mon = (struct monst *) 0;
         /* When actively returning to the player, be more selective:
            only pursue targets very close to the player (immediate
            threats) so the pet doesn't detour.  The pet will still
            melee-attack adjacent hostiles via ALLOW_M regardless. */
-        else if (force_rejoin && pthreat > 8)
+        else if (force_rejoin && !marked_target && pthreat > 8)
             pursue_mon = (struct monst *) 0;
+    }
+
+    if (pursue_mon && pursue_mon->marked_for_pet && mtmp->mtame
+        && !mtmp->mleashed
+        && distmin(omx, omy, pursue_mon->mx, pursue_mon->my) > 1)
+        have_marked_path = pet_bfs_to_coord(mtmp, pursue_mon->mx,
+                                            pursue_mon->my,
+                                            &marked_bfs_nx,
+                                            &marked_bfs_ny, (int *) 0);
+
+    if (pursue_mon && pursue_mon->marked_for_pet
+        && distmin(omx, omy, pursue_mon->mx, pursue_mon->my) <= 1
+        && pet_safe_melee_target(mtmp, pursue_mon)) {
+        int mstatus;
+
+        if (after)
+            return 0;
+
+        notonhead = 0;
+        mstatus = mattackm(mtmp, pursue_mon);
+        if (mstatus & MM_AGR_DIED)
+            return 2;
+        if ((mstatus & MM_HIT) && !(mstatus & MM_DEF_DIED) && rn2(4)
+            && pursue_mon->mlstmv != monstermoves
+            && !onscary(mtmp->mx, mtmp->my, pursue_mon)
+            && monnear(pursue_mon, mtmp->mx, mtmp->my)) {
+            mstatus = mattackm(pursue_mon, mtmp);
+            if (mstatus & MM_DEF_DIED)
+                return 2;
+        }
+        return 0;
     }
 
     appr = dog_goal(mtmp, has_edog ? edog : (struct edog *) 0, after, udist,
@@ -1449,13 +1779,22 @@ int after; /* this is extra fast monster movement */
         appr = 1;
     }
 
+    if (pursue_mon && pursue_mon->marked_for_pet && have_marked_path
+        && !force_rejoin) {
+        gx = marked_bfs_nx;
+        gy = marked_bfs_ny;
+        gtyp = UNDEF;
+        appr = 1;
+        force_marked_pursuit = TRUE;
+    }
+
     /* If we have a player-centered monster target, make the movement goal
        point toward that monster (clamped to MAX_PET_DISTANCE from the player)
        so the pet positions between the player and the hostile instead of
        lingering on the opposite side.  Also: if the hostile is very close
        to the player, attempt an immediate safe interpose square next to the
        player on the target side (urgent override to help the player). */
-    if (pursue_mon) {
+    if (pursue_mon && !(force_marked_pursuit && have_marked_path)) {
         int pmx = pursue_mon->mx, pmy = pursue_mon->my;
         int maxd2 = MAX_PET_DISTANCE * MAX_PET_DISTANCE;
 
@@ -1660,7 +1999,7 @@ int after; /* this is extra fast monster movement */
                rooms and corridors to actually reach the player. */
             if (new_player_dist > allowed_dist_sq
                 && new_player_dist >= old_player_dist
-                && !force_rejoin)
+                && !force_rejoin && !force_marked_pursuit)
                 continue;
         }
 
@@ -1672,17 +2011,7 @@ int after; /* this is extra fast monster movement */
             int mstatus;
             register struct monst *mtmp2 = m_at(nx, ny);
 
-            if ((int) mtmp2->m_lev >= (int) mtmp->m_lev + 2
-                || (mtmp2->data == &mons[PM_FLOATING_EYE] && rn2(10)
-                    && mtmp->mcansee && haseyes(mtmp->data) && mtmp2->mcansee
-                    && (perceives(mtmp->data) || !mtmp2->minvis))
-                || (mtmp2->data == &mons[PM_GELATINOUS_CUBE] && rn2(10))
-                || (max_passive_dmg(mtmp2, mtmp) >= mtmp->mhp)
-                || ((mtmp->mhp * 4 < mtmp->mhpmax
-                     || mtmp2->data->msound == MS_GUARDIAN
-                     || mtmp2->data->msound == MS_LEADER) && mtmp2->mpeaceful
-                    && !Conflict)
-                || (touch_petrifies(mtmp2->data) && !resists_ston(mtmp)))
+            if (!pet_safe_melee_target(mtmp, mtmp2))
                 continue;
 
             if (after)
@@ -1771,7 +2100,7 @@ int after; /* this is extra fast monster movement */
            the hero. Thus, only run it if not leashed and >5 tiles
            away.  When force_rejoin is active, skip this entirely so
            the pet can retrace its steps to exit a room. */
-        if (!mtmp->mleashed && !force_rejoin
+        if (!mtmp->mleashed && !force_rejoin && !force_marked_pursuit
             && distmin(mtmp->mx, mtmp->my, u.ux, u.uy) > 5) {
             k = has_edog ? uncursedcnt : cnt;
             for (j = 0; j < MTSZ && j < k - 1; j++)

@@ -70,6 +70,15 @@ Commits since `README.md` was last updated (commit c012979 — 2025-03-05):
   - Tested: quiver cycling with same-type items assigned different invlets; verified non-quiverable items are skipped.
 
 
+- UNCOMMITTED 2026-03-08 Jeff Tratt — FIX: pet interpose threat ranking
+  - Separate player-threat ranking from pet ranged-attack scoring in `src/dogmove.c`. Interpose/follow decisions now rank monsters by threat to the player instead of using `score_targ()`, which intentionally penalizes monsters with the player behind them for friendly-fire reasons.
+  - When the player is standing on `Elbereth`, monsters that ignore that protection are boosted in the same threat ranking, so pets prioritize the hostiles the engraving does not keep off you.
+  - Add `#name` → `k` → mark monster for pets. Marked hostile monsters receive a strong priority boost in tame-pet targeting so you can explicitly direct pets toward a chosen enemy.
+  - Marked hostile pursuit now uses a dedicated BFS route step in `src/dogmove.c`, mirroring hard player-rejoin pathing so pets commit through doors/corners instead of only drifting toward the marked target by local scoring.
+  - This restores the intended behavior for `"<pet> <noise> at <monster>"` and `"...won't pass through"` cases, where the pet should key off the monster most dangerous from the player's perspective.
+  - Files: `include/monst.h`, `src/do_name.c`, `src/dogmove.c`, `test_pet_player_threat.c`, `CHANGELOG.md`.
+
+
 - UNCOMMITTED 2026-02-17 Jeff Tratt — FIX: pet follow & combat AI
   - Fix: pets were avoiding nearby hostiles due to inverted pursuit scoring; pets now actively pursue and interpose for player-centered threats.
   - Preserve BFS-based rejoin while allowing immediate-threat pursuit; tightened rejoin/BFS trigger thresholds to improve follow responsiveness.

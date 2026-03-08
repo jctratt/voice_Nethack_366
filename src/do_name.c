@@ -26,10 +26,12 @@ STATIC_DCL void FDECL(gather_locs, (coord **, int *, int));
 STATIC_DCL int FDECL(gloc_filter_floodfill_matcharea, (int, int));
 STATIC_DCL void FDECL(auto_describe, (int, int));
 STATIC_DCL void NDECL(do_mname);
+STATIC_DCL void NDECL(do_mmark);
 STATIC_DCL boolean FDECL(alreadynamed, (struct monst *, char *, char *));
 STATIC_DCL void FDECL(do_oname, (struct obj *));
 STATIC_PTR char *FDECL(docall_xname, (struct obj *));
 STATIC_DCL void NDECL(namefloorobj);
+int NDECL(price_identify);
 /* Prototype for helper that computes a shop price low/high range for an
    object appearance; implemented later (after price_label_matches). */
 STATIC_DCL boolean FDECL(compute_shop_price_range_for_obj, (struct obj *, struct monst *, long *, long *));
@@ -1262,6 +1264,64 @@ do_mname()
         (void) christen_monst(mtmp, buf);
 }
 
+/* allow player to toggle a pet-target mark on some chosen monster */
+STATIC_OVL void
+do_mmark()
+{
+    char monnambuf[BUFSZ];
+    coord cc;
+    int cx, cy;
+    struct monst *mtmp = 0;
+
+    if (Hallucination) {
+        You("would never recognize it anyway.");
+        return;
+    }
+    cc.x = u.ux;
+    cc.y = u.uy;
+    if (getpos(&cc, FALSE, "the monster you want to mark for pets") < 0
+        || !isok(cc.x, cc.y))
+        return;
+    cx = cc.x;
+    cy = cc.y;
+
+    if (cx == u.ux && cy == u.uy) {
+        if (u.usteed && canspotmon(u.usteed))
+            mtmp = u.usteed;
+        else {
+            pline("I see no monster there.");
+            return;
+        }
+    } else {
+        mtmp = m_at(cx, cy);
+    }
+
+    if (!mtmp
+        || (!sensemon(mtmp)
+            && (!(cansee(cx, cy) || see_with_infrared(mtmp))
+                || mtmp->mundetected || M_AP_TYPE(mtmp) == M_AP_FURNITURE
+                || M_AP_TYPE(mtmp) == M_AP_OBJECT
+                || (mtmp->minvis && !See_invisible)))) {
+        pline("I see no monster there.");
+        return;
+    }
+
+    if (mtmp == u.usteed || mtmp->mtame) {
+        pline("You can't mark %s as a pet target.",
+              distant_monnam(mtmp, ARTICLE_THE, monnambuf));
+        return;
+    }
+
+    mtmp->marked_for_pet = !mtmp->marked_for_pet;
+    if (mtmp->marked_for_pet) {
+        pline("%s marked for pets.",
+              upstart(distant_monnam(mtmp, ARTICLE_THE, monnambuf)));
+    } else {
+        pline("%s no longer marked for pets.",
+              upstart(distant_monnam(mtmp, ARTICLE_THE, monnambuf)));
+    }
+}
+
 STATIC_VAR int via_naming = 0;
 
 /*
@@ -1437,8 +1497,9 @@ int i;
 
 /* C and #name commands - player can name monster or object or type of obj.
  *
- * February 2026: menu also provides shortcuts for intrinsic tracker and notes
- * manager so they are easily accessible from the naming submenu.
+ * February/March 2026: menu also provides pet-marking, intrinsic tracker,
+ * notes, and price-ID shortcuts so they are easily accessible from the
+ * naming submenu.
  */
 int
 docallcmd()
@@ -1478,6 +1539,9 @@ docallcmd()
     any.a_char = 'a'; /* group accelerator 'l' */
     add_menu(win, NO_GLYPH, &any, abc ? 0 : any.a_char, 'l', ATR_NONE,
              "record an annotation for the current level", MENU_UNSELECTED);
+    any.a_char = 'k'; /* group accelerator 'C' */
+    add_menu(win, NO_GLYPH, &any, abc ? 0 : any.a_char, 'C', ATR_NONE,
+             "mark a monster for pets", MENU_UNSELECTED);
 
     /* new submenu entries added February 2026 */
     any.a_char = 't'; /* group accelerator 'C' */
@@ -1505,6 +1569,9 @@ docallcmd()
         break;
     case 'm': /* name a visible monster */
         do_mname();
+        break;
+    case 'k': /* mark a visible monster for pet targeting */
+        do_mmark();
         break;
     case 'i': /* name an individual object in inventory */
         allowall[0] = ALL_CLASSES;
