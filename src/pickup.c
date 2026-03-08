@@ -10,6 +10,9 @@
 #include "hack.h"
 #include <limits.h> /* for INT_MAX used by quiver autoswap */
 
+/* value used by inventory letter assignment when invlet_constant is off */
+#define NOINVSYM '#'
+
 /* quiver ordering persistence (defined in quiver.c) */
 extern int *quiver_orderindx;
 extern int quiver_ordercnt;
@@ -20,6 +23,7 @@ STATIC_DCL void FDECL(simple_look, (struct obj *, BOOLEAN_P));
 STATIC_DCL boolean FDECL(query_classes, (char *, boolean *, boolean *,
                                          const char *, struct obj *,
                                          BOOLEAN_P, int *));
+STATIC_DCL char FDECL(obj_to_let, (struct obj *)); /* forward for inventory header */
 STATIC_DCL boolean FDECL(fatal_corpse_mistake, (struct obj *, BOOLEAN_P));
 STATIC_DCL void FDECL(check_here, (BOOLEAN_P));
 STATIC_DCL boolean FDECL(n_or_more, (struct obj *));
@@ -926,6 +930,81 @@ menu_item **pick_list; /* list of objects and counts to pick up */
  *                          pick nothing.
  *      FEEL_COCKATRICE   - touch corpse.
  */
+
+/* compute the inventory header string that display_inventory() would
+ * produce.  The caller must provide a buffer of at least QBUFSZ bytes.
+ * This is factored out so that the prompt string can be updated instead of
+ * (or in addition to) inserting a menu item.  The old helper still exists
+ * for backwards compatibility.
+ */
+STATIC_OVL void
+compute_invheader(char *invheading)
+{
+    int wcap = weight_cap();
+    /* local copy of obj_to_let from invent.c; avoid linking since
+       that function is static to invent.c */
+    auto char invlet_of = 0; /* will be repurposed below */
+    char am_let = '_', rl_let = '_', rr_let = '_', to_let = '_';
+    if (uamul) {
+        if (!flags.invlet_constant) {
+            uamul->invlet = NOINVSYM;
+            reassign();
+        }
+        am_let = uamul->invlet;
+    }
+    if (uleft) {
+        if (!flags.invlet_constant) {
+            uleft->invlet = NOINVSYM;
+            reassign();
+        }
+        rl_let = uleft->invlet;
+    }
+    if (uright) {
+        if (!flags.invlet_constant) {
+            uright->invlet = NOINVSYM;
+            reassign();
+        }
+        rr_let = uright->invlet;
+    }
+    if (uwep) {
+        if (!flags.invlet_constant) {
+            uwep->invlet = NOINVSYM;
+            reassign();
+        }
+        to_let = uwep->invlet;
+    }
+
+    Sprintf(invheading, "%d/52 slots Wt:%d(%d)=%ld Spd:%d Exr:%ld \"%c =%c =%c )%c LK:%d",
+            inv_cnt(TRUE),
+            inv_weight() + wcap, wcap,
+            ((long)weight_cap() - ((long)(inv_weight()+weight_cap()))),
+            youmonst.movement,
+            context.next_attrib_check - moves,
+            am_let, rl_let, rr_let, to_let, u.uluck);
+}
+
+/* When showing an inventory-style menu the header line normally
+ * displayed by display_inventory() (slots, weight, speed, etc.) is not
+ * automatically included.  For the "Put in what?" and "Take out what?"
+ * dialogs it can be helpful to see those numbers while choosing items.
+ *
+ * This helper previously duplicated the invheading computation; it now
+ * simply calls compute_invheader and adds the resulting string as a menu
+ * item.  Calling code may also insert the header into the prompt instead.
+ */
+STATIC_OVL void
+menu_add_invheader(winid win)
+{
+    char invheading[QBUFSZ];
+    anything any = zeroany;
+
+    /* convenience wrapper retained for legacy callers */
+    compute_invheader(invheading);
+    debugpline1("menu_add_invheader: %s", invheading);
+    add_menu(win, NO_GLYPH, &any, 0, 0, ATR_BOLD, invheading,
+             MENU_UNSELECTED);
+}
+
 int
 query_objlist(qstr, olist_p, qflags, pick_list, how, allow)
 const char *qstr;                 /* query string */
@@ -1009,7 +1088,30 @@ boolean FDECL((*allow), (OBJ_P)); /* allow function */
     }
 
     win = create_nhwindow(NHW_MENU);
+
+    /* build a prompt string that may include the inv heading so the
+       information stays at the top of the window rather than scrolling
+       away.  Only do this for the put-in / take-out dialogs that the
+       user specifically requested, leaving the old behaviour intact.
+     */
+    char promptbuf[QBUFSZ];
+    const char *prompt = qstr;
+
     start_menu(win);
+    if (qstr && (strncmp(qstr, "Put in", 6) == 0 ||
+                 strncmp(qstr, "Take out", 8) == 0)) {
+        char invheading[QBUFSZ];
+        compute_invheader(invheading);
+        Sprintf(promptbuf, "%s\n%s", qstr, invheading);
+        prompt = promptbuf;
+        /* preserve the previous behaviour of inserting a nonselectable
+           menu item as well; it doesn't hurt and provides redundancy. */
+        {
+            anything any2 = zeroany;
+            add_menu(win, NO_GLYPH, &any2, 0, 0, ATR_BOLD,
+                     invheading, MENU_UNSELECTED);
+        }
+    }
     any = zeroany;
     /*
      * Run through the list and add the objects to the menu.  If
@@ -1034,12 +1136,42 @@ boolean FDECL((*allow), (OBJ_P)); /* allow function */
             if ((*allow)(curr)) {
                 /* if sorting, print type name (once only) */
                 if (sorted && !printed_type_name) {
-                    any = zeroany;
-                    add_menu(win, NO_GLYPH, &any, 0, 0, iflags.menu_headings,
-                             let_to_name(*pack, FALSE,
-                                         ((how != PICK_NONE)
-                                          && iflags.menu_head_objsym)),
-                             MENU_UNSELECTED);
+                    long total = 0L;
+                    int cnt = 0;
+                    /* compute weights for this class (only objects that
+                       will actually be displayed) */
+                    {
+                        Loot *scan = sortedolist;
+                        struct obj *scanobj;
+                        for (; (scanobj = scan->obj) != 0; ++scan) {
+                            if (scanobj->oclass == *pack && (*allow)(scanobj)) {
+                                total += (long) scanobj->owt;
+                                cnt++;
+                            }
+                        }
+                    }
+
+                    {
+                        char heading[BUFSZ];
+                        const char *name = let_to_name(*pack, FALSE,
+                                                       ((how != PICK_NONE)
+                                                        && iflags.menu_head_objsym));
+                        if (flags.invweight && total > 0L) {
+                            if (cnt > 1) {
+                                long per = total / cnt;
+                                const char *mul = iflags.wc_eight_bit_input ? "×" : "x";
+                                Sprintf(heading, "%s %ld%s%ldu", name, total, mul, per);
+                            } else {
+                                Sprintf(heading, "%s %ldu", name, total);
+                            }
+                        } else {
+                            Strcpy(heading, name);
+                        }
+                        any = zeroany;
+                        add_menu(win, NO_GLYPH, &any, 0, 0,
+                                 iflags.menu_headings, heading,
+                                 MENU_UNSELECTED);
+                    }
                     printed_type_name = TRUE;
                 }
 
@@ -1086,10 +1218,11 @@ boolean FDECL((*allow), (OBJ_P)); /* allow function */
                     if (flags.invweight) {
                         long total_wt = (long) curr->owt;
                         long per_wt = (curr->quan > 1) ? (total_wt / curr->quan) : total_wt;
+                        const char *mul = iflags.wc_eight_bit_input ? "×" : "x";
                         if (curr->quan > 1 && total_wt > 0)
-                            Sprintf(eos(lab), " [%ldx%ld]", total_wt, per_wt);
+                            Sprintf(eos(lab), " %ld%s%ldu", total_wt, mul, per_wt);
                         else if (total_wt > 0)
-                            Sprintf(eos(lab), " [%ld]", total_wt);
+                            Sprintf(eos(lab), " %ldu", total_wt);
                     }
                     add_menu(win, obj_to_glyph(curr, rn2_on_display_rng), &any,
                              accelerator,
@@ -1126,7 +1259,7 @@ boolean FDECL((*allow), (OBJ_P)); /* allow function */
                  MENU_UNSELECTED);
     }
 
-    end_menu(win, qstr);
+    end_menu(win, prompt);
     n = select_menu(win, how, pick_list);
     destroy_nhwindow(win);
 

@@ -13,7 +13,13 @@ Commits since `README.md` was last updated (commit c012979 — 2025-03-05):
     accelerator; that letter is now exclusively reserved for the new notes
     menu shortcut.  This prevents pressing 'n' from unintentionally invoking
     the old rename‑type behaviour when the submenu contains the notes option.
-- UNCOMMITTED 2026-03-07 Jeff Tratt — UI: when `OPTIONS=invweight` is enabled, also display per-item/total weight annotations in inventory-style menus that appear during `apply` and `loot` commands (including the looting submenu and `getobj`/`ggetobj` menus).  Labels use the same `[TOTALxITEM]` format as the main inventory.  This completes the original feature by extending visibility to selection dialogs.
+- UNCOMMITTED 2026-03-08 Jeff Tratt — UI: `#overview` pet locator now labels
+  pets using their current hit points ("HP") instead of "Lv" in the
+  per-level summary.  The previous "Lv" prefix was easily confused with the
+  dungeon-level numbers shown on the same page.
+- UNCOMMITTED 2026-03-07 Jeff Tratt — UI: when `OPTIONS=invweight` is enabled, also display per-item/total weight annotations in inventory-style menus that appear during `apply` and `loot` commands (including the looting submenu and `getobj`/`ggetobj` menus).  Labels originally used the `[TOTALxITEM]` syntax like the main inventory, but have since been switched to the more compact `TOTAL×ITEMu` format (no brackets) to avoid confusion with the quiver indicator; output falls back to `x` if the terminal doesn’t support 8-bit characters (`eight_bit_tty`).  This completes the original feature by extending visibility to selection dialogs.
+- UNCOMMITTED 2026-03-08 Jeff Tratt — UI: inventory menus triggered by "Put in what?"/"Take out what?" now show the normal inventory header, and when objects are grouped by class the category heading includes the combined weight for that class (e.g. "WANDS 35×7u").  This gives quicker insight into the cost/weight of each category while looting or stashing.
+- UNCOMMITTED 2026-03-08 Jeff Tratt — UI: extend weight totals to the regular inventory display as well; class headings in `i` now show the same per-category weight and respect `OPTIONS=invweight` (single‑item weights are shown too).  Prompt newline logic was improved and headings are only added when `invweight` is active.
 - UNCOMMITTED 2026-02-24 Jeff Tratt — FEATURE: #force doubles as quick quiver when not standing on a container
   - If no lockable box or chest is underfoot, issuing `#force` now selects the
     highest-priority quiver item (honoring invlet/otype ordering); the chosen

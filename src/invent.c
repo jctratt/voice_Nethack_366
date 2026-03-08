@@ -2766,32 +2766,43 @@ long quan;       /* if non-0, print this quantity, not obj->quan */
         Sprintf(li, "%c - %s%s", (use_invlet ? obj->invlet : let),
                 (txt ? txt : doname(obj)), (dot ? "." : ""));
 #else
-   Sprintf(li, "%c %c %s%s",
-       (use_invlet ? obj->invlet : let),
-       (use_invlet && obj->sticky ? '=' : '-'),
-       (txt ? txt : doname(obj)), (dot ? "." : ""));
+    Sprintf(li, "%c %c %s%s",
+            (use_invlet ? obj->invlet : let),
+            (use_invlet && obj->sticky ? '=' : '-'),
+            (txt ? txt : doname(obj)), (dot ? "." : ""));
 #endif /* STICKY_OBJECTS */
-    }
-    if (savequan)
-        obj->quan = savequan;
+}
 
-    /*
-     * When OPTIONS=invweight is enabled, append a per-item/total weight
-     * annotation to the name for any object we are formatting.  This
-     * affects inventory menus (getobj and friends), apply menus and
-     * similar listings where xprname() is used.  We avoid doing this when a
-     * cost is being shown because shop or unpaid messages already carry a
-     * numeric value and adding weight would clutter the output.
-     */
+if (savequan)
+    obj->quan = savequan;
+
+/* When OPTIONS=invweight is enabled, append a per-item/total weight
+   annotation to the name for any object we are formatting.  This
+   affects inventory menus (getobj and friends), apply menus and
+   similar listings where xprname() is used.  We avoid doing this when a
+   cost is being shown because shop or unpaid messages already carry a
+   numeric value and adding weight would clutter the output.
+   The format was changed to avoid square brackets (which are already used
+   for the quiver indicator) and to use a multiplication sign plus a
+   trailing "u" unit marker.  Terminals without 8-bit output will substitute
+   a plain 'x' instead of '×'.  Examples: " 20×5u" (or " 20x5u" when
+   eight_bit_tty is off) or " 60u".
+*/
+
     if (flags.invweight && obj && obj->owt > 0 && cost == 0L) {
         long total_wt = (long) obj->owt;
         long per_wt = (obj->quan > 1) ? (total_wt / obj->quan) : total_wt;
         char wtbuf[32];
+        /* display-ability check: if the terminal is not sending 8-bit
+           characters (common for curses dashboards without UTF-8 locale)
+           the multiplication sign will corrupt, so fall back to plain
+           'x' instead.  eight_bit_tty is the nearest available option. */
+        const char *mul = iflags.wc_eight_bit_input ? "×" : "x";
 
         if (obj->quan > 1 && total_wt > 0)
-            Sprintf(wtbuf, " [%ldx%ld]", total_wt, per_wt);
+            Sprintf(wtbuf, " %ld%s%ldu", total_wt, mul, per_wt);
         else if (total_wt > 0)
-            Sprintf(wtbuf, " [%ld]", total_wt);
+            Sprintf(wtbuf, " %ldu", total_wt);
         else
             wtbuf[0] = '\0';
         if (wtbuf[0])
@@ -3079,10 +3090,39 @@ long *out_cnt;
             any = zeroany; /* all bits zero */
             ilet = otmp->invlet;
             if (flags.sortpack && !classcount) {
+                /* compute class total weight; mirror logic from pickup.c
+                   so the inventory itself shows the same annotations as the
+                   various pick/loot menus.  Note that `owt` already factors
+                   in quantity for items like ammo, so we don't multiply by
+                   `quan` here. */
+                long total = 0L;
+                int cnt = 0;
+                {
+                    Loot *scan;
+                    struct obj *scanobj;
+                    for (scan = sortedinvent; (scanobj = scan->obj) != 0; ++scan) {
+                        if (scanobj->oclass == *invlet) {
+                            total += (long) scanobj->owt;
+                            cnt++;
+                        }
+                    }
+                }
+                char heading[BUFSZ];
+                const char *name = let_to_name(*invlet, FALSE,
+                                                (want_reply && iflags.menu_head_objsym));
+                if (flags.invweight && total > 0L) {
+                    if (cnt > 1) {
+                        long per = total / cnt;
+                        const char *mul = iflags.wc_eight_bit_input ? "×" : "x";
+                        Sprintf(heading, "%s %ld%s%ldu", name, total, mul, per);
+                    } else {
+                        Sprintf(heading, "%s %ldu", name, total);
+                    }
+                } else {
+                    Strcpy(heading, name);
+                }
                 add_menu(win, NO_GLYPH, &any, 0, 0, iflags.menu_headings,
-                         let_to_name(*invlet, FALSE,
-                                     (want_reply && iflags.menu_head_objsym)),
-                         MENU_UNSELECTED);
+                         heading, MENU_UNSELECTED);
                 classcount++;
             }
             if (wizid)
@@ -3104,14 +3144,23 @@ long *out_cnt;
 
                 Strcpy(lab, doname(otmp));
                 /* show per-item and total weight in inventory listing when
-                   OPTIONS=invweight is enabled (format: [TOTALxITEM]) */
+                   OPTIONS=invweight is enabled.  Use multiplication sign and
+                   append a unit suffix ("u"); no brackets so that it doesn't
+                   conflict with the quiver indicator.  Terminals lacking
+                   8-bit/UTF-8 output (seven-bit curses builds, etc.) will
+                   fall back to 'x' instead of '×'.  Examples: " 20×5u" or
+                   " 20x5u", and " 60u" for a single item. */
                 if (flags.invweight) {
                     long total_wt = (long) otmp->owt;
                     long per_wt = (otmp->quan > 1) ? (total_wt / otmp->quan) : total_wt;
+                    /* choose a symbol we can safely send; curses builds or
+                       7-bit terminals without eight_bit_tty will mis-render
+                       UTF-8, so fall back to plain 'x' in that case */
+                    const char *mul = iflags.wc_eight_bit_input ? "×" : "x";
                     if (otmp->quan > 1 && total_wt > 0)
-                        Sprintf(eos(lab), " [%ldx%ld]", total_wt, per_wt);
+                        Sprintf(eos(lab), " %ld%s%ldu", total_wt, mul, per_wt);
                     else if (total_wt > 0)
-                        Sprintf(eos(lab), " [%ld]", total_wt);
+                        Sprintf(eos(lab), " %ldu", total_wt);
                 }
 
                 /* map object to unique quiver-candidate rank (if any) */

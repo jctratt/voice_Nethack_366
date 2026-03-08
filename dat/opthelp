@@ -29,6 +29,8 @@ herecmd_menu   show menu of some possible commands when clicking
 ignintr        ignore interrupt signal, including breaks          [FALSE]
 implicit_uncursed  omit "uncursed" from inventory, if possible    [TRUE]
 invweight      show per-item inventory weight in inventory list  [FALSE]
+               weights appear as TOTAL×UNITu (no brackets); falls back to x on
+               7-bit/8-bit-unsupported terminals.
 drop_ignore_gems ignore gems/rocks when dropping unknown items (+X) [FALSE]
                items are still listed in the initial category prompt and can
                always be dropped by specifying g/r or using `drop all`; the
