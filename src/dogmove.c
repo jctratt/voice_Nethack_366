@@ -180,15 +180,72 @@ static NEARDATA const char nofetch[] = { BALL_CLASS, CHAIN_CLASS, ROCK_CLASS,
 
 STATIC_VAR xchar gtyp, gx, gy; /* type and position of dog's current goal */
 
-/* Pet AI tuning */
+/* Pet AI tuning -----------------------------------------------------------
+ *
+ * PET_TARGET_RADIUS
+ *    Radius (in geometric tiles) around the player within which a pet looks
+ *    for hostile monsters to pursue.  Increased from 7 to keep pets more
+ *    aware of threats near the player.
+ *
+ * MAX_PET_DISTANCE
+ *    Square distance threshold used by dog_move() candidate filtering to
+ *    discourage un-leashed pets from wandering too far from the player.
+ *
+ * Hard rejoin thresholds (path-based):
+ *    Earlier versions triggered "hard rejoin" (suppressing fetching and
+ *    combat tactics in favour of simply moving toward the player) whenever
+ *    the straight-line distance from pet to player exceeded a small value.
+ *    That caused poor behaviour when the player and pet were separated by a
+ *    long winding corridor: the Euclidean distance could be low even though
+ *    the true path length was very high, so the pet would lapse back into
+ *    normal AI and dawdle, sometimes never making it back.
+ *
+ *    We now compute the actual BFS path length from pet to player each turn
+ *    and use it for the rejoin decision.  PET_REJOIN_PATH_TRIGGER is the
+ *    number of walkable steps beyond which a pet will enter hard rejoin;
+ *    PET_REJOIN_PATH_HOLD is a hysteresis value, allowing the pet to exit
+ *    rejoin only when the path length has shrunk below that threshold.  This
+ *    ensures that pets stuck around a corner will chase relentlessly until
+ *    they are genuinely close by path.
+ -----------------------------------------------------------
+ *
+ * PET_TARGET_RADIUS
+ *    Radius (in geometric tiles) around the player within which a pet looks
+ *    for hostile monsters to pursue.  Increased from 7 to keep pets more
+ *    aware of threats near the player.
+ *
+ * MAX_PET_DISTANCE
+ *    Square distance threshold used by dog_move() candidate filtering to
+ *    discourage un-leashed pets from wandering too far from the player.
+ *
+ * Hard rejoin thresholds (path-based):
+ *    Earlier versions triggered "hard rejoin" (suppressing fetching and
+ *    combat tactics in favour of simply moving toward the player) whenever
+ *    the straight-line distance from pet to player exceeded a small value.
+ *    That caused poor behaviour when the player and pet were separated by a
+ *    long winding corridor: the Euclidean distance could be low even though
+ *    the true path length was very high, so the pet would lapse back into
+ *    normal AI and dawdle, sometimes never making it back.
+ *
+ *    We now compute the actual BFS path length from pet to player each turn
+ *    and use it for the rejoin decision.  PET_REJOIN_PATH_TRIGGER is the
+ *    number of walkable steps beyond which a pet will enter hard rejoin;
+ *    PET_REJOIN_PATH_HOLD is a hysteresis value, allowing the pet to exit
+ *    rejoin only when the path length has shrunk below that threshold.  This
+ *    ensures that pets stuck around a corner will chase relentlessly until
+ *    they are genuinely close by path.
+ */
 #define PET_TARGET_RADIUS 14 /* tiles around player to search for hostile targets (increased from 7) */
 #define MAX_PET_DISTANCE 5  /* max allowed distance (tiles) pet may move away from player */
+#define PET_REJOIN_PATH_TRIGGER 7 /* start hard rejoin when path to player exceeds this */
+#define PET_REJOIN_PATH_HOLD 4    /* stay in hard rejoin until path is back within this */
 
 /* Player-centered search helpers (prefer player-origin targets first) */
 STATIC_DCL struct monst *FDECL(best_target_from_origin, (struct monst *, int, int, int));
 STATIC_DCL struct monst *FDECL(find_targ_from_origin, (struct monst *, int, int, int, int, int));
 
-STATIC_DCL boolean FDECL(pet_bfs_to_player, (struct monst *, xchar *, xchar *));
+STATIC_DCL boolean FDECL(pet_bfs_to_player,
+                         (struct monst *, xchar *, xchar *, int *));
 
 STATIC_PTR void FDECL(wantdoor, (int, int, genericptr_t));
 
@@ -197,6 +254,12 @@ STATIC_PTR void FDECL(wantdoor, (int, int, genericptr_t));
  * pet, modeled after the travel ('_') command pathfinder.  Returns TRUE and
  * fills *nx, *ny with the square the pet should step into next.  Returns
  * FALSE if no reachable path exists.
+ *
+ * If `pathdist` is non-null, this function also sets *pathdist to the
+ * number of walkable steps from the pet to the player (i.e. the length of
+ * the BFS tree at the moment the pet's location is reached).  `dog_move()`
+ * uses this to decide when a pet is "far away" by real path length rather
+ * than simple Euclidean distance.
  *
  * The BFS expands outward from the player.  Each cell records which
  * neighbor it was reached *from* (encoded as direction index 1-8, with
@@ -209,9 +272,10 @@ STATIC_PTR void FDECL(wantdoor, (int, int, genericptr_t));
  * through walls treat walls as passable, etc.
  */
 STATIC_OVL boolean
-pet_bfs_to_player(mtmp, nx, ny)
+pet_bfs_to_player(mtmp, nx, ny, pathdist)
 struct monst *mtmp;
 xchar *nx, *ny;
+int *pathdist;
 {
     /* Direction offsets matching xdir[]/ydir[] indices 0-7 */
     static const int dx8[8] = { -1, -1,  0,  1, 1, 1, 0, -1 };
@@ -228,13 +292,16 @@ xchar *nx, *ny;
     boolean can_open  = (!nohands(mdat) && !verysmall(mdat));
     boolean can_phase = passes_walls(mdat);
     boolean can_ooze  = amorphous(mdat);
-    int n, nn, set, i, dir;
+    int n, nn, set, i, dir, depth;
     int mx = mtmp->mx, my = mtmp->my;
     int px = u.ux, py = u.uy;
     int cx, cy;
 
     if (mx == px && my == py)
         return FALSE; /* already on top of player?? */
+
+    if (pathdist)
+        *pathdist = 0;
 
     (void) memset((genericptr_t) pred, 0, sizeof pred);
 
@@ -244,6 +311,7 @@ xchar *nx, *ny;
     pred[px][py] = 9; /* sentinel: visited, is origin */
     n = 1;
     set = 0;
+    depth = 0;
 
     while (n > 0) {
         nn = 0;
@@ -339,6 +407,8 @@ xchar *nx, *ny;
                 if (tx == mx && ty == my) {
                     /* Found the pet!  Walk predecessor chain back to the
                        square adjacent to the pet (one step). */
+                    if (pathdist)
+                        *pathdist = depth + 1;
                     *nx = mx + dx8[rdir];
                     *ny = my + dy8[rdir];
                     return TRUE;
@@ -351,6 +421,7 @@ xchar *nx, *ny;
         }
         n = nn;
         set = 1 - set;
+        depth++;
     }
 
     return FALSE; /* no path found */
@@ -1196,6 +1267,7 @@ int after; /* this is extra fast monster movement */
     int omx, omy; /* original mtmp position */
     int appr, whappr, udist;
     int i, j, k;
+    int player_pathdist = -1;
     register struct edog *edog = EDOG(mtmp);
     struct obj *obj = (struct obj *) 0;
     xchar otyp;
@@ -1204,6 +1276,8 @@ int after; /* this is extra fast monster movement */
     boolean did_interpose = FALSE; /* set when pet explicitly interposes */
     boolean have_interpose_goal = FALSE;
     boolean force_rejoin = FALSE;
+    boolean have_player_path = FALSE;
+    xchar bfs_nx = 0, bfs_ny = 0;
     xchar nix, niy;      /* position mtmp is (considering) moving to */
     register int nx, ny; /* temporary coordinates */
     xchar cnt, uncursedcnt, chcnt;
@@ -1256,11 +1330,23 @@ int after; /* this is extra fast monster movement */
     } else
         whappr = 0;
 
-    /* Hard rejoin mode: when a tame pet is more than 3 tiles away,
-       suppress tactical behavior and force movement back toward player. */
-    if (mtmp->mtame && !mtmp->mleashed
-        && distmin(omx, omy, u.ux, u.uy) > 3)
-        force_rejoin = TRUE;
+    if (mtmp->mtame && !mtmp->mleashed)
+        have_player_path = pet_bfs_to_player(mtmp, &bfs_nx, &bfs_ny,
+                                             &player_pathdist);
+
+    /* Hard rejoin mode should use actual path length, not straight-line
+       distance.  That keeps corridor-separated pets focused on catching
+       up until they are genuinely back near the player in walkable steps. */
+    if (mtmp->mtame && !mtmp->mleashed) {
+        if (have_player_path) {
+            if (player_pathdist > PET_REJOIN_PATH_TRIGGER
+                || (distmin(omx, omy, u.ux, u.uy) > 3
+                    && player_pathdist > PET_REJOIN_PATH_HOLD))
+                force_rejoin = TRUE;
+        } else if (distmin(omx, omy, u.ux, u.uy) > 3) {
+            force_rejoin = TRUE;
+        }
+    }
 
     /* choose a monster to pursue (player-centered preferred)
        - prefer straight-line player-origin targets (existing behavior)
@@ -1332,9 +1418,7 @@ int after; /* this is extra fast monster movement */
            optimal next step for the pet to reach the player, accounting
            for doors, corridors, and the pet's movement capabilities.
            The BFS is recomputed each turn so player movement is tracked. */
-        xchar bfs_nx, bfs_ny;
-
-        if (pet_bfs_to_player(mtmp, &bfs_nx, &bfs_ny)) {
+        if (have_player_path) {
             gx = bfs_nx;
             gy = bfs_ny;
         } else {
