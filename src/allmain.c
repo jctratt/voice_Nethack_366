@@ -30,6 +30,11 @@ boolean resuming;
 #if defined(MICRO) || defined(WIN32)
     char ch;
     int abort_lev;
+                if (iflags.pet_rejoin_flush) {
+                    flushinp();
+                    iflags.pet_rejoin_flush = FALSE;
+                }
+                iflags.pet_rejoin_heard = FALSE;
 #endif
     int moveamt = 0, wtcap = 0, change = 0;
     boolean monscanmove = FALSE;

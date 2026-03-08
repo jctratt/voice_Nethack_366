@@ -2,6 +2,14 @@
 #include "hack.h"
 #include <stdio.h>
 
+/* mapseen chain head defined in dungeon.c */
+extern mapseen *mapseenchn;
+/* helper added by recent patch */
+extern void sanitize_petnames(char *);
+
+/* mapseen chain head defined in dungeon.c */
+extern mapseen *mapseenchn; 
+
 int
 main(void)
 {
@@ -37,11 +45,23 @@ main(void)
         return 2;
     }
 
-    if (!strstr(mptr->petnames, "(Lv 4)")) {
-        fprintf(stderr, "FAILED: petnames='%s' (missing level)\n", mptr->petnames);
+    if (!strstr(mptr->petnames, "(HP 4)")) {
+        fprintf(stderr, "FAILED: petnames='%s' (missing HP)\n", mptr->petnames);
         return 3;
     }
 
     printf("OK: mapseen for %d:%d petnames='%s'\n", dest.dnum, dest.dlevel, mptr->petnames);
+
+    /* verify sanitize_petnames fixes legacy text */
+    {
+        char buf[PETNAMES_MAX+1];
+        strcpy(buf, "Fido (Lv 4), Spot (Lv 1)");
+        sanitize_petnames(buf);
+        if (!strstr(buf, "(HP 4)") || !strstr(buf, "(HP 1)")) {
+            fprintf(stderr, "FAILED: sanitize_petnames('%s') -> '%s'\n",
+                    "Fido (Lv 4), Spot (Lv 1)", buf);
+            return 4;
+        }
+    }
     return 0;
 }

@@ -38,7 +38,7 @@ main(void)
     /* annotate lvl2 with a pet summary */
     if (found->petnames)
         free((genericptr_t) found->petnames);
-    found->petnames = dupstr("Fido (Lv 4)");
+    found->petnames = dupstr("Fido (HP 4)");
     found->petnames_lth = strlen(found->petnames);
 
     /* now the level with petnames must be considered interesting */

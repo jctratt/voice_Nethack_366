@@ -1,6 +1,12 @@
-/* test_overview_pets_levels.c - ensure recalc_mapseen includes pet levels */
+/* test_overview_pets_levels.c - ensure recalc_mapseen includes pet HP/status */
 #include "hack.h"
 #include <stdio.h>
+
+extern mapseen *mapseenchn; /* from dungeon.c */
+extern void sanitize_petnames(char *);
+
+/* mapseen chain head defined in dungeon.c */
+extern mapseen *mapseenchn; 
 
 int
 main(void)
@@ -17,6 +23,16 @@ main(void)
     }
 
     mptr = mapseenchn; /* newly created entry for current level */
+
+    /* sanity: ensure sanitize_petnames behaves as expected */
+    {
+        char tmp[PETNAMES_MAX+1] = "Zippy (Lv 3)";
+        sanitize_petnames(tmp);
+        if (!strstr(tmp, "(HP 3)")) {
+            fprintf(stderr, "FAILED: sanitize_petnames didn't convert '%s'\n", tmp);
+            return 4;
+        }
+    }
 
     /* ensure no monsters are present */
     level.monlist = (struct monst *) 0;
@@ -40,8 +56,8 @@ main(void)
         return 2;
     }
 
-    if (!strstr(mptr->petnames, "(Lv 5)")) {
-        fprintf(stderr, "FAILED: petnames='%s' (missing level)\n", mptr->petnames);
+    if (!strstr(mptr->petnames, "(HP 5)")) {
+        fprintf(stderr, "FAILED: petnames='%s' (missing HP)\n", mptr->petnames);
         return 3;
     }
 

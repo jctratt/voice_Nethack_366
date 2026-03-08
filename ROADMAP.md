@@ -28,7 +28,9 @@ This file holds long-running context, process notes, and the prioritized TODO li
   `pet_bfs_to_player()` with new constants `PET_REJOIN_PATH_TRIGGER` and
   `PET_REJOIN_PATH_HOLD`.  Pets now enter hard‑rejoin mode based on true
   corridor length instead of Euclidean distance, fixing cases where a pet
-  could lag far behind around corners.  See `dogmove.c` comments for details.
+  could lag far behind around corners.  Current tuning is tighter: path
+  distance `> 4` triggers hard rejoin and the pet stays in it until back
+  within 3 steps.  See `dogmove.c` comments for details.
 
 ---
 Last updated: 2026-03-07

@@ -37,7 +37,7 @@ Done
   - Preserve existing keyboard mappings and non-intrusive UI behavior.
 - Suggested files to inspect: `src/invent.c`, `src/cmd.c`, UI modules `src/win_*` / curses windows that render inventory.
 - Next step: Prototype implemented — added per-line/stack weight display. The `invweight` option is available in `options`, via `NETHACKOPTIONS`, or in `.nethackrc` and can be persisted.
-- Tests: added `test_invweight.sh` (smoke test). Manual verification: open inventory, press `W` to show/hide weights; stacks show total+per-item weight (e.g., `3 potions [60x20]`).
+- Tests: added `test_invweight.sh` (smoke test). Manual verification: open inventory, press `W` to show/hide weights; stacks show total+per-item weight (e.g., `3 potions 60×20u`).
 - Priority: P2 (prototype done — ready for review)
 
 ---

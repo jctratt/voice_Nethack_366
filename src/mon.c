@@ -833,8 +833,13 @@ movemon()
                 && fightm(mtmp))
                 continue; /* mon might have died */
         }
-        if (dochugw(mtmp)) /* otherwise just move the monster */
+        if (dochugw(mtmp)) { /* otherwise just move the monster */
+            if (mtmp->movement >= NORMAL_SPEED)
+                somebody_can_move = TRUE;
             continue;
+        }
+        if (mtmp->movement >= NORMAL_SPEED)
+            somebody_can_move = TRUE;
     }
 
     if (any_light_source())

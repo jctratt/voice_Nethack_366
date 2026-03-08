@@ -19,6 +19,10 @@ STATIC_DCL long FDECL(score_targ, (struct monst *, struct monst *));
 STATIC_DCL boolean FDECL(can_reach_location, (struct monst *, XCHAR_P,
                                               XCHAR_P, XCHAR_P, XCHAR_P));
 STATIC_DCL boolean FDECL(could_reach_item, (struct monst *, XCHAR_P, XCHAR_P));
+STATIC_DCL boolean FDECL(pet_intact_doorway, (XCHAR_P, XCHAR_P));
+STATIC_DCL boolean FDECL(pet_illegal_door_diagonal,
+                         (XCHAR_P, XCHAR_P, XCHAR_P, XCHAR_P));
+STATIC_DCL void FDECL(pet_rejoin_sound, (struct monst *));
 STATIC_DCL void FDECL(quickmimic, (struct monst *));
 
 /* choose an appropriate verb for a pet interpose announcement
@@ -75,6 +79,21 @@ pet_interpose_verb(mtmp)
     default:
         return "growls";
     }
+}
+
+STATIC_OVL void
+pet_rejoin_sound(mtmp)
+    struct monst *mtmp;
+{
+    char petbuf[BUFSZ];
+
+    if (iflags.pet_rejoin_heard || canseemon(mtmp))
+        return;
+
+    Strcpy(petbuf, y_monnam(mtmp));
+    You_hear("%s %s through the halls.", petbuf,
+             vtense(petbuf, locomotion(mtmp->data, "move")));
+    iflags.pet_rejoin_heard = TRUE;
 }
 
 /* pick a carried item for pet to drop */
@@ -206,39 +225,20 @@ STATIC_VAR xchar gtyp, gx, gy; /* type and position of dog's current goal */
  *    PET_REJOIN_PATH_HOLD is a hysteresis value, allowing the pet to exit
  *    rejoin only when the path length has shrunk below that threshold.  This
  *    ensures that pets stuck around a corner will chase relentlessly until
- *    they are genuinely close by path.
- -----------------------------------------------------------
+ *    they are genuinely close by path.  Current tuning is intentionally
+ *    aggressive: any path length greater than 4 triggers hard rejoin.
  *
- * PET_TARGET_RADIUS
- *    Radius (in geometric tiles) around the player within which a pet looks
- *    for hostile monsters to pursue.  Increased from 7 to keep pets more
- *    aware of threats near the player.
- *
- * MAX_PET_DISTANCE
- *    Square distance threshold used by dog_move() candidate filtering to
- *    discourage un-leashed pets from wandering too far from the player.
- *
- * Hard rejoin thresholds (path-based):
- *    Earlier versions triggered "hard rejoin" (suppressing fetching and
- *    combat tactics in favour of simply moving toward the player) whenever
- *    the straight-line distance from pet to player exceeded a small value.
- *    That caused poor behaviour when the player and pet were separated by a
- *    long winding corridor: the Euclidean distance could be low even though
- *    the true path length was very high, so the pet would lapse back into
- *    normal AI and dawdle, sometimes never making it back.
- *
- *    We now compute the actual BFS path length from pet to player each turn
- *    and use it for the rejoin decision.  PET_REJOIN_PATH_TRIGGER is the
- *    number of walkable steps beyond which a pet will enter hard rejoin;
- *    PET_REJOIN_PATH_HOLD is a hysteresis value, allowing the pet to exit
- *    rejoin only when the path length has shrunk below that threshold.  This
- *    ensures that pets stuck around a corner will chase relentlessly until
- *    they are genuinely close by path.
+ * PET_REJOIN_BONUS_ACTIONS
+ *    Maximum number of extra monster actions granted during a single monster
+ *    phase when a pet is in hard rejoin and has just taken a BFS-guided step
+ *    toward the player.  This lets the pet spend a few normal movement
+ *    actions back-to-back to close a long corridor gap without teleporting.
  */
 #define PET_TARGET_RADIUS 14 /* tiles around player to search for hostile targets (increased from 7) */
 #define MAX_PET_DISTANCE 5  /* max allowed distance (tiles) pet may move away from player */
-#define PET_REJOIN_PATH_TRIGGER 7 /* start hard rejoin when path to player exceeds this */
-#define PET_REJOIN_PATH_HOLD 4    /* stay in hard rejoin until path is back within this */
+#define PET_REJOIN_PATH_TRIGGER 4 /* start hard rejoin when path to player exceeds this */
+#define PET_REJOIN_PATH_HOLD 3    /* stay in hard rejoin until path is back within this */
+#define PET_REJOIN_BONUS_ACTIONS 5 /* max extra same-phase catch-up moves */
 
 /* Player-centered search helpers (prefer player-origin targets first) */
 STATIC_DCL struct monst *FDECL(best_target_from_origin, (struct monst *, int, int, int));
@@ -248,6 +248,30 @@ STATIC_DCL boolean FDECL(pet_bfs_to_player,
                          (struct monst *, xchar *, xchar *, int *));
 
 STATIC_PTR void FDECL(wantdoor, (int, int, genericptr_t));
+
+STATIC_OVL boolean
+pet_intact_doorway(x, y)
+xchar x, y;
+{
+    struct rm *lev_p = &levl[x][y];
+
+    if (!IS_DOOR(lev_p->typ))
+        return FALSE;
+    if (Is_rogue_level(&u.uz))
+        return TRUE;
+    return (boolean) (lev_p->doormask & ~(D_NODOOR | D_BROKEN));
+}
+
+STATIC_OVL boolean
+pet_illegal_door_diagonal(ox, oy, nx, ny)
+xchar ox, oy, nx, ny;
+{
+    if (ox == nx || oy == ny)
+        return FALSE;
+
+    return (boolean) (pet_intact_doorway(ox, oy)
+                      || pet_intact_doorway(nx, ny));
+}
 
 /*
  * pet_bfs_to_player: BFS shortest-path from the player's position to the
@@ -346,17 +370,9 @@ int *pathdist;
                             continue; /* can't deal with closed door */
                     }
                     /* diagonal move into/out of a doorway with door? */
-                    if (dx8[dir] && dy8[dir]) {
-                        /* entering a doorway diagonally is only allowed if the door
-                           is completely gone (NODOOR or BROKEN) */
-                        if (levl[tx][ty].doormask != D_NODOOR && levl[tx][ty].doormask != D_BROKEN)
-                            continue;
-                        /* leaving from a doorway diagonally likewise */
-                        int ctyp = levl[cx][cy].typ;
-                        if ((IS_DOOR(ctyp) || ctyp == SDOOR)
-                            && levl[cx][cy].doormask != D_NODOOR && levl[cx][cy].doormask != D_BROKEN)
-                            continue;
-                    }
+                    if (pet_illegal_door_diagonal((xchar) cx, (xchar) cy,
+                                                  (xchar) tx, (xchar) ty))
+                        continue;
                 }
                 /* pool / lava */
                 if (is_pool(tx, ty) && !is_swimmer(mdat)
@@ -1336,15 +1352,16 @@ int after; /* this is extra fast monster movement */
 
     /* Hard rejoin mode should use actual path length, not straight-line
        distance.  That keeps corridor-separated pets focused on catching
-       up until they are genuinely back near the player in walkable steps. */
+       up until they are genuinely back near the player in walkable steps.
+       If BFS cannot find any path at all, do not enter hard rejoin: the pet
+       may be intentionally isolated or genuinely trapped, and should not
+       burn turns trying to sprint toward an unreachable player. */
     if (mtmp->mtame && !mtmp->mleashed) {
         if (have_player_path) {
             if (player_pathdist > PET_REJOIN_PATH_TRIGGER
                 || (distmin(omx, omy, u.ux, u.uy) > 3
                     && player_pathdist > PET_REJOIN_PATH_HOLD))
                 force_rejoin = TRUE;
-        } else if (distmin(omx, omy, u.ux, u.uy) > 3) {
-            force_rejoin = TRUE;
         }
     }
 
@@ -1422,8 +1439,10 @@ int after; /* this is extra fast monster movement */
             gx = bfs_nx;
             gy = bfs_ny;
         } else {
-            /* BFS couldn't find a path (pet might be completely cut off);
-               fall back to direct approach toward the player. */
+            /* This should be rare because force_rejoin is only enabled when
+               a path exists, but if pathing changed mid-turn, avoid trying
+               to sprint toward an unreachable player and fall back to the
+               ordinary goal chosen earlier. */
             gx = u.ux;
             gy = u.uy;
         }
@@ -1604,14 +1623,9 @@ int after; /* this is extra fast monster movement */
         /* don't allow diagonal moves that pass through a doorway with a
            door in it.  this mirrors the checks in hack.c and pet_bfs_to_player
            to keep pets from "transporting" over doors via diagonal steps */
-        if (nx != omx && ny != omy) {
-            /* moving diagonally */
-            if ((IS_DOOR(levl[nx][ny].typ)
-                 && (levl[nx][ny].doormask & ~D_BROKEN))
-                || (IS_DOOR(levl[omx][omy].typ)
-                    && (levl[omx][omy].doormask & ~D_BROKEN)))
-                continue;
-        }
+        if (pet_illegal_door_diagonal((xchar) omx, (xchar) omy,
+                                      (xchar) nx, (xchar) ny))
+            continue;
 
         /* Never consider moving onto the player's square; that results in
            the pet 'attacking' the player (mattacku).  Allow only when the
@@ -1937,6 +1951,13 @@ int after; /* this is extra fast monster movement */
             niy = omy;
         }
 
+        if (pet_illegal_door_diagonal((xchar) omx, (xchar) omy,
+                                      (xchar) nix, (xchar) niy)) {
+            nix = omx;
+            niy = omy;
+            return 0;
+        }
+
         if (info[chi] & ALLOW_U) {
             if (mtmp->mleashed) { /* play it safe */
                 pline("%s breaks loose of %s leash!", Monnam(mtmp),
@@ -2019,6 +2040,22 @@ int after; /* this is extra fast monster movement */
         if (do_eat) {
             if (dog_eat(mtmp, obj, omx, omy, FALSE) == 2)
                 return 2;
+        }
+
+        /* After a successful BFS-guided rejoin step, preload a bounded
+           number of ordinary movement actions so the pet can spend part of
+           the same monster phase catching up around corners.  This keeps the
+           movement legal and trap-aware because each extra step is still run
+           through movemon()/dog_move() rather than being teleported. */
+        if (force_rejoin && have_player_path && mtmp->mtame && !mtmp->mleashed
+            && mtmp->movement < NORMAL_SPEED
+            && player_pathdist > PET_REJOIN_PATH_HOLD + 1) {
+            int bonus_actions = player_pathdist - PET_REJOIN_PATH_HOLD - 1;
+
+            if (bonus_actions > PET_REJOIN_BONUS_ACTIONS)
+                bonus_actions = PET_REJOIN_BONUS_ACTIONS;
+            if (bonus_actions > 0)
+                mtmp->movement += bonus_actions * NORMAL_SPEED;
         }
     } else if (mtmp->mleashed && distu(omx, omy) > 4) {
         /* an incredible kludge, but the only way to keep pooch near

@@ -2257,6 +2257,21 @@ mapseen *mptr;
     savecemetery(fd, WRITE_SAVE, &mptr->final_resting_place);
 }
 
+
+/* helper used by load_mapseen and tests: convert old-level labels */
+STATIC_OVL void
+sanitize_petnames(pn)
+char *pn;
+{
+    char *p;
+    if (!pn)
+        return;
+    while ((p = strstr(pn, "(Lv ")) != 0) {
+        p[1] = 'H';
+        p[2] = 'P';
+    }
+}
+
 STATIC_OVL mapseen *
 load_mapseen(fd)
 int fd;
@@ -2291,6 +2306,16 @@ int fd;
         load->petnames = (char *) alloc(load->petnames_lth + 1);
         mread(fd, (genericptr_t) load->petnames, load->petnames_lth);
         load->petnames[load->petnames_lth] = '\0';
+        /* convert legacy "(Lv N)" labels to "(HP N)" so old saves
+           automatically upgrade during loading */
+        {
+            char *p;
+            while ((p = strstr(load->petnames, "(Lv ")) != 0) {
+                /* same length, just overwrite 'Lv' with 'HP' */
+                p[1] = 'H';
+                p[2] = 'P';
+            }
+        }
     } else
         load->petnames = 0;
     mread(fd, (genericptr_t) load->msrooms, sizeof load->msrooms);
@@ -2723,14 +2748,17 @@ recalc_mapseen()
             /* use m_monnam() to get either custom name or species */
             (void) strncpy(tmpname, m_monnam(mtmp), sizeof tmpname - 1);
             tmpname[sizeof tmpname - 1] = '\0';
-            /* append visible level for current pet so #overview shows "Name (Lv N)" */
-            if (mtmp->m_lev > 0) {
+            /* append a short status for current pet so #overview shows
+               "Name (HP N)" rather than using the confusing "Lv" label.  HP is
+               more distinct from the dungeon-level numbers that also appear on
+               the overview page. */
+            if (mtmp->mhp > 0) {
                 /* ensure we don't overflow tmpname */
-                (void) strncat(tmpname, " (Lv ", sizeof tmpname - strlen(tmpname) - 1);
+                (void) strncat(tmpname, " (HP ", sizeof tmpname - strlen(tmpname) - 1);
                 {
-                    char lvlbuf[16];
-                    Sprintf(lvlbuf, "%d)", (int) mtmp->m_lev);
-                    (void) strncat(tmpname, lvlbuf, sizeof tmpname - strlen(tmpname) - 1);
+                    char hpbuf[16];
+                    Sprintf(hpbuf, "%d)", (int) mtmp->mhp);
+                    (void) strncat(tmpname, hpbuf, sizeof tmpname - strlen(tmpname) - 1);
                 }
             }
             if (!plen) {
@@ -2788,7 +2816,7 @@ recalc_mapseen()
 }
 
 /* Add a pet name to an existing mapseen entry (used for migrating/mydogs pets).
-   This appends `Name (Lv N)` while avoiding duplicates and respecting the
+   This appends `Name (HP N)` while avoiding duplicates and respecting the
    PETNAMES_MAX truncation/ellipsis rules used by recalc_mapseen(). */
 void
 add_pet_to_mapseen(lev, mtmp)
@@ -2797,7 +2825,7 @@ struct monst *mtmp;
 {
     mapseen *mptr;
     char tmpname[PETNAMES_MAX + 1];
-    char lvlbuf[16];
+    char buf[32];          /* for HP formatting */
     int need, plen;
 
     if (!mtmp || !mtmp->mtame || mtmp->isminion)
@@ -2805,12 +2833,12 @@ struct monst *mtmp;
     if (!(mptr = find_mapseen(lev)))
         return;
 
-    /* compose name + optional level */
+    /* compose name + optional current hit points */
     (void) strncpy(tmpname, m_monnam(mtmp), sizeof tmpname - 1);
     tmpname[sizeof tmpname - 1] = '\0';
-    if (mtmp->m_lev > 0) {
-        Sprintf(lvlbuf, " (Lv %d)", (int) mtmp->m_lev);
-        (void) strncat(tmpname, lvlbuf, sizeof tmpname - strlen(tmpname) - 1);
+    if (mtmp->mhp > 0) {
+        Sprintf(buf, " (HP %d)", (int) mtmp->mhp);
+        (void) strncat(tmpname, buf, sizeof tmpname - strlen(tmpname) - 1);
     }
 
     /* avoid duplicate entries */
@@ -2842,6 +2870,7 @@ struct monst *mtmp;
         mptr->petnames_lth = (unsigned) strlen(newbuf);
     }
 }
+
 
 /*ARGUSED*/
 /* valley and sanctum levels get automatic annotation once temple is entered */

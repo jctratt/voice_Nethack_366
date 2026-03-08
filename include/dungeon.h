@@ -267,7 +267,7 @@ typedef struct mapseen {
 struct monst;
 
 /* Add pet summary to an existing mapseen entry (used by migration code)
-   - appends `Name (Lv N)` while respecting PETNAMES_MAX and avoiding dups */
+   - appends `Name (HP N)` while respecting PETNAMES_MAX and avoiding dups */
 void add_pet_to_mapseen(d_level *, struct monst *);
 
 /* exported helper so tests and other modules can determine whether a
