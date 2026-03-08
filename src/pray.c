@@ -1074,17 +1074,17 @@ aligntyp g_align;
                travelled past the Valley of the Dead (gehennom_entered) */
             if (!u.uevent.uopened_dbridge && !u.uevent.gehennom_entered) {
                 if (u.uevent.uheard_tune < 1) {
-                    godvoice(g_align, (char *) 0);
-                    verbalize("Hark, %s!", youmonst.data->mlet == S_HUMAN
-                                               ? "mortal"
-                                               : "creature");
-                    verbalize(
-                       "To enter the castle, thou must play the right tune!");
+                        You_hear("a divine music...");
+                        pline("It sounds like:  \"%s\".", tune);
                     u.uevent.uheard_tune++;
                     break;
                 } else if (u.uevent.uheard_tune < 2) {
-                    You_hear("a divine music...");
-                    pline("It sounds like:  \"%s\".", tune);
+                        godvoice(g_align, (char *) 0);
+                        verbalize("Hark, %s!", youmonst.data->mlet == S_HUMAN
+                                                   ? "mortal"
+                                                   : "creature");
+                        verbalize(
+                           "To enter the castle, thou must play the right tune!");
                     u.uevent.uheard_tune++;
                     break;
                 }
