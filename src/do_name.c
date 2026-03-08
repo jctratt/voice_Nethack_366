@@ -1458,13 +1458,15 @@ docallcmd()
     add_menu(win, NO_GLYPH, &any, abc ? 0 : any.a_char, 'C', ATR_NONE,
              "a monster", MENU_UNSELECTED);
     if (invent) {
-        /* we use y and n as accelerators so that we can accept user's
-           response keyed to old "name an individual object?" prompt */
-        any.a_char = 'i'; /* group accelerator 'y' */
+        /* previously we used 'y'/'n' group accelerators to match the old
+           "name an individual object?" prompt; the item accelerators are
+           still 'i' and 'o'.  'n' is now needed by the notes submenu so the
+           secondary grouping is no longer convenient. */
+        any.a_char = 'i'; /* group accelerator 'y' (for backwards compat) */
         add_menu(win, NO_GLYPH, &any, abc ? 0 : any.a_char, 'y', ATR_NONE,
                  "a particular object in inventory", MENU_UNSELECTED);
-        any.a_char = 'o'; /* group accelerator 'n' */
-        add_menu(win, NO_GLYPH, &any, abc ? 0 : any.a_char, 'n', ATR_NONE,
+        any.a_char = 'o'; /* no longer use 'n' here */
+        add_menu(win, NO_GLYPH, &any, abc ? 0 : any.a_char, 0, ATR_NONE,
                  "the type of an object in inventory", MENU_UNSELECTED);
     }
     any.a_char = 'f'; /* group accelerator ',' (or ':' instead?) */
