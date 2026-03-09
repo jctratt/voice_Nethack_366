@@ -1935,7 +1935,8 @@ int after; /* this is extra fast monster movement */
                     interpose_goal_x = bestx;
                     interpose_goal_y = besty;
 
-                    if (abs(bestx - omx) <= 1 && abs(besty - omy) <= 1) {
+                    if ((bestx != omx || besty != omy)
+                        && abs(bestx - omx) <= 1 && abs(besty - omy) <= 1) {
                         /* announce interpose when visible */
                         if (pursue_mon && pursue_mon != &youmonst
                             && !(abs(omx - u.ux) <= 1 && abs(omy - u.uy) <= 1)
