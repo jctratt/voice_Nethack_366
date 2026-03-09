@@ -32,6 +32,28 @@ const char *s;
     return FALSE;
 }
 
+/* Mirror monster_nearby()'s adjacent threat test without its occupation
+   side effects.  This is used only to decide whether Elbereth state-change
+   messages are worth surfacing. */
+STATIC_OVL boolean
+engraving_threat_nearby()
+{
+    struct monst *mtmp;
+    int maxd2 = (BOLT_LIM + 1) * (BOLT_LIM + 1);
+
+    for (mtmp = fmon; mtmp; mtmp = mtmp->nmon)
+        if (!DEADMONSTER(mtmp) && distu(mtmp->mx, mtmp->my) <= maxd2
+            && M_AP_TYPE(mtmp) != M_AP_FURNITURE
+            && M_AP_TYPE(mtmp) != M_AP_OBJECT && !mtmp->mpeaceful
+            && !mtmp->mtame
+            && (!is_hider(mtmp->data) || !mtmp->mundetected)
+            && !noattacks(mtmp->data) && mtmp->mcanmove && !mtmp->msleeping
+            && (canseemon(mtmp) || (sensemon(mtmp) && couldsee(mtmp->mx, mtmp->my))))
+            return TRUE;
+
+    return FALSE;
+}
+
 STATIC_VAR NEARDATA struct engr *head_engr;
 STATIC_DCL const char *NDECL(blengr);
 
@@ -86,7 +108,8 @@ engraving_done()
         }
 
         if (state == 0) {
-            pline("You feel safer.");
+            if (engraving_threat_nearby())
+                pline("You feel safer.");
             pending_engraving_message = 0;
             g_has_spoken_elbereth = 1;
             g_has_spoken_no_elbereth = 0;
@@ -117,9 +140,11 @@ engraving_done()
         }
 
         if (state == 0) {
-            pline("You feel safer.");
+            if (engraving_threat_nearby())
+                pline("You feel safer.");
         } else if (last_engraving_state == 0) {
-            pline("You feel vulnerable.");
+            if (engraving_threat_nearby())
+                pline("You feel vulnerable.");
         }
         pending_engraving_message = 0;
         last_engraving_state = state;
@@ -432,7 +457,8 @@ boolean magical;
                    the same square, notify them immediately that they are
                    no longer protected. */
                 if (x == u.ux && y == u.uy && had_elbereth) {
-                    pline("You feel vulnerable.");
+                    if (engraving_threat_nearby())
+                        pline("You feel vulnerable.");
                     pending_engraving_message = 0;
                     g_has_spoken_elbereth = 0;
                     g_has_spoken_no_elbereth = 1;
@@ -1334,7 +1360,8 @@ doengrave()
         if (g_tried_elbereth_local) {
             /* user tried to engrave Elbereth; check final result */
             if (sengr_at("Elbereth", u.ux, u.uy, TRUE)) {
-                pline("You feel safer.");
+                if (engraving_threat_nearby())
+                    pline("You feel safer.");
                 /* clear any deferred pending message */
                 pending_engraving_message = 0;
                 g_has_spoken_elbereth = 1;
@@ -1397,12 +1424,14 @@ doengrave()
             /* State-change messages: entering Elbereth or losing it. */
             if (new_state != last_engraving_state) {
                 if (new_state == 0) {
-                    pline("You feel safer.");
+                    if (engraving_threat_nearby())
+                        pline("You feel safer.");
                     pending_engraving_message = 0;
                     g_has_spoken_elbereth = 1;
                     g_has_spoken_no_elbereth = 0;
                 } else if (last_engraving_state == 0) {
-                    pline("You feel vulnerable.");
+                    if (engraving_threat_nearby())
+                        pline("You feel vulnerable.");
                     pending_engraving_message = 0;
                     g_has_spoken_elbereth = 0;
                     g_has_spoken_no_elbereth = 1;

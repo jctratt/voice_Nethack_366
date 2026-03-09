@@ -23,6 +23,27 @@ STATIC_DCL void FDECL(regen_hp, (int));
 STATIC_DCL void FDECL(interrupt_multi, (const char *));
 STATIC_DCL void FDECL(debug_fields, (const char *));
 
+#ifdef VOICE_ENABLED
+STATIC_OVL boolean
+allmain_engraving_threat_nearby()
+{
+    struct monst *mtmp;
+    int maxd2 = (BOLT_LIM + 1) * (BOLT_LIM + 1);
+
+    for (mtmp = fmon; mtmp; mtmp = mtmp->nmon)
+        if (!DEADMONSTER(mtmp) && distu(mtmp->mx, mtmp->my) <= maxd2
+            && M_AP_TYPE(mtmp) != M_AP_FURNITURE
+            && M_AP_TYPE(mtmp) != M_AP_OBJECT && !mtmp->mpeaceful
+            && !mtmp->mtame
+            && (!is_hider(mtmp->data) || !mtmp->mundetected)
+            && !noattacks(mtmp->data) && mtmp->mcanmove && !mtmp->msleeping
+            && (canseemon(mtmp) || (sensemon(mtmp) && couldsee(mtmp->mx, mtmp->my))))
+            return TRUE;
+
+    return FALSE;
+}
+#endif
+
 void
 moveloop(resuming)
 boolean resuming;
@@ -389,10 +410,12 @@ boolean resuming;
 #ifdef VOICE_ENABLED
             /* Output pending engraving messages after bot() completes */
             if (pending_engraving_message == 1) {
-                pline("You feel safer.");
+                if (allmain_engraving_threat_nearby())
+                    pline("You feel safer.");
                 pending_engraving_message = 0;
             } else if (pending_engraving_message == 2) {
-                pline("You feel vulnerable.");
+                if (allmain_engraving_threat_nearby())
+                    pline("You feel vulnerable.");
                 pending_engraving_message = 0;
             }
 #endif /* VOICE_ENABLED */

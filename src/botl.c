@@ -14,6 +14,25 @@
 #include <limits.h>
 #endif
 
+STATIC_OVL boolean
+botl_engraving_threat_nearby()
+{
+    struct monst *mtmp;
+    int maxd2 = (BOLT_LIM + 1) * (BOLT_LIM + 1);
+
+    for (mtmp = fmon; mtmp; mtmp = mtmp->nmon)
+        if (!DEADMONSTER(mtmp) && distu(mtmp->mx, mtmp->my) <= maxd2
+            && M_AP_TYPE(mtmp) != M_AP_FURNITURE
+            && M_AP_TYPE(mtmp) != M_AP_OBJECT && !mtmp->mpeaceful
+            && !mtmp->mtame
+            && (!is_hider(mtmp->data) || !mtmp->mundetected)
+            && !noattacks(mtmp->data) && mtmp->mcanmove && !mtmp->msleeping
+            && (canseemon(mtmp) || (sensemon(mtmp) && couldsee(mtmp->mx, mtmp->my))))
+            return TRUE;
+
+    return FALSE;
+}
+
 int g_has_spoken_elbereth = 0;
 int g_has_spoken_no_elbereth = 0;
 int last_engraving_state = -1; /* -1: none, 0: Elbereth, 1: other */
@@ -839,13 +858,15 @@ bot_via_windowport()
         if (iflags.window_inited && state != last_engraving_state) {
             /* Entering or creating Elbereth */
             if (state == 0) {
-                pending_engraving_message = 1; /* safer */
+                pending_engraving_message =
+                    botl_engraving_threat_nearby() ? 1 : 0;
                 g_has_spoken_elbereth = 1;
                 g_has_spoken_no_elbereth = 0;
             }
             /* Leaving Elbereth or Elbereth eroded */
             else if (last_engraving_state == 0) {
-                pending_engraving_message = 2; /* vulnerable */
+                pending_engraving_message =
+                    botl_engraving_threat_nearby() ? 2 : 0;
                 g_has_spoken_elbereth = 0;
                 g_has_spoken_no_elbereth = 1;
             }
