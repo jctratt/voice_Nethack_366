@@ -1787,6 +1787,12 @@ dosacrifice()
                     ? "see crabgrass at your %s.  A funny thing in a dungeon."
                             : "glimpse a four-leaf clover at your %s.",
                         makeplural(body_part(FOOT)));
+
+                /* luck has changed, refresh inventory display (especially
+                   for perm_invent/curses) even though contents didn't
+                   really change; this mirrors other luck-affecting
+                   operations that call update_inventory() */
+                update_inventory();
             }
         }
     }
