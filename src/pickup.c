@@ -1018,6 +1018,7 @@ boolean FDECL((*allow), (OBJ_P)); /* allow function */
     winid win;
     struct obj *curr, *last, fake_hero_object, *olist = *olist_p;
     char *pack;
+    char *menuprompt = 0;
     anything any;
     boolean printed_type_name, first,
             sorted = (qflags & INVORDER_SORT) != 0,
@@ -1094,23 +1095,19 @@ boolean FDECL((*allow), (OBJ_P)); /* allow function */
        away.  Only do this for the put-in / take-out dialogs that the
        user specifically requested, leaving the old behaviour intact.
      */
-    char promptbuf[QBUFSZ];
     const char *prompt = qstr;
 
     start_menu(win);
     if (qstr && (strncmp(qstr, "Put in", 6) == 0 ||
                  strncmp(qstr, "Take out", 8) == 0)) {
         char invheading[QBUFSZ];
+        size_t promptlen;
+
         compute_invheader(invheading);
-        Sprintf(promptbuf, "%s\n%s", qstr, invheading);
-        prompt = promptbuf;
-        /* preserve the previous behaviour of inserting a nonselectable
-           menu item as well; it doesn't hurt and provides redundancy. */
-        {
-            anything any2 = zeroany;
-            add_menu(win, NO_GLYPH, &any2, 0, 0, ATR_BOLD,
-                     invheading, MENU_UNSELECTED);
-        }
+        promptlen = strlen(qstr) + strlen(invheading) + 2;
+        menuprompt = (char *) alloc(promptlen);
+        Sprintf(menuprompt, "%s\n%s", qstr, invheading);
+        prompt = menuprompt;
     }
     any = zeroany;
     /*
@@ -1260,6 +1257,8 @@ boolean FDECL((*allow), (OBJ_P)); /* allow function */
     }
 
     end_menu(win, prompt);
+    if (menuprompt)
+        free((genericptr_t) menuprompt);
     n = select_menu(win, how, pick_list);
     destroy_nhwindow(win);
 
