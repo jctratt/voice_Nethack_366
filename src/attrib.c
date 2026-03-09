@@ -349,6 +349,11 @@ register schar n;
         u.uluck = LUCKMIN;
     if (u.uluck > 0 && u.uluck > LUCKMAX)
         u.uluck = LUCKMAX;
+
+    /* some inventory elements (particularly with perm_invent or curses)
+       are sensitive to current luck; make sure curses ports redraw when
+       luck changes even if the pack contents didn’t */
+    update_inventory();
 }
 
 int
