@@ -9,6 +9,14 @@
 
 extern boolean notonhead;
 
+#define PET_MELEE_OK 0
+#define PET_MELEE_INTIMIDATED 1
+#define PET_MELEE_FLOATING_EYE 2
+#define PET_MELEE_GELATINOUS_CUBE 3
+#define PET_MELEE_FATAL_PASSIVE 4
+#define PET_MELEE_PEACEFUL_TARGET 5
+#define PET_MELEE_PETRIFYING_TARGET 6
+
 STATIC_DCL boolean FDECL(dog_hunger, (struct monst *, struct edog *));
 STATIC_DCL int FDECL(dog_invent, (struct monst *, struct edog *, int));
 STATIC_DCL int FDECL(dog_goal, (struct monst *, struct edog *, int, int, int));
@@ -21,8 +29,12 @@ STATIC_DCL struct monst *FDECL(best_player_threat,
                                (struct monst *, int, int, int));
 STATIC_DCL long FDECL(score_player_threat,
                       (struct monst *, struct monst *, int, int, int));
+STATIC_DCL int FDECL(pet_melee_refusal_reason,
+                     (struct monst *, struct monst *));
 STATIC_DCL boolean FDECL(pet_safe_melee_target,
                          (struct monst *, struct monst *));
+STATIC_DCL void FDECL(maybe_report_pet_intimidation,
+                      (struct monst *, struct monst *, int));
 STATIC_DCL boolean FDECL(can_reach_location, (struct monst *, XCHAR_P,
                                               XCHAR_P, XCHAR_P, XCHAR_P));
 STATIC_DCL boolean FDECL(could_reach_item, (struct monst *, XCHAR_P, XCHAR_P));
@@ -1374,27 +1386,108 @@ int ox, oy, radius;
     return best_targ;
 }
 
+STATIC_OVL int
+pet_melee_refusal_reason(mtmp, mtmp2)
+struct monst *mtmp, *mtmp2;
+{
+    if (!mtmp || !mtmp2)
+        return PET_MELEE_FATAL_PASSIVE;
+
+    if ((int) mtmp2->m_lev >= (int) mtmp->m_lev + 2)
+        return PET_MELEE_INTIMIDATED;
+
+    if (mtmp2->data == &mons[PM_FLOATING_EYE] && rn2(10)
+        && mtmp->mcansee && haseyes(mtmp->data) && mtmp2->mcansee
+        && (perceives(mtmp->data) || !mtmp2->minvis))
+        return PET_MELEE_FLOATING_EYE;
+
+    if (mtmp2->data == &mons[PM_GELATINOUS_CUBE] && rn2(10))
+        return PET_MELEE_GELATINOUS_CUBE;
+
+    if (max_passive_dmg(mtmp2, mtmp) >= mtmp->mhp)
+        return PET_MELEE_FATAL_PASSIVE;
+
+    if ((mtmp->mhp * 4 < mtmp->mhpmax
+         || mtmp2->data->msound == MS_GUARDIAN
+         || mtmp2->data->msound == MS_LEADER) && mtmp2->mpeaceful
+        && !Conflict && !mtmp2->marked_for_pet)
+        return PET_MELEE_PEACEFUL_TARGET;
+
+    if (touch_petrifies(mtmp2->data) && !resists_ston(mtmp))
+        return PET_MELEE_PETRIFYING_TARGET;
+
+    return PET_MELEE_OK;
+}
+
+STATIC_OVL void
+maybe_report_pet_intimidation(mtmp, mtmp2, refusal_reason)
+struct monst *mtmp, *mtmp2;
+int refusal_reason;
+{
+    enum { PET_INTIMIDATION_CACHE = 8 };
+    static unsigned recent_pet_ids[PET_INTIMIDATION_CACHE];
+    static unsigned recent_target_ids[PET_INTIMIDATION_CACHE];
+    static long recent_turns[PET_INTIMIDATION_CACHE];
+    static int next_slot = 0;
+    static long last_msg_moves = -1L;
+    static char last_msg[BUFSZ];
+    char msgbuf[BUFSZ];
+    int slot, empty_slot = -1;
+
+    if (refusal_reason != PET_MELEE_INTIMIDATED || !mtmp || !mtmp2)
+        return;
+
+    if (!mtmp->mtame || mtmp2->mpeaceful)
+        return;
+
+    if (!(canseemon(mtmp) || canspotmon(mtmp2)))
+        return;
+
+    for (slot = 0; slot < PET_INTIMIDATION_CACHE; ++slot) {
+        if (!recent_turns[slot] && empty_slot < 0)
+            empty_slot = slot;
+        if (recent_pet_ids[slot] == mtmp->m_id
+            && recent_target_ids[slot] == mtmp2->m_id) {
+            if (monstermoves - recent_turns[slot] < 25L)
+                return;
+            recent_turns[slot] = monstermoves;
+            Sprintf(msgbuf, "%s seems intimidated by %s.", Monnam(mtmp),
+                    mon_nam(mtmp2));
+            if (last_msg_moves == moves && !strcmp(last_msg, msgbuf))
+                return;
+            last_msg_moves = moves;
+            Strcpy(last_msg, msgbuf);
+            pline("%s", msgbuf);
+            return;
+        }
+    }
+
+    if (empty_slot >= 0)
+        slot = empty_slot;
+    else {
+        slot = next_slot;
+        next_slot = (next_slot + 1) % PET_INTIMIDATION_CACHE;
+    }
+
+    recent_pet_ids[slot] = mtmp->m_id;
+    recent_target_ids[slot] = mtmp2->m_id;
+    recent_turns[slot] = monstermoves;
+
+    Sprintf(msgbuf, "%s seems intimidated by %s.", Monnam(mtmp),
+            mon_nam(mtmp2));
+    if (last_msg_moves == moves && !strcmp(last_msg, msgbuf))
+        return;
+    last_msg_moves = moves;
+    Strcpy(last_msg, msgbuf);
+    pline("%s", msgbuf);
+}
+
 STATIC_OVL boolean
 pet_safe_melee_target(mtmp, mtmp2)
 struct monst *mtmp, *mtmp2;
 {
-    if (!mtmp || !mtmp2)
-        return FALSE;
-
-    if ((int) mtmp2->m_lev >= (int) mtmp->m_lev + 2
-        || (mtmp2->data == &mons[PM_FLOATING_EYE] && rn2(10)
-            && mtmp->mcansee && haseyes(mtmp->data) && mtmp2->mcansee
-            && (perceives(mtmp->data) || !mtmp2->minvis))
-        || (mtmp2->data == &mons[PM_GELATINOUS_CUBE] && rn2(10))
-        || (max_passive_dmg(mtmp2, mtmp) >= mtmp->mhp)
-        || ((mtmp->mhp * 4 < mtmp->mhpmax
-             || mtmp2->data->msound == MS_GUARDIAN
-             || mtmp2->data->msound == MS_LEADER) && mtmp2->mpeaceful
-            && !Conflict && !mtmp2->marked_for_pet)
-        || (touch_petrifies(mtmp2->data) && !resists_ston(mtmp)))
-        return FALSE;
-
-    return TRUE;
+    return (boolean) (pet_melee_refusal_reason(mtmp, mtmp2)
+                      == PET_MELEE_OK);
 }
 
 STATIC_OVL int
@@ -1698,23 +1791,18 @@ int after; /* this is extra fast monster movement */
      if (!pursue_mon)
           pursue_mon = best_player_threat(mtmp, u.ux, u.uy, PET_TARGET_RADIUS);
 
-    if (!pursue_mon) {
-        /* For tame pets, avoid selecting pet-local targets when already
-           separated from the player; this keeps them from wandering off.
-           Non-tame monsters keep the old fallback behavior. */
-        if (!mtmp->mtame || udist <= (MAX_PET_DISTANCE * MAX_PET_DISTANCE))
-            pursue_mon = best_target(mtmp); /* fallback to pet-local target */
-    }
+    if (!pursue_mon)
+        pursue_mon = best_target(mtmp); /* fallback to pet-local target */
 
     if (pursue_mon && mtmp->mtame) {
         int pthreat = dist2(pursue_mon->mx, pursue_mon->my, u.ux, u.uy);
         boolean marked_target = (boolean) pursue_mon->marked_for_pet;
-        /* Only let tame pets pursue targets that are actually near the
-           player.  Otherwise, prioritize rejoining the player. */
-        if (!marked_target && pthreat > 16)
-            pursue_mon = (struct monst *) 0;
-        else if (marked_target
-                 && pthreat > PET_TARGET_RADIUS * PET_TARGET_RADIUS)
+        /* Marked targets may extend pursuit radius, but ordinary tame-pet
+           combat should only be constrained by player proximity when the pet
+           is actually in hard rejoin mode.  Otherwise, pets wind up hugging
+           the player instead of engaging local hostiles. */
+        if (marked_target
+            && pthreat > PET_TARGET_RADIUS * PET_TARGET_RADIUS)
             pursue_mon = (struct monst *) 0;
         /* When actively returning to the player, be more selective:
            only pursue targets very close to the player (immediate
@@ -1733,26 +1821,30 @@ int after; /* this is extra fast monster movement */
                                             &marked_bfs_ny, (int *) 0);
 
     if (pursue_mon && pursue_mon->marked_for_pet
-        && distmin(omx, omy, pursue_mon->mx, pursue_mon->my) <= 1
-        && pet_safe_melee_target(mtmp, pursue_mon)) {
-        int mstatus;
+        && distmin(omx, omy, pursue_mon->mx, pursue_mon->my) <= 1) {
+        int refusal_reason = pet_melee_refusal_reason(mtmp, pursue_mon);
 
-        if (after)
-            return 0;
+        if (refusal_reason == PET_MELEE_OK) {
+            int mstatus;
 
-        notonhead = 0;
-        mstatus = mattackm(mtmp, pursue_mon);
-        if (mstatus & MM_AGR_DIED)
-            return 2;
-        if ((mstatus & MM_HIT) && !(mstatus & MM_DEF_DIED) && rn2(4)
-            && pursue_mon->mlstmv != monstermoves
-            && !onscary(mtmp->mx, mtmp->my, pursue_mon)
-            && monnear(pursue_mon, mtmp->mx, mtmp->my)) {
-            mstatus = mattackm(pursue_mon, mtmp);
-            if (mstatus & MM_DEF_DIED)
+            if (after)
+                return 0;
+
+            notonhead = 0;
+            mstatus = mattackm(mtmp, pursue_mon);
+            if (mstatus & MM_AGR_DIED)
                 return 2;
+            if ((mstatus & MM_HIT) && !(mstatus & MM_DEF_DIED) && rn2(4)
+                && pursue_mon->mlstmv != monstermoves
+                && !onscary(mtmp->mx, mtmp->my, pursue_mon)
+                && monnear(pursue_mon, mtmp->mx, mtmp->my)) {
+                mstatus = mattackm(pursue_mon, mtmp);
+                if (mstatus & MM_DEF_DIED)
+                    return 2;
+            }
+            return 0;
         }
-        return 0;
+        maybe_report_pet_intimidation(mtmp, pursue_mon, refusal_reason);
     }
 
     appr = dog_goal(mtmp, has_edog ? edog : (struct edog *) 0, after, udist,
@@ -1798,12 +1890,13 @@ int after; /* this is extra fast monster movement */
         int pmx = pursue_mon->mx, pmy = pursue_mon->my;
         int maxd2 = MAX_PET_DISTANCE * MAX_PET_DISTANCE;
 
-          /* urgent interpose: if target is near player, prefer an adjacent
-              square beside the player on the target side; only force an
-              immediate move when that square is adjacent to the pet. */
+        /* urgent interpose: only for immediate threats near the player,
+           prefer an adjacent square beside the player on the target side;
+           only force an immediate move when that square is adjacent to
+           the pet. */
         {
             int tpdist2 = dist2(pursue_mon->mx, pursue_mon->my, u.ux, u.uy);
-            if (tpdist2 <= (PET_TARGET_RADIUS * PET_TARGET_RADIUS)
+            if (tpdist2 <= 4
                 && !pursue_mon->mflee) {
                 int vx = sgn(pursue_mon->mx - u.ux);
                 int vy = sgn(pursue_mon->my - u.uy);
@@ -2010,9 +2103,12 @@ int after; /* this is extra fast monster movement */
         if ((info[i] & ALLOW_M) && MON_AT(nx, ny)) {
             int mstatus;
             register struct monst *mtmp2 = m_at(nx, ny);
+            int refusal_reason = pet_melee_refusal_reason(mtmp, mtmp2);
 
-            if (!pet_safe_melee_target(mtmp, mtmp2))
+            if (refusal_reason != PET_MELEE_OK) {
+                maybe_report_pet_intimidation(mtmp, mtmp2, refusal_reason);
                 continue;
+            }
 
             if (after)
                 return 0; /* hit only once each move */

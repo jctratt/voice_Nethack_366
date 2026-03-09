@@ -81,6 +81,8 @@ Commits since `README.md` was last updated (commit c012979 — 2025-03-05):
   - When the player is standing on `Elbereth`, monsters that ignore that protection are boosted in the same threat ranking, so pets prioritize the hostiles the engraving does not keep off you.
   - Add `#name` → `k` → mark monster for pets. Marked hostile monsters receive a strong priority boost in tame-pet targeting so you can explicitly direct pets toward a chosen enemy.
   - Marked hostile pursuit now uses a dedicated BFS route step in `src/dogmove.c`, mirroring hard player-rejoin pathing so pets commit through doors/corners instead of only drifting toward the marked target by local scoring.
+  - Follow-up fix: tame pets were over-constrained into staying beside the player because ordinary local-hostile fallback was suppressed outside `MAX_PET_DISTANCE`, non-marked pursuit was rejected unless the hostile was very close to the player, and the "urgent interpose" branch mistakenly triggered for anything within `PET_TARGET_RADIUS` instead of only immediate threats. Those constraints are now limited to true hard-rejoin/immediate-threat cases so pets resume normal combat behavior while still catching up when genuinely behind.
+  - Added combat feedback when a tame pet refuses a visible non-peaceful monster for the "too strong" case: `"%s seems intimidated by %s."` The message is deduped within the same player turn and throttled per pet/target pair.
   - This restores the intended behavior for `"<pet> <noise> at <monster>"` and `"...won't pass through"` cases, where the pet should key off the monster most dangerous from the player's perspective.
   - Files: `include/monst.h`, `src/do_name.c`, `src/dogmove.c`, `test_pet_player_threat.c`, `CHANGELOG.md`.
 
