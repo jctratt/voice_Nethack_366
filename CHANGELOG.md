@@ -2,6 +2,16 @@
 
 Commits since `README.md` was last updated (commit c012979 — 2025-03-05):
 
+- UNCOMMITTED 2026-03-11 Jeff Tratt — DEV: add `invweight` smoke-test helper and preserve workspace git helper
+  - Add `test_invweight.sh`, a lightweight source-based smoke test for the
+    `OPTIONS=invweight` display format. It writes scratch data under `tmp/`
+    and verifies that the expected weight-format strings are still present in
+    the inventory and pickup code paths.
+  - Preserve the workspace-level auto-approval entry for a specific
+    read-only `git --no-pager blame ... src/dogmove.c` command in
+    `voice_Nethack_366.code-workspace`, keeping the local VS Code workflow
+    in sync with the current repository state.
+
 - UNCOMMITTED 2026-03-08 Jeff Tratt — FIX: curses bottom-row map rendering and shockwave restore corruption
   - Fix a bordered-curses off-by-one in `win/curses/curswins.c:curses_putch()`: visibility was being checked after converting map coordinates into border-adjusted screen coordinates, so ordinary incremental redraws could skip the bottom map row even when the map fully fit the terminal.
   - This manifested as missing bottom walls and shockwave effects apparently "blanking" the bottom line; resizing or triggering a full redraw could temporarily make the row reappear.
