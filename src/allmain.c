@@ -405,6 +405,18 @@ boolean resuming;
             if (vision_full_recalc)
                 vision_recalc(0); /* vision! */
         }
+        /* if visibility of the hero changes (e.g. turn on/off invis)
+           we need a status refresh so the tile field will be recomputed
+           even if nothing else caused context.botl to be set. */
+        {
+            static boolean last_invis = FALSE;
+            /* 'Invisible' is true when the hero is invisible and cannot see
+               herself.  That is the state where the status tile might lag. */
+            if (Invisible != last_invis) {
+                context.botl = TRUE;
+                last_invis = Invisible;
+            }
+        }
         if (context.botl || context.botlx) {
             bot();
 #ifdef VOICE_ENABLED

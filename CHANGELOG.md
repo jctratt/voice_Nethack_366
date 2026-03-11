@@ -145,6 +145,18 @@ Commits since `README.md` was last updated (commit c012979 — 2025-03-05):
     normal and permanent inventories and plays nicely with `OPTIONS=invweight`.
   - Added smoke test script verifying the level string and updated
     documentation as appropriate.
+
+- UNCOMMITTED 2026-03-11 Jeff Tratt — Fix BL_TILE engraving refresh for invisible hero
+  - `BL_TILE` now reports `Elbereth` or `Engrave` when the hero is standing
+    on an engraving, so tile-based status highlighting can key off the
+    engraving state rather than only the terrain glyph.
+  - The main loop now requests a status refresh when the hero enters or
+    leaves the true `Invisible` state, preventing the tile field from
+    lagging until some unrelated status update occurs.
+  - Engraving creation, erosion, and deletion now force a redraw of the
+    affected map square via `newsym_force(x, y)`, fixing the case where an
+    invisible hero would not see the engraving mark update until another
+    creature crossed the tile.
 - 8a2cde9 2026-02-04 Jeff Tratt — priceid: show alternate candidate prices; move category selection earlier; add Ctrl-B/Ctrl-S toggle and Ctrl-G category jump; credit dizzy (Aubrey Raech/dizzyprice)
 - 935e871 2026-02-04 Jeff Tratt — docall: add appearance-based short prefill and labeled shop L/H hints; use shop_get_cost/shop_set_cost
 - ff3ecbb 2026-02-03 Jeff Tratt — Reapply WIP tile options and resolve BL_TILE merge conflicts

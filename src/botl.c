@@ -759,19 +759,32 @@ bot_via_windowport()
        Honor flags.tile_description: when FALSE show only the glyph symbol.
     */
     {
-        int glyph = back_to_glyph(u.ux, u.uy);
         char tile_name[BUFSZ] = "";
-
-        if (glyph_is_cmap(glyph)) {
-            int cmap_idx = glyph_to_cmap(glyph);
-            if (cmap_idx >= 0 && cmap_idx < MAXPCHARS) {
-                const char *desc = defsyms[cmap_idx].explanation;
-                uchar sym = defsyms[cmap_idx].sym;
-                if (flags.tile_description) {
-                    if (desc && *desc)
-                        Sprintf(tile_name, "%c %s", (int) sym, desc);
-                } else {
-                    Sprintf(tile_name, "%c", (int) sym);
+        /* if there's an engraving we want to display it instead of the
+           normal glyph description; keeps the new "tile" field useful
+           for highlighting Elbereth/engrave and avoids confusing floor
+           messages with an ordinary tile name */
+        {
+            struct engr *ep = engr_at(u.ux, u.uy);
+            if (ep && ep->engr_txt[0]) {
+                if (!strcmpi(ep->engr_txt, "Elbereth"))
+                    Strcpy(tile_name, "Elbereth");
+                else
+                    Strcpy(tile_name, "Engrave");
+            } else {
+                int glyph = back_to_glyph(u.ux, u.uy);
+                if (glyph_is_cmap(glyph)) {
+                    int cmap_idx = glyph_to_cmap(glyph);
+                    if (cmap_idx >= 0 && cmap_idx < MAXPCHARS) {
+                        const char *desc = defsyms[cmap_idx].explanation;
+                        uchar sym = defsyms[cmap_idx].sym;
+                        if (flags.tile_description) {
+                            if (desc && *desc)
+                                Sprintf(tile_name, "%c %s", (int) sym, desc);
+                        } else {
+                            Sprintf(tile_name, "%c", (int) sym);
+                        }
+                    }
                 }
             }
         }

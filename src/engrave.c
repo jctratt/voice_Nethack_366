@@ -466,6 +466,8 @@ boolean magical;
                     last_engraving_text[0] = '\0';
                 }
                 del_engr(ep);
+            } else {
+                newsym_force(x, y);
             }
         }
     }
@@ -572,6 +574,7 @@ xchar e_type;
     ep->engr_time = e_time;
     ep->engr_type = e_type > 0 ? e_type : rnd(N_ENGRAVE - 1);
     ep->engr_lth = smem;
+    newsym_force(x, y);
 }
 
 /* delete any engraving at location <x,y> */
@@ -1537,6 +1540,8 @@ void
 del_engr(ep)
 register struct engr *ep;
 {
+    int x = ep->engr_x, y = ep->engr_y;
+
     if (ep == head_engr) {
         head_engr = ep->nxt_engr;
     } else {
@@ -1553,6 +1558,7 @@ register struct engr *ep;
         }
     }
     dealloc_engr(ep);
+    newsym_force(x, y);
 }
 
 /* randomly relocate an engraving */
