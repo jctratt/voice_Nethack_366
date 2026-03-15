@@ -2,6 +2,12 @@
 
 Commits since `README.md` was last updated (commit c012979 — 2025-03-05):
 
+- UNCOMMITTED 2026-03-15 Jeff Tratt — TWEAK: throw/fire multishot keeps classic variance but becomes skill-biased
+  - Adjust `src/dothrow.c:throw_obj()` so ordinary `t`/`f` multishot still uses the classic proficient bonus path (`++` for skilled/expert potential) instead of converting weapon skill directly into guaranteed extra shots.
+  - Add a normalized skill floor for the final multishot roll (basic..grand master => 1..5), but only enforce that floor 90% of the time when no explicit count prefix was supplied. This preserves occasional "bad" low rolls while making under-skill outcomes much rarer in normal play.
+  - Explicit count prefixes still win (`1f` stays 1), and the existing slow-crossbow penalty still bypasses the floor so that low-strength crossbow fire remains intentionally swingy.
+  - Why: the prior hard-floor version overcorrected by making expert fire effectively guaranteed at 3+, which removed too much roguelike variance. The new behavior keeps randomness, avoids the old overproduction of 1-shot results, and still allows rare disappointing volleys.
+
 - UNCOMMITTED 2026-03-11 Jeff Tratt — DEV: add `invweight` smoke-test helper and preserve workspace git helper
   - Add `test_invweight.sh`, a lightweight source-based smoke test for the
     `OPTIONS=invweight` display format. It writes scratch data under `tmp/`

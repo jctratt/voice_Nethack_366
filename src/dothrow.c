@@ -85,10 +85,10 @@ struct obj *obj;
 int shotlimit;
 {
     struct obj *otmp;
-    int multishot;
+    int multishot, skill_rating, multishot_floor;
     schar skill;
     long wep_mask;
-    boolean twoweap, weakmultishot;
+    boolean twoweap, weakmultishot, slowcrossbow;
 
     /* ask "in what direction?" */
     if (!getdir((char *) 0)) {
@@ -153,6 +153,7 @@ int shotlimit;
      * (potential volley of up to N missiles; default for N is 1)
      */
     multishot = 1;
+    multishot_floor = 1;
     skill = objects[obj->otyp].oc_skill;
     if (obj->quan > 1L /* no point checking if there's only 1 */
         /* ammo requires corresponding launcher be wielded */
@@ -167,11 +168,23 @@ int shotlimit;
                          /* poor dexterity also inhibits multishot */
                          || Fumbling || ACURR(A_DEX) <= 6);
 
+        /* Track a normalized skill floor (basic..grand master => 1..5)
+           for the final volley roll, but keep the classic proficient
+           multishot bonus path so higher skill still improves potential
+           rather than guaranteeing it outright. */
+        skill_rating = P_SKILL(weapon_type(obj));
+        if (skill_rating >= P_BASIC) {
+            multishot_floor = skill_rating - P_UNSKILLED;
+            if (weakmultishot) {
+                if (skill_rating < P_EXPERT)
+                    multishot_floor = 1;
+            }
+        }
         /* Bonus if the player is proficient in this weapon... */
-        switch (P_SKILL(weapon_type(obj))) {
+        switch (skill_rating) {
         case P_EXPERT:
             multishot++;
-        /*FALLTHRU*/
+            /*FALLTHRU*/
         case P_SKILLED:
             if (!weakmultishot)
                 multishot++;
@@ -238,12 +251,16 @@ int shotlimit;
         /* crossbows are slow to load and probably shouldn't allow multiple
            shots at all, but that would result in players never using them;
            instead, high strength is necessary to load and shoot quickly */
-        if (multishot > 1 && skill == -P_CROSSBOW
+        slowcrossbow = (boolean) (multishot > 1 && skill == -P_CROSSBOW
             && ammo_and_launcher(obj, uwep)
-            && (int) ACURRSTR < (Race_if(PM_GNOME) ? 16 : 18))
+            && (int) ACURRSTR < (Race_if(PM_GNOME) ? 16 : 18));
+        if (slowcrossbow)
             multishot = rnd(multishot);
 
         multishot = rnd(multishot);
+        if (!shotlimit && !slowcrossbow && multishot < multishot_floor
+            && rn2(10))
+            multishot = multishot_floor;
         if ((long) multishot > obj->quan)
             multishot = (int) obj->quan;
         if (shotlimit > 0 && multishot > shotlimit)

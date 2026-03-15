@@ -29,6 +29,8 @@ A modified version of NetHack 3.6.6 with text-to-speech capabilities using espea
 
   When `quiverorder_invlet` is set, the game iterates the listed inventory letters in order and selects the *first available* quiverable item — the invlet list has absolute precedence (not just a scoring hint). Non-quiverable or excluded letters are skipped automatically.
 
+- **Skill-biased multishot variance**: throw/fire (`t`/`f`) keeps randomized multishot, but weapon skill now biases the final volley away from disappointing low rolls without removing variance outright. In normal use, a below-skill final roll is only allowed about 10% of the time; explicit count prefixes like `1f` still force the requested count, and low-strength crossbows still retain their separate penalty behavior.
+
 - **Showlines (sight-lines helper)** 🟡
   - Adds an extended command `#showlines` (also bound by default to a Ctrl key) that draws transient sight/ray lines out from the player to help judge line-of-sight and zap direction.
   - Adds an extended command `#showboomerang` (no default separate key binding) that draws transient boomerang trajectories for the 8 directions, using the same visibility and stopping rules as `#showlines`.
