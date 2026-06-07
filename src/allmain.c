@@ -646,6 +646,12 @@ display_gamewindows()
 void
 newgame()
 {
+    /* Truncate the batch log so a fresh game starts with an empty file */
+    FILE *clear_log = (fopen)("nethack_messages.txt", "w");
+    if (clear_log) {
+        fclose(clear_log);
+    }
+    /* Truncate the batch log so a fresh game starts with an empty file */
     int i;
 
 #ifdef MFLOPPY

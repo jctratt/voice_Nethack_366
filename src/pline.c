@@ -258,7 +258,11 @@ VA_DECL(const char *, line)
         vision_recalc(0);
     if (u.ux)
         flush_screen(1); /* %% */
-
+/* --- CALL THE LOGGING FUNCTION --- */
+    if (line && *line) {
+        log_message_batched(line, 0); /* 0 means normal operation */
+    }
+    /* --------------------------------- */
     putmesg(line);
 
 #ifdef VOICE_ENABLED
@@ -882,4 +886,44 @@ sanitize_message(const char *src, char *dest)
 }
 #endif /* VOICE_ENABLED */
 
+/* Global wrapper so other files can force a flush on exit */
+void log_message_batched(const char *line, int force_flush)
+{
+    #define BATCH_LIMIT 100
+    #define BUFFER_SIZE (BATCH_LIMIT * 256)
+    static char batch_buffer[BUFFER_SIZE] = {0};
+    static int message_count = 0;
+
+    size_t line_len = (line && *line) ? strlen(line) : 0;
+
+    /* 1. FLUSH FIRST IF NECESSARY */
+    boolean buffer_will_overflow = (line_len > 0) && 
+        ((strlen(batch_buffer) + line_len + 2) >= BUFFER_SIZE);
+
+    if (message_count > 0 && (message_count >= BATCH_LIMIT || buffer_will_overflow || force_flush)) {
+        char filename[256];
+        
+        /* Fallback to "nethack" if plname isn't initialized yet during early boot */
+        if (plname && *plname) {
+            snprintf(filename, sizeof(filename), "%s_messages.txt", plname);
+        } else {
+            strncpy(filename, "nethack_messages.txt", sizeof(filename));
+        }
+
+        FILE *logfile = (fopen)(filename, "a");
+        if (logfile) {
+            fprintf(logfile, "%s", batch_buffer);
+            fclose(logfile);
+        }
+        batch_buffer[0] = '\0';
+        message_count = 0;
+    }
+
+    /* 2. APPEND SECOND */
+    if (line_len > 0) {
+        strcat(batch_buffer, line);
+        strcat(batch_buffer, "\n");
+        message_count++;
+    }
+}
 /*pline.c*/

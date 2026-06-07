@@ -623,6 +623,8 @@ clearlocks()
             delete_levelfile(x); /* not all levels need be present */
     }
 #endif /* ?PC_LOCKING,&c */
+/* Inside your exit function */
+    log_message_batched(NULL, 1); /* 1 forces an immediate SSD flush of whatever is left */
 }
 
 #if defined(SELECTSAVED)
