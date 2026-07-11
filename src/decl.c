@@ -9,6 +9,8 @@
 int NDECL((*afternmv));
 int NDECL((*occupation));
 
+int perminv_last_shown_count = 0; /* # entries curses drew into persistent inv window */
+int inv_popup_resume_hint = -1;   /* -1 = no hint; else, skip this many entries on next inv popup */
 /* from xxxmain.c */
 const char *hname = 0; /* name of the game (argv[0] of main) */
 int hackpid = 0;       /* current process id */

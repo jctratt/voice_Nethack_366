@@ -44,8 +44,9 @@ curses_update_inv(void)
 
     /* Clear the window as it is at the moment. */
     werase(win);
-
+    perminv_last_shown_count = 0;
     display_inventory(NULL, FALSE);
+    /* fprintf(stderr, "[DBG] after curses_update_inv: perminv_last_shown_count=%d\n", perminv_last_shown_count); */
 
     if (border)
         box(win, 0, 0);
@@ -85,6 +86,7 @@ curses_add_inv(int y,
      */
     if (y - border >= height) /* 'height' is already -2 for Top+Btm borders */
         return;
+    perminv_last_shown_count++;
     available_width = width; /* 'width' also already -2 for Lft+Rgt borders */
 
     wmove(win, y, x);

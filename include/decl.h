@@ -13,6 +13,8 @@ E int NDECL((*afternmv));
 
 E const char *hname;
 E int hackpid;
+E int perminv_last_shown_count;
+E int inv_popup_resume_hint;
 #if defined(UNIX) || defined(VMS)
 E int locknum;
 #endif

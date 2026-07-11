@@ -2816,7 +2816,10 @@ if (savequan)
 int
 ddoinv()
 {
+    inv_popup_resume_hint = perminv_last_shown_count;
+    /* fprintf(stderr, "[DBG] ddoinv: hint set to %d\n", inv_popup_resume_hint); */
     (void) display_inventory((char *) 0, FALSE);
+    inv_popup_resume_hint = -1;
     return 0;
 }
 

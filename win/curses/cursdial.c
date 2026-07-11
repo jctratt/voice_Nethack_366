@@ -1822,7 +1822,6 @@ curses_finalize_nhmenu(winid wid, const char *prompt)
     current_menu->prompt = curses_copy_of(prompt);
 }
 
-
 /* Display a nethack menu, and return a selection, if applicable */
 
 int
@@ -1854,6 +1853,7 @@ curses_display_nhmenu(winid wid, int how, MENU_ITEM_P ** _selected)
     while (menu_item_ptr != NULL) {
         menu_item_ptr->selected = menu_item_ptr->presel;
         menu_item_ptr = menu_item_ptr->next_item;
+
     }
 
     menu_win_size(current_menu);
@@ -2656,6 +2656,27 @@ menu_get_selections(WINDOW * win, nhmenu *menu, int how)
     boolean dismiss = FALSE;
     char search_key[BUFSZ], selectors[256];
     nhmenu_item *menu_item_ptr = menu->entries;
+
+    if (inv_popup_resume_hint >= 0) {
+    int skip = inv_popup_resume_hint;
+    int total = 0;
+    nhmenu_item *p = menu->entries;
+    nhmenu_item *q = menu->entries;
+
+    while (p && skip > 0) {
+        p = p->next_item;
+        skip--;
+    }
+    while (q) {
+        total++;
+        q = q->next_item;
+    }
+    /* fprintf(stderr, "[DBG] resume: hint=%d total_entries=%d landed_page=%d\n",
+            inv_popup_resume_hint, total, p ? p->page_num : -1); */
+    if (p)
+        curpage = p->page_num;
+    inv_popup_resume_hint = -1;
+}
 
     menu_display_page(menu, win, curpage, selectors);
 
