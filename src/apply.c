@@ -93,14 +93,45 @@ use_towel(obj)
 struct obj *obj;
 {
     boolean drying_feedback = (obj == uwep);
+    boolean have_goop = (Glib || u.ucreamed);
 
     if (!freehand()) {
         You("have no free %s!", body_part(HAND));
         return 0;
-    } else if (obj == ublindf) {
-        You("cannot use it while you're wearing it!");
-        return 0;
-    } else if (obj->cursed) {
+    }
+
+    /* Change of key behavior: applying a towel now primarily toggles
+     * wearing it over your face/eyes, the same as a blindfold, since
+     * that's the far more common use (forcing blindness for telepathy,
+     * training, etc. when no real blindfold is at hand).  Wiping your
+     * face/hands clean is demoted to a secondary action, reached via a
+     * y/n prompt when there's actually something to wipe. */
+    if (obj == ublindf) {
+        /* already wearing this towel over your face -- take it off */
+        if (cursed(obj))
+            return 1; /* costs a turn, matches normal takeoff behavior */
+        Blindf_off(obj);
+        if (is_wet_towel(obj))
+            dry_a_towel(obj, -1, drying_feedback);
+        return 1;
+    } else if (!ublindf) {
+        /* nothing else is covering your eyes; put the towel on unless
+         * the player would rather wipe up gunk instead */
+        if (have_goop) {
+            char choice = ynq("Wipe off the gunk instead of covering your face?");
+            if (choice == 'q') return 0;  /* Cancel the action entirely, costs 0 turns */
+            if (choice == 'y') goto do_wipe;
+        }
+        Blindf_on(obj);
+        if (is_wet_towel(obj))
+            dry_a_towel(obj, -1, drying_feedback);
+        return 1;
+    }
+    /* else: some other eyewear (blindfold/lenses) is already worn, so
+       putting the towel on isn't an option -- fall through to wiping */
+
+ do_wipe:
+    if (obj->cursed) {
         long old;
 
         switch (rn2(3)) {

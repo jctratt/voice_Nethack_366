@@ -268,8 +268,6 @@ STATIC_DCL boolean FDECL(pet_bfs_to_coord,
                           int *));
 STATIC_DCL boolean FDECL(pet_bfs_to_player,
                          (struct monst *, xchar *, xchar *, int *));
-STATIC_DCL boolean FDECL(pet_step_passable,
-                         (struct monst *, xchar, xchar, xchar, xchar));
 
 STATIC_PTR void FDECL(wantdoor, (int, int, genericptr_t));
 
@@ -295,101 +293,6 @@ xchar ox, oy, nx, ny;
 
     return (boolean) (pet_intact_doorway(ox, oy)
                       || pet_intact_doorway(nx, ny));
-}
-
-/*
- * pet_step_passable: validate a single proposed step from (ox,oy) to
- * (nx,ny) using the same passability rules as pet_bfs_to_player's
- * neighbor test (walls/rock, closed & locked doors, pools, lava,
- * boulders, and diagonal squeeze/doorway checks).
- *
- * This exists because some navigation shortcuts in dog_move() (e.g.
- * the immediate "interpose" jump) pick a destination square directly
- * without running it through mfndpos()/the BFS pathfinder.  Without
- * this check, those shortcuts could move a pet through a closed or
- * locked door, or through a wall corner, because being "adjacent" in
- * grid terms does not by itself mean the step is legal.
- */
-STATIC_OVL boolean
-pet_step_passable(mon, ox, oy, nx, ny)
-struct monst *mon;
-xchar ox, oy, nx, ny;
-{
-    struct permonst *mdat = mon->data;
-    boolean can_open  = (!nohands(mdat) && !verysmall(mdat));
-    boolean can_phase = passes_walls(mdat);
-    boolean can_ooze  = amorphous(mdat);
-    struct rm *door_lev;
-    int rtyp, htyp, vtyp;
-    int ddx, ddy;
-
-    if (!isok(nx, ny))
-        return FALSE;
-    if (nx == ox && ny == oy)
-        return TRUE;
-
-    ddx = sgn((int) nx - (int) ox);
-    ddy = sgn((int) ny - (int) oy);
-
-    rtyp = levl[nx][ny].typ;
-
-    /* --- passability check (monster perspective) --- */
-    if (IS_ROCK(rtyp)) {
-        if (can_phase && may_passwall(nx, ny))
-            ; /* ok */
-        else if (rtyp == IRONBARS && passes_bars(mdat))
-            ; /* ok */
-        else
-            return FALSE; /* impassable */
-    } else if (IS_DOOR(rtyp) || rtyp == SDOOR) {
-        if (levl[nx][ny].doormask & (D_CLOSED | D_LOCKED)) {
-            if (!can_phase && !can_ooze && !can_open)
-                return FALSE; /* can't deal with closed/locked door */
-        }
-        if (pet_illegal_door_diagonal(ox, oy, nx, ny))
-            return FALSE;
-    }
-
-    /* pool / lava */
-    if (is_pool(nx, ny) && !is_swimmer(mdat)
-        && !is_flyer(mdat) && !is_floater(mdat)
-        && !is_clinger(mdat))
-        return FALSE;
-    if (is_lava(nx, ny) && !likes_lava(mdat)
-        && !is_flyer(mdat) && !is_floater(mdat)
-        && !is_clinger(mdat))
-        return FALSE;
-
-    /* boulder */
-    if (sobj_at(BOULDER, nx, ny) && !throws_rocks(mdat))
-        return FALSE;
-
-    /* diagonal tight-squeeze */
-    if (ddx && ddy
-        && bad_rock(mdat, ox, ny)
-        && bad_rock(mdat, nx, oy))
-        return FALSE;
-
-    /* diagonal door check: can't move diagonally through a door unless
-       it's completely gone (NODOOR or BROKEN).  Check both adjacent
-       squares that the diagonal move passes through, including secret
-       doors. */
-    if (ddx && ddy) {
-        htyp = levl[ox + ddx][oy].typ;
-        if (IS_DOOR(htyp) || htyp == SDOOR) {
-            door_lev = &levl[ox + ddx][oy];
-            if (door_lev->doormask != D_NODOOR && door_lev->doormask != D_BROKEN)
-                return FALSE; /* door blocks diagonal */
-        }
-        vtyp = levl[ox][oy + ddy].typ;
-        if (IS_DOOR(vtyp) || vtyp == SDOOR) {
-            door_lev = &levl[ox][oy + ddy];
-            if (door_lev->doormask != D_NODOOR && door_lev->doormask != D_BROKEN)
-                return FALSE; /* door blocks diagonal */
-        }
-    }
-
-    return TRUE;
 }
 
 /*
@@ -1490,21 +1393,6 @@ struct monst *mtmp, *mtmp2;
     if (!mtmp || !mtmp2)
         return PET_MELEE_FATAL_PASSIVE;
 
-    /* NEW: Custom Mimic Avoidance */
-    if (!iflags.vanilla_pet_behavior &&
-        (mtmp2->data == &mons[PM_SMALL_MIMIC] ||
-         mtmp2->data == &mons[PM_LARGE_MIMIC] ||
-         mtmp2->data == &mons[PM_GIANT_MIMIC])) {
-        /* Intimidated unless the pet is substantially stronger (e.g., +4 levels) */
-        if ((int) mtmp->m_lev < (int) mtmp2->m_lev + 4)
-            return PET_MELEE_INTIMIDATED;
-    }
-
-    if ((int) mtmp2->m_lev >= (int) mtmp->m_lev + 2)
-        return PET_MELEE_INTIMIDATED;
-
-    /* ... remainder of function ... */
-
     if ((int) mtmp2->m_lev >= (int) mtmp->m_lev + 2)
         return PET_MELEE_INTIMIDATED;
 
@@ -1518,19 +1406,6 @@ struct monst *mtmp, *mtmp2;
 
     if (max_passive_dmg(mtmp2, mtmp) >= mtmp->mhp)
         return PET_MELEE_FATAL_PASSIVE;
-
-    /* Protect important peaceful NPCs from being killed by an overeager
-       pet: quest leaders are already covered below via MS_LEADER (that
-       check predates this custom AI and mirrors stock behavior, so it
-       stays unconditional).  Shopkeepers and priests (including altar
-       priests) are not covered there, since their msound isn't
-       MS_GUARDIAN/MS_LEADER and they're often at full health.  This is
-       new custom-AI behavior, so -- like the mimic-avoidance check
-       above -- it's gated off in vanilla mode. */
-    if (!iflags.vanilla_pet_behavior
-        && (mtmp2->isshk || mtmp2->ispriest) && mtmp2->mpeaceful
-        && !Conflict && !mtmp2->marked_for_pet)
-        return PET_MELEE_PEACEFUL_TARGET;
 
     if ((mtmp->mhp * 4 < mtmp->mhpmax
          || mtmp2->data->msound == MS_GUARDIAN
@@ -1901,11 +1776,8 @@ int after; /* this is extra fast monster movement */
        up until they are genuinely back near the player in walkable steps.
        If BFS cannot find any path at all, do not enter hard rejoin: the pet
        may be intentionally isolated or genuinely trapped, and should not
-       burn turns trying to sprint toward an unreachable player.
-       This entire "sprint to catch up" behavior is part of the custom
-       pet AI; when iflags.vanilla_pet_behavior is set, skip it so pets
-       just use ordinary goal-directed movement instead. */
-    if (mtmp->mtame && !mtmp->mleashed && !iflags.vanilla_pet_behavior) {
+       burn turns trying to sprint toward an unreachable player. */
+    if (mtmp->mtame && !mtmp->mleashed) {
         if (have_player_path) {
             if (player_pathdist > PET_REJOIN_PATH_TRIGGER
                 || (distmin(omx, omy, u.ux, u.uy) > 3
@@ -1915,10 +1787,8 @@ int after; /* this is extra fast monster movement */
     }
 
      /* choose a monster to pursue using player-facing threat ranking rather
-         than pet ranged-attack scoring.  This long-radius, player-centered
-         threat search is custom AI; in vanilla mode fall straight through
-         to the original pet-local target selection below. */
-     if (!pursue_mon && !iflags.vanilla_pet_behavior)
+         than pet ranged-attack scoring */
+     if (!pursue_mon)
           pursue_mon = best_player_threat(mtmp, u.ux, u.uy, PET_TARGET_RADIUS);
 
     if (!pursue_mon)
@@ -2016,16 +1886,12 @@ int after; /* this is extra fast monster movement */
        so the pet positions between the player and the hostile instead of
        lingering on the opposite side.  Also: if the hostile is very close
        to the player, attempt an immediate safe interpose square next to the
-       player on the target side (urgent override to help the player).
-       This whole tactical-interposing behavior is custom AI; skip it
-       entirely in vanilla mode so the pet just uses its ordinary goal
-       (set by dog_goal) instead of actively repositioning around threats. */
-    if (pursue_mon && !iflags.vanilla_pet_behavior
-        && !(force_marked_pursuit && have_marked_path)) {
+       player on the target side (urgent override to help the player). */
+    if (pursue_mon && !(force_marked_pursuit && have_marked_path)) {
         int pmx = pursue_mon->mx, pmy = pursue_mon->my;
         int maxd2 = MAX_PET_DISTANCE * MAX_PET_DISTANCE;
 
-        /* urgent interpose: only for immediate threats near the player;
+        /* urgent interpose: only for immediate threats near the player,
            prefer an adjacent square beside the player on the target side;
            only force an immediate move when that square is adjacent to
            the pet. */
@@ -2071,9 +1937,7 @@ int after; /* this is extra fast monster movement */
                     interpose_goal_y = besty;
 
                     if ((bestx != omx || besty != omy)
-                        && abs(bestx - omx) <= 1 && abs(besty - omy) <= 1
-                        && pet_step_passable(mtmp, (xchar) omx, (xchar) omy,
-                                             (xchar) bestx, (xchar) besty)) {
+                        && abs(bestx - omx) <= 1 && abs(besty - omy) <= 1) {
                         /* announce interpose when visible */
                         if (pursue_mon && pursue_mon != &youmonst
                             && !(abs(omx - u.ux) <= 1 && abs(omy - u.uy) <= 1)
@@ -2215,10 +2079,8 @@ int after; /* this is extra fast monster movement */
             continue;
 
         /* never allow an un-leashed pet to move so far from the player that
-           it exceeds MAX_PET_DISTANCE.  This clamp is custom AI (vanilla
-           NetHack has no such hard leash-like radius for tame monsters);
-           skip it in vanilla mode. */
-        if (!mtmp->mleashed && !iflags.vanilla_pet_behavior) {
+           it exceeds MAX_PET_DISTANCE. */
+        if (!mtmp->mleashed) {
             int allowed_dist_sq = MAX_PET_DISTANCE * MAX_PET_DISTANCE;
             int old_player_dist = udist;
             int new_player_dist = distu(nx, ny);
@@ -2355,9 +2217,8 @@ int after; /* this is extra fast monster movement */
            player-centered (within PET_TARGET_RADIUS) be more aggressive
            about closing on the monster and *allow* temporary movement
            away from the player so the pet can position between you and
-           the hostile.  All of this extra positioning bias is custom AI;
-           in vanilla mode, skip it and just use the base goal delta. */
-        if (pursue_mon && !iflags.vanilla_pet_behavior) {
+           the hostile. */
+        if (pursue_mon) {
             int old_mon_dist = dist2(omx, omy, pursue_mon->mx, pursue_mon->my);
             int new_mon_dist = dist2(nx, ny, pursue_mon->mx, pursue_mon->my);
             int monDelta = new_mon_dist - old_mon_dist; /* >0 means moving away */

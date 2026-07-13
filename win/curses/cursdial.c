@@ -2671,8 +2671,6 @@ menu_get_selections(WINDOW * win, nhmenu *menu, int how)
         total++;
         q = q->next_item;
     }
-    /* fprintf(stderr, "[DBG] resume: hint=%d total_entries=%d landed_page=%d\n",
-            inv_popup_resume_hint, total, p ? p->page_num : -1); */
     if (p)
         curpage = p->page_num;
     inv_popup_resume_hint = -1;

@@ -222,6 +222,42 @@ int shotlimit;
         default:
             break; /* No bonus */
         }
+        /* Standard RNG roll for the base volley */
+        multishot = rnd(multishot);
+        /* Apply custom role flat bonuses after base RNG to prevent dilution */
+        if (Role_if(PM_WIZARD)) {
+            if (skill == P_DAGGER) {
+                /* Dynamically scale bonus based on dagger proficiency ranking */
+                switch (P_SKILL(P_DAGGER)) {
+                    /* case P_BASIC:        multishot += 1; break; */
+                    case P_SKILLED:      multishot += 1; break;
+                    /* case P_EXPERT:       multishot += 3; break; */
+#ifdef P_MASTER
+                    case P_MASTER:       multishot += 4; break;
+#endif
+#ifdef P_GRAND_MASTER
+                    case P_GRAND_MASTER: multishot += 6; break;
+#endif
+                    default: break; /* Unskilled gets no bonus */
+                }
+            }
+        } else if (Role_if(PM_RANGER)) {
+            /* Ranger gets a bonus for daggers or any arrow fired from a bow */
+            if (skill == P_DAGGER || (obj && ammo_and_launcher(obj, uwep)
+                && objects[uwep->otyp].oc_skill == P_BOW)) {
+                multishot += 1;
+            }
+        }
+        /* Apply player-requested count prefixes (e.g., 3f) to the final total */
+        if (shotlimit && multishot > shotlimit)
+            multishot = shotlimit;
+
+        /* Standard low-tier fallback mechanism */
+        /* if (!shotlimit && !slowcrossbow && multishot > multishot_floor
+            && rn2(100)<10) {
+            multishot = multishot_floor;
+            pline("single shot");
+        } */
         /* ...or using their race's special bow; no bonus for spears */
         if (!weakmultishot)
             switch (Race_switch) {
@@ -256,26 +292,38 @@ int shotlimit;
             && (int) ACURRSTR < (Race_if(PM_GNOME) ? 16 : 18));
         if (slowcrossbow)
             multishot = rnd(multishot);
-
-        multishot = rnd(multishot);
-        if (!shotlimit && !slowcrossbow && multishot < multishot_floor
-            && rn2(10))
+        /* old floor-rescue logic, superseded by the bias block below */
+        /* if (!shotlimit && !slowcrossbow && multishot < multishot_floor
+            && rn2(100)<90) {
             multishot = multishot_floor;
-        if ((long) multishot > obj->quan)
+            pline("multishot_floor shot");
+            } */
+        /* Bias the final volley toward the cap (skill floor, or the
+           player's count-prefix if one was given), with a low chance
+           of falling short. */
+        if (!slowcrossbow) {
+            int cap = shotlimit ? shotlimit : multishot_floor;
+            if (rn2(100) < 90)
+                multishot = cap;
+            else
+                multishot = rnd(cap);
+            /* pline("bias cap=%d roll=%d", cap, multishot);*/ /* debug, remove later */
+        }
+        /* safety: never try to throw more than you're holding */
+        if ((long) multishot > obj->quan) {
             multishot = (int) obj->quan;
-        if (shotlimit > 0 && multishot > shotlimit)
-            multishot = shotlimit;
+        }
     }
 
     m_shot.s = ammo_and_launcher(obj, uwep) ? TRUE : FALSE;
     /* give a message if shooting more than one, or if player
        attempted to specify a count */
-    if (multishot > 0 || shotlimit > 0) {
+    /* if (multishot > 0 || shotlimit > 0) { */
         /* "You shoot N arrows." or "You throw N daggers." */
         You("%s %d %s.", m_shot.s ? "shoot" : "throw",
             multishot, /* (might be 1 if player gave shotlimit) */
-            (multishot == 1) ? singular(obj, xname) : xname(obj));
-    }
+            (multishot) ? singular(obj, xname) : xname(obj));
+    /*}*/
 
     wep_mask = obj->owornmask;
     m_shot.o = obj->otyp;
