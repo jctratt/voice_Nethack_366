@@ -1110,10 +1110,11 @@ ustatusline()
         Strcat(info, mon_nam(u.ustuck));
     }
 
-    pline("Status of %s (%s):  Level %d  HP %d(%d)  AC %d%s.", plname,
+    pline("Status of %s (%s):  Level %d  HP %d(%d)  AC %d%s  Hunger %d  Luck %d  Prot %d.", plname,
           piousness(FALSE, align_str(u.ualign.type)),
           Upolyd ? mons[u.umonnum].mlevel : u.ulevel, Upolyd ? u.mh : u.uhp,
-          Upolyd ? u.mhmax : u.uhpmax, u.uac, info);
+          Upolyd ? u.mhmax : u.uhpmax, u.uac, info,
+          u.uhunger, u.uluck, u.ublessed);
 }
 
 /*priest.c*/
