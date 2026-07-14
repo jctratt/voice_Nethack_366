@@ -1312,6 +1312,19 @@ coord *click_cc;
         if (found) {
             /* use putmixed() because there may be an encoded glyph present */
             putmixed(WIN_MESSAGE, 0, out_str);
+
+            /* Custom metrics layout */
+            if (cc.x == u.ux && cc.y == u.uy) {
+                ustatusline();
+                } else {
+                struct monst *mtmp = m_at(cc.x, cc.y);
+                if (mtmp && mtmp->mtame) {
+                    long pet_nutr = (has_edog(mtmp)) ? (EDOG(mtmp)->hungrytime - moves) : 0L;
+                    pline("Pet Status:  HP %d(%d)  Tameness %d  NutrTurns %ld",
+                          mtmp->mhp, mtmp->mhpmax, mtmp->mtame, pet_nutr);
+                }
+            }
+
 #ifdef DUMPLOG
             {
                 char dmpbuf[BUFSZ];
