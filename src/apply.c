@@ -1719,11 +1719,18 @@ int magic; /* 0=Physical, otherwise skill level */
     if (!magic && !Jumping) {
         int sp_no;
 
-        for (sp_no = 0; sp_no < MAXSPELL; ++sp_no)
-            if (spl_book[sp_no].sp_id == NO_SPELL)
+        for (sp_no = 0; sp_no < MAXSPELL; ++sp_no) {
+            if (spl_book[sp_no].sp_id == NO_SPELL) {
                 break;
-            else if (spl_book[sp_no].sp_id == SPE_JUMPING)
-                return spelleffects(sp_no, FALSE);
+            } else if (spl_book[sp_no].sp_id == SPE_JUMPING) {
+                if (yn("You lack the physical means to jump. Cast the Jumping spell?") == 'y') {
+                    /* Hands off completely to standard casting behavior */
+                    return spelleffects(sp_no, FALSE);
+                } else {
+                    return 0;
+                }
+            }
+        }
     }
 
     if (!magic && (nolimbs(youmonst.data) || slithy(youmonst.data))) {
