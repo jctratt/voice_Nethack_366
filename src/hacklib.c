@@ -907,7 +907,16 @@ void
 init_random(fn)
 int FDECL((*fn), (int));
 {
-    set_random(sys_random_seed(), fn);
+    unsigned long seed;
+
+    if (forced_seed) {
+        seed = (fn == rn2) ? forced_seed : (forced_seed ^ 0xA5A5A5A5A5A5A5A5ULL);
+    } else {
+        seed = sys_random_seed();
+    }
+    if (fn == rn2)
+        game_seed = seed; /* remember for welcome-message display */
+    set_random(seed, fn);
 }
 
 /* Reshuffles the random number generator. */

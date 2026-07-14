@@ -124,6 +124,8 @@ NEARDATA boolean mrg_to_wielded = FALSE;
 
 NEARDATA boolean in_steed_dismounting = FALSE;
 NEARDATA boolean has_strong_rngseed = FALSE;
+NEARDATA unsigned long long forced_seed = 0L; /* 0 = not forced; set via -seed <N> */
+NEARDATA unsigned long long game_seed = 0L;   /* actual CORE seed in play, for display */
 
 NEARDATA coord bhitpos = DUMMY;
 NEARDATA coord doors[DOORMAX] = { DUMMY };

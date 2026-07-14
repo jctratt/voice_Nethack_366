@@ -811,11 +811,37 @@ u_init()
         break;
     case PM_WIZARD:
         ini_inv(Wizard);
-        if (!rn2(5))
+        {
+            struct obj *otmp;
+            /* Look through inventory to find the starting athame */
+            for (otmp = invent; otmp; otmp = otmp->nobj) {
+                if (otmp->otyp == ATHAME) {
+                    otmp->oerodeproof = 1;
+                    break; /* Found it, stop searching */
+                }
+            }
+        }
+        if (!rn2(2)) /* 2=50% */
             ini_inv(Magicmarker);
-        if (!rn2(5))
+        if (rn2(100) < 75)
             ini_inv(Blindfold);
         skill_init(Skill_W);
+        {
+        struct obj *otmp;
+        /* Traverse the starting inventory */
+        for (otmp = invent; otmp; otmp = otmp->nobj) {
+            /* Check if the item is a weapon, armor, or tool that can be proofed */
+            if (otmp->oclass == WEAPON_CLASS ||
+                otmp->oclass == ARMOR_CLASS ||
+                is_weptool(otmp)) {
+
+                /* 5% chance (1 in 20) to erodeproof the item */
+                if (rn2(100) < 33 ) /* 33% */ {
+                    otmp->oerodeproof = 1;
+                }
+            }
+        }
+    }
         break;
 
     default: /* impossible */

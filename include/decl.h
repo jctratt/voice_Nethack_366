@@ -223,6 +223,8 @@ E NEARDATA boolean defer_see_monsters;
 
 E NEARDATA boolean in_steed_dismounting;
 E NEARDATA boolean has_strong_rngseed;
+E NEARDATA unsigned long long forced_seed;
+E NEARDATA unsigned long long game_seed;
 
 E const int shield_static[];
 

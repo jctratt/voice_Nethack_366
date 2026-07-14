@@ -3071,6 +3071,23 @@ boolean tinitial, tfrom_file;
 
     duplicate = duplicate_opt_detection(opts, 1); /* 1: check compounds */
 
+    fullname = "seed";
+    if (match_optname(opts, fullname, 4, TRUE)) {
+        if ((op = index(opts, ':')) != 0) {
+            op++;
+            while (*op && isspace((uchar)*op)) op++;
+            if (*op) {
+                forced_seed = strtoull(op, (char **)0, 10);
+                game_seed = forced_seed;
+
+                /* Hard override: immediately wipe and rebuild the active RNG pools */
+                init_random(rn2);
+                init_random(rn2_on_display_rng);
+            }
+        }
+        return TRUE;
+    }
+
     fullname = "pettype";
     if (match_optname(opts, fullname, 3, TRUE)) {
         if (duplicate)

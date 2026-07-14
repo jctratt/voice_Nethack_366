@@ -442,6 +442,21 @@ char *argv[];
                     flags.initrace = i;
             }
             break;
+        case 's': /* -seed <value>: force a specific RNG seed */
+            if (!strcmpi(*argv, "-seed")) {
+                if (argv[0][5] == '=') {
+                    forced_seed = strtoul(&argv[0][6], (char **) 0, 10);
+                } else if (argc > 1) {
+                    argc--;
+                    argv++;
+                    forced_seed = strtoul(argv[0], (char **) 0, 10);
+                } else {
+                    raw_print("Seed value expected after -seed");
+                }
+            } else {
+                raw_printf("Unknown option: %.60s", *argv);
+            }
+            break;
         case 'w': /* windowtype */
             config_error_init(FALSE, "command line", FALSE);
             choose_windows(&argv[0][2]);
