@@ -161,10 +161,10 @@ REGION:(48,10,54,10),unlit,"ordinary",filled,irregular {
 }
 
 # Doors
-DOOR:locked,(55,08)
-DOOR:locked,(55,12)
-DOOR:locked,(47,08)
-DOOR:locked,(47,12)
+DOOR:closed,(55,08)
+DOOR:closed,(55,12)
+DOOR:closed,(47,08)
+DOOR:closed,(47,12)
 # Stairs
 TERRAIN:(03,17),'.'
 STAIR:(03,17),up
