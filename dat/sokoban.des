@@ -439,79 +439,123 @@ OBJECT:'/',random
 ### Top (last) level of Sokoban ###
 MAZE:"soko1-1",' '
 FLAGS:noteleport,premapped,solidify
-GEOMETRY:center,center
-#12345678901234567890123456789012345678901234567890
+#GEOMETRY:center,center
+GEOMETRY:left,top
+# #=0 as it is a zero,zero top left layout.
+# 25x(16+1-blank-row w*h
+#        10        20        30        40        50        60
+#123456789012345678901234567890123456789012345678901234567890
 MAP
---------------------------
-|........................|
-|.......|---------------.|
--------.------         |.|
- |...........|         |.|
- |...........|         |.|
---------.-----         |.|
-|............|         |.|
-|............|         |.|
------.--------   ------|.|
- |..........|  --|.....|.|
- |..........|  |.+.....|.|
- |.........|-  |-|.....|.|
--------.----   |.+.....+.|
-|........|     |-|.....|--
-|........|     |.+.....|  
-|...|-----     --|.....|  
------            -------  
+                             ------------------------
+                             |......................|
+                             |..--...............SS.|
+                           ----.|-------------S---|.|
+                           |..|.--  --...||......P|.|
+                           |.....|--|....||......K|.|
+                           |.....|..|....||.......|.|
+                           --....|......-||TTT.TT{|.|
+                            |.......|...|-----S---|.|
+                            |....|..|...|  |......|.|
+                            |....|--|...||-|......|.|
+                            |.......|..--|........|.|
+                            ----....|.-- |-|......+.|
+                               ---.--.|  |........|--
+                                |.....|  |-|......|  
+                                |..|..|  |........|  
+                                -------  ----------  
+                                                     
 ENDMAP
-$place = { (16,11),(16,13),(16,15) }
+# -------------------------- 4a-wide
+#   ------------------------ 4b-narrow
+#MAP
+#  ------------------------
+#  |......................|
+#  |..-------------------.|
+#----.|    -----        |.|
+#|..|.--  --...|        |.|
+#|.....|--|....|        |.|
+#|.....|..|....|        |.|
+#--....|......--        |.|
+# |.......|...|   ------|.|
+# |....|..|...| --|.....|.|
+# |....---|...| |.+.....|.|
+# |.......|..-- |-|.....|.|
+# ----....|.--  |.+.....+.|
+#    ---.--.|   |-|.....|--
+#     |.....|   |.+.....|  
+#     |..|..|   --|.....|  
+#     -------     -------  
+#ENDMAP
+# REGION:(x,y,x,y)
+REGION:(27,00,52,17),lit,"ordinary"
+NON_DIGGABLE:(27,00,52,17)
+NON_PASSWALL:(27,00,52,17)
+
+REGION:(45,10,48,16),lit,"zoo",filled
+# prize closet
+REGION:(41,11,43,15),lit,"ordinary"
+#REGION:(45,9,49,15),lit,"zoo",filled,irregular
+## prize_closet
+#REGION:(40,11,42,16),lit,"ordinary"
+
+$place = { (42,11),(42,13),(42,15) }
 SHUFFLE: $place
 
-STAIR:(01,01),down
-REGION:(00,00,25,17),lit,"ordinary"
-NON_DIGGABLE:(00,00,25,17)
-NON_PASSWALL:(00,00,25,17)
+STAIR:(33,15),down
+
+DOOR:locked,(50,12)
+DOOR:closed,(43,11)
+DOOR:closed,(43,13)
+DOOR:closed,(43,15)
+
+ALTAR:(43,04),law,altar
+ALTAR:(45,04),neutral,altar
+ALTAR:(47,04),chaos,altar
 
 # Boulders
-OBJECT:('`',"boulder"),(03,05)
-OBJECT:('`',"boulder"),(05,05)
-OBJECT:('`',"boulder"),(07,05)
-OBJECT:('`',"boulder"),(09,05)
-OBJECT:('`',"boulder"),(11,05)
-#
-OBJECT:('`',"boulder"),(04,07)
-OBJECT:('`',"boulder"),(04,08)
-OBJECT:('`',"boulder"),(06,07)
-OBJECT:('`',"boulder"),(09,07)
-OBJECT:('`',"boulder"),(11,07)
-#
-OBJECT:('`',"boulder"),(03,12)
-OBJECT:('`',"boulder"),(04,10)
-OBJECT:('`',"boulder"),(05,12)
-OBJECT:('`',"boulder"),(06,10)
-OBJECT:('`',"boulder"),(07,11)
-OBJECT:('`',"boulder"),(08,10)
-OBJECT:('`',"boulder"),(09,12)
-#
-OBJECT:('`',"boulder"),(03,14)
+OBJECT:('`',"boulder"),(31,04)
+OBJECT:('`',"boulder"),(29,06)
+OBJECT:('`',"boulder"),(30,06)
+OBJECT:('`',"boulder"),(31,07)
+OBJECT:('`',"boulder"),(32,07)
+OBJECT:('`',"boulder"),(29,08)
+OBJECT:('`',"boulder"),(32,08)
+OBJECT:('`',"boulder"),(30,09)
+OBJECT:('`',"boulder"),(31,09)
+OBJECT:('`',"boulder"),(30,10)
+OBJECT:('`',"boulder"),(32,10)
+OBJECT:('`',"boulder"),(33,12)
+OBJECT:('`',"boulder"),(34,14)
+OBJECT:('`',"boulder"),(38,05)
+OBJECT:('`',"boulder"),(39,06)
+OBJECT:('`',"boulder"),(37,07)
+OBJECT:('`',"boulder"),(38,07)
+OBJECT:('`',"boulder"),(37,08)
+OBJECT:('`',"boulder"),(39,09)
+OBJECT:('`',"boulder"),(38,10)
 
 # Traps
-TRAP:"hole",(08,01)
-TRAP:"hole",(09,01)
-TRAP:"hole",(10,01)
-TRAP:"hole",(11,01)
-TRAP:"hole",(12,01)
-TRAP:"hole",(13,01)
-TRAP:"hole",(14,01)
-TRAP:"hole",(15,01)
-TRAP:"hole",(16,01)
-TRAP:"hole",(17,01)
-TRAP:"hole",(18,01)
-TRAP:"hole",(19,01)
-TRAP:"hole",(20,01)
-TRAP:"hole",(21,01)
-TRAP:"hole",(22,01)
-TRAP:"hole",(23,01)
+#TRAP:"hole",(34,01)
+#TRAP:"hole",(35,01)
+#TRAP:"hole",(36,01)
+#TRAP:"hole",(37,01)
+TRAP:"hole",(38,01)
+TRAP:"hole",(39,01)
+TRAP:"hole",(40,01)
+TRAP:"hole",(41,01)
+TRAP:"hole",(42,01)
+TRAP:"hole",(43,01)
+TRAP:"hole",(44,01)
+TRAP:"hole",(45,01)
+TRAP:"hole",(46,01)
+TRAP:"hole",(47,01)
+TRAP:"hole",(48,01)
+TRAP:"hole",(49,01)
+TRAP:"hole",(50,01)
 
-MONSTER:('m',"giant mimic"), random, m_object "boulder"
-MONSTER:('m',"giant mimic"), random, m_object "boulder"
+
+#MONSTER:('m',"giant mimic"), random, m_object "boulder"
+#MONSTER:('m',"giant mimic"), random, m_object "boulder"
 
 # Random objects
 OBJECT:'%',random
@@ -521,98 +565,155 @@ OBJECT:'%',random
 OBJECT:'=',random
 OBJECT:'/',random
 
-# Rewards
-DOOR:locked,(23,13)
-DOOR:closed,(17,11)
-DOOR:closed,(17,13)
-DOOR:closed,(17,15)
-REGION:(18,10,22,16),lit,"zoo",filled,irregular
-IF [50%] {
-  OBJECT:('(',"bag of holding"),$place[0]
-} ELSE {
-  OBJECT:('"',"amulet of reflection"),$place[0]
-}
 ENGRAVING:$place[0],burn,"Elbereth"
+ENGRAVING:$place[1],burn,"Elbereth"
+ENGRAVING:$place[2],burn,"Elbereth"
 OBJECT:('?', "scare monster"),$place[0],cursed
-
+OBJECT:('?', "scare monster"),$place[1],cursed
+OBJECT:('?', "scare monster"),$place[2],cursed
+OBJECT:('(',"bag of holding"),$place[0]
+OBJECT:('"',"amulet of reflection"),$place[1]
+OBJECT:('[',"cloak of magic resistance"),$place[2]
 
 MAZE:"soko1-2",' '
 FLAGS:noteleport,premapped,solidify
-GEOMETRY:center,center
-#12345678901234567890123456789012345678901234567890
+#GEOMETRY:center,center
+GEOMETRY:left,top
+# #=0 as it is a zero,zero top left layout.
+# 25x17 w*h
+#        10        20        30        40        50
+#123456789012345678901234567890123456789012345678901234567890
 MAP
-  ------------------------
-  |......................|
-  |..-------------------.|
-----.|    -----        |.|
-|..|.--  --...|        |.|
-|.....|--|....|        |.|
-|.....|..|....|        |.|
---....|......--        |.|
- |.......|...|   ------|.|
- |....|..|...| --|.....|.|
- |....|--|...| |.+.....|.|
- |.......|..-- |-|.....|.|
- ----....|.--  |.+.....+.|
-    ---.--.|   |-|.....|--
-     |.....|   |.+.....|  
-     |..|..|   --|.....|  
-     -------     -------  
+                           --------------------------
+                           |........................|
+                           |.......|--..........---.|
+                           -------.-------|.......|.|
+                            |...........| |---S---|.|
+                            |...........| |......P|.|
+                           --------.----- |......K|.|
+                           |............| |.......|.|
+                           |............| |TTT.TT{|.|
+                           -----.-------- |---S---|.|
+                            |..........| --|......|.|
+                            |..........| |.+......|.|
+                            |.........|- |-|......|.|
+                           -------.----  |.+......+.|
+                           |........|    |-|......|--
+                           |........|    |.+......|  
+                           |...|-----    --|......|  
+                           -----           --------  
 ENDMAP
-$place = { (16,10),(16,12),(16,14) }
+#MAP #unused original
+#--------------------------
+#|>......^^^^^^^^^^^^^^^^.|
+#|.......----------------.|
+#-------.------         |.|
+# |...........|         |.|
+# |.0.0.0.0.0.|         |.|
+#--------.----|         |.|
+#|...0.0..0.0.|         |.|
+#|...0........|         |.|
+#-----.--------   ------|.|
+# |..0.0.0...|  --|.....|.|
+# |.....0....|  |.+.....|.|
+# |.0.0...0.--  |-|.....|.|
+#-------.----   |.+.....+.|
+#|..0.....|     |-|.....|--
+#|........|     |.+.....|  
+#|...------     --|.....|  
+#-----            -------  
+#ENDMAP
+REGION:(27,00,62,16),lit,"ordinary"
+NON_DIGGABLE:(27,00,62,16)
+NON_PASSWALL:(27,00,62,16)
+
+# prize closet
+REGION:(41,11,43,15),lit,"ordinary"
+#zoo 1-2
+REGION:(45,10,49,16),lit,"zoo",filled
+
+$place = { (42,11),(42,13),(42,15) }
 SHUFFLE: $place
 
-STAIR:(06,15),down
-REGION:(00,00,25,16),lit,"ordinary"
-NON_DIGGABLE:(00,00,25,16)
-NON_PASSWALL:(00,00,25,16)
+STAIR:(28,01),down
+
+DOOR:locked,(50,13)
+DOOR:closed,(43,11)
+DOOR:closed,(43,13)
+DOOR:closed,(43,15)
+
+ALTAR:(43,05),law,altar
+ALTAR:(45,05),neutral,altar
+ALTAR:(47,05),chaos,altar
+
+## Boulders
+#OBJECT:('`',"boulder"),(03,05)
+#OBJECT:('`',"boulder"),(05,05)
+#OBJECT:('`',"boulder"),(07,05)
+#OBJECT:('`',"boulder"),(09,05)
+#OBJECT:('`',"boulder"),(11,05)
+##
+#OBJECT:('`',"boulder"),(04,07)
+#OBJECT:('`',"boulder"),(04,08)
+#OBJECT:('`',"boulder"),(06,07)
+#OBJECT:('`',"boulder"),(09,07)
+#OBJECT:('`',"boulder"),(11,07)
+##
+#OBJECT:('`',"boulder"),(03,12)
+#OBJECT:('`',"boulder"),(04,10)
+#OBJECT:('`',"boulder"),(05,12)
+#OBJECT:('`',"boulder"),(06,10)
+#OBJECT:('`',"boulder"),(07,11)
+#OBJECT:('`',"boulder"),(08,10)
+#OBJECT:('`',"boulder"),(09,12)
+##
+#OBJECT:('`',"boulder"),(03,14)
 
 # Boulders
-OBJECT:('`',"boulder"),(04,04)
-OBJECT:('`',"boulder"),(02,06)
-OBJECT:('`',"boulder"),(03,06)
-OBJECT:('`',"boulder"),(04,07)
-OBJECT:('`',"boulder"),(05,07)
-OBJECT:('`',"boulder"),(02,08)
-OBJECT:('`',"boulder"),(05,08)
-OBJECT:('`',"boulder"),(03,09)
-OBJECT:('`',"boulder"),(04,09)
-OBJECT:('`',"boulder"),(03,10)
-OBJECT:('`',"boulder"),(05,10)
-OBJECT:('`',"boulder"),(06,12)
+OBJECT:('`',"boulder"),(30,05)
+OBJECT:('`',"boulder"),(32,05)
+OBJECT:('`',"boulder"),(34,05)
+OBJECT:('`',"boulder"),(36,05)
+OBJECT:('`',"boulder"),(38,05)
 #
-OBJECT:('`',"boulder"),(07,14)
+OBJECT:('`',"boulder"),(31,07)
+OBJECT:('`',"boulder"),(31,08)
+OBJECT:('`',"boulder"),(33,07)
+OBJECT:('`',"boulder"),(36,07)
+OBJECT:('`',"boulder"),(38,07)
 #
-OBJECT:('`',"boulder"),(11,05)
-OBJECT:('`',"boulder"),(12,06)
-OBJECT:('`',"boulder"),(10,07)
-OBJECT:('`',"boulder"),(11,07)
-OBJECT:('`',"boulder"),(10,08)
-OBJECT:('`',"boulder"),(12,09)
-OBJECT:('`',"boulder"),(11,10)
-
+OBJECT:('`',"boulder"),(30,12)
+OBJECT:('`',"boulder"),(31,10)
+OBJECT:('`',"boulder"),(32,12)
+OBJECT:('`',"boulder"),(33,10)
+OBJECT:('`',"boulder"),(34,11)
+OBJECT:('`',"boulder"),(35,10)
+OBJECT:('`',"boulder"),(36,12)
+#
+OBJECT:('`',"boulder"),(30,14)
 # Traps
-TRAP:"hole",(05,01)
-TRAP:"hole",(06,01)
-TRAP:"hole",(07,01)
-TRAP:"hole",(08,01)
-TRAP:"hole",(09,01)
-TRAP:"hole",(10,01)
-TRAP:"hole",(11,01)
-TRAP:"hole",(12,01)
-TRAP:"hole",(13,01)
-TRAP:"hole",(14,01)
-TRAP:"hole",(15,01)
-TRAP:"hole",(16,01)
-TRAP:"hole",(17,01)
-TRAP:"hole",(18,01)
-TRAP:"hole",(19,01)
-TRAP:"hole",(20,01)
-TRAP:"hole",(21,01)
-TRAP:"hole",(22,01)
+#TRAP:"hole",(34,01)
+#TRAP:"hole",(35,01)
+#TRAP:"hole",(36,01)
+#TRAP:"hole",(37,01)
+TRAP:"hole",(38,01)
+TRAP:"hole",(39,01)
+TRAP:"hole",(40,01)
+TRAP:"hole",(41,01)
+TRAP:"hole",(42,01)
+TRAP:"hole",(43,01)
+TRAP:"hole",(44,01)
+TRAP:"hole",(45,01)
+TRAP:"hole",(46,01)
+TRAP:"hole",(47,01)
+TRAP:"hole",(48,01)
+TRAP:"hole",(49,01)
+TRAP:"hole",(50,01)
 
-MONSTER:('m',"giant mimic"), random, m_object "boulder"
-MONSTER:('m',"giant mimic"), random, m_object "boulder"
+
+
+#MONSTER:('m',"giant mimic"), random, m_object "boulder"
+#MONSTER:('m',"giant mimic"), random, m_object "boulder"
 
 # Random objects
 OBJECT:'%',random
@@ -622,16 +723,15 @@ OBJECT:'%',random
 OBJECT:'=',random
 OBJECT:'/',random
 
-# Rewards
-DOOR:locked,(23,12)
-DOOR:closed,(17,10)
-DOOR:closed,(17,12)
-DOOR:closed,(17,14)
-REGION:(18,09,22,15),lit,"zoo",filled,irregular
-IF [50%] {
-  OBJECT:('(',"bag of holding"),$place[0]
-} ELSE {
-  OBJECT:('"',"amulet of reflection"),$place[0]
-}
+
 ENGRAVING:$place[0],burn,"Elbereth"
+ENGRAVING:$place[1],burn,"Elbereth"
+ENGRAVING:$place[2],burn,"Elbereth"
 OBJECT:('?', "scare monster"),$place[0],cursed
+OBJECT:('?', "scare monster"),$place[1],cursed
+OBJECT:('?', "scare monster"),$place[2],cursed
+OBJECT:('(',"bag of holding"),$place[0]
+OBJECT:('"',"amulet of reflection"),$place[1]
+OBJECT:('[',"cloak of magic resistance"),$place[2]
+
+

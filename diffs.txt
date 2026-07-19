@@ -1,511 +1,1043 @@
-diff --git a/include/flag.h b/include/flag.h
-index dbfad88..3f2e431 100644
-Binary files a/include/flag.h and b/include/flag.h differ
-diff --git a/src/apply.c b/src/apply.c
-index acd6db5..1482baa 100644
---- a/src/apply.c
-+++ b/src/apply.c
-@@ -93,14 +93,45 @@ use_towel(obj)
- struct obj *obj;
- {
-     boolean drying_feedback = (obj == uwep);
-+    boolean have_goop = (Glib || u.ucreamed);
+diff --git a/dat/Wizard.des b/dat/Wizard.des
+index f27f476..da74e60 100644
+--- a/dat/Wizard.des
++++ b/dat/Wizard.des
+@@ -8,7 +8,7 @@
+ #	and receive your quest assignment.
+ #
+ MAZE: "Wiz-strt",' '
+-FLAGS: noteleport,hardfloor
++FLAGS: noteleport,hardfloor, premapped
+ GEOMETRY:center,center
+ MAP
+ ............................................................................
+@@ -109,7 +109,7 @@ MONSTER: 'B',(10,19),hostile
+ #
  
-     if (!freehand()) {
-         You("have no free %s!", body_part(HAND));
-         return 0;
--    } else if (obj == ublindf) {
--        You("cannot use it while you're wearing it!");
--        return 0;
--    } else if (obj->cursed) {
-+    }
+ MAZE: "Wiz-loca",' '
+-FLAGS: hardfloor
++FLAGS: hardfloor, premapped
+ GEOMETRY:center,center
+ MAP
+ .............        .......................................................
+@@ -255,10 +255,10 @@ MAP
+                    -------------                 -------------              
+                    |...........|                 |...........|              
+             -------|...........-------------------...........|              
+-            |......S...........|..|..|..|..|..|..|...........|              
++            |......+...........|..|..|..|..|..|..|...........|              
+             |......|...........|..|..|..|..|..|..|...........|              
+             |......|...........-F+-F+-F+-F+-F+-F+-...........|              
+-            --S----|...........S.................+...........|              
++            --+----|...........+.................+...........|              
+             |......|...........-F+-F+-F+-F+-F+-F+-...........|              
+             |......|...........|..|..|..|..|..|..|...........|              
+             |......|...........|..|..|..|..|..|..|...........|              
+diff --git a/dat/sokoban.des b/dat/sokoban.des
+index c498345..0a14484 100644
+--- a/dat/sokoban.des
++++ b/dat/sokoban.des
+@@ -439,79 +439,123 @@ OBJECT:'/',random
+ ### Top (last) level of Sokoban ###
+ MAZE:"soko1-1",' '
+ FLAGS:noteleport,premapped,solidify
+-GEOMETRY:center,center
+-#12345678901234567890123456789012345678901234567890
++#GEOMETRY:center,center
++GEOMETRY:left,top
++# #=0 as it is a zero,zero top left layout.
++# 25x(16+1-blank-row w*h
++#        10        20        30        40        50        60
++#123456789012345678901234567890123456789012345678901234567890
+ MAP
+---------------------------
+-|........................|
+-|.......|---------------.|
+--------.------         |.|
+- |...........|         |.|
+- |...........|         |.|
+---------.-----         |.|
+-|............|         |.|
+-|............|         |.|
+------.--------   ------|.|
+- |..........|  --|.....|.|
+- |..........|  |.+.....|.|
+- |.........|-  |-|.....|.|
+--------.----   |.+.....+.|
+-|........|     |-|.....|--
+-|........|     |.+.....|  
+-|...|-----     --|.....|  
+------            -------  
++                             ------------------------
++                             |......................|
++                             |..--...............SS.|
++                           ----.|-------------S---|.|
++                           |..|.--  --...||......P|.|
++                           |.....|--|....||......K|.|
++                           |.....|..|....||.......|.|
++                           --....|......-||TTT.TT{|.|
++                            |.......|...|-----S---|.|
++                            |....|..|...|  |......|.|
++                            |....|--|...||-|......|.|
++                            |.......|..--|........|.|
++                            ----....|.-- |-|......+.|
++                               ---.--.|  |........|--
++                                |.....|  |-|......|  
++                                |..|..|  |........|  
++                                -------  ----------  
++                                                     
+ ENDMAP
+-$place = { (16,11),(16,13),(16,15) }
++# -------------------------- 4a-wide
++#   ------------------------ 4b-narrow
++#MAP
++#  ------------------------
++#  |......................|
++#  |..-------------------.|
++#----.|    -----        |.|
++#|..|.--  --...|        |.|
++#|.....|--|....|        |.|
++#|.....|..|....|        |.|
++#--....|......--        |.|
++# |.......|...|   ------|.|
++# |....|..|...| --|.....|.|
++# |....---|...| |.+.....|.|
++# |.......|..-- |-|.....|.|
++# ----....|.--  |.+.....+.|
++#    ---.--.|   |-|.....|--
++#     |.....|   |.+.....|  
++#     |..|..|   --|.....|  
++#     -------     -------  
++#ENDMAP
++# REGION:(x,y,x,y)
++REGION:(27,00,52,17),lit,"ordinary"
++NON_DIGGABLE:(27,00,52,17)
++NON_PASSWALL:(27,00,52,17)
 +
-+    /* Change of key behavior: applying a towel now primarily toggles
-+     * wearing it over your face/eyes, the same as a blindfold, since
-+     * that's the far more common use (forcing blindness for telepathy,
-+     * training, etc. when no real blindfold is at hand).  Wiping your
-+     * face/hands clean is demoted to a secondary action, reached via a
-+     * y/n prompt when there's actually something to wipe. */
-+    if (obj == ublindf) {
-+        /* already wearing this towel over your face -- take it off */
-+        if (cursed(obj))
-+            return 1; /* costs a turn, matches normal takeoff behavior */
-+        Blindf_off(obj);
-+        if (is_wet_towel(obj))
-+            dry_a_towel(obj, -1, drying_feedback);
-+        return 1;
-+    } else if (!ublindf) {
-+        /* nothing else is covering your eyes; put the towel on unless
-+         * the player would rather wipe up gunk instead */
-+        if (have_goop) {
-+            char choice = ynq("Wipe off the gunk instead of covering your face?");
-+            if (choice == 'q') return 0;  /* Cancel the action entirely, costs 0 turns */
-+            if (choice == 'y') goto do_wipe;
-+        }
-+        Blindf_on(obj);
-+        if (is_wet_towel(obj))
-+            dry_a_towel(obj, -1, drying_feedback);
-+        return 1;
-+    }
-+    /* else: some other eyewear (blindfold/lenses) is already worn, so
-+       putting the towel on isn't an option -- fall through to wiping */
++REGION:(45,10,48,16),lit,"zoo",filled
++# prize closet
++REGION:(41,11,43,15),lit,"ordinary"
++#REGION:(45,9,49,15),lit,"zoo",filled,irregular
++## prize_closet
++#REGION:(40,11,42,16),lit,"ordinary"
 +
-+ do_wipe:
-+    if (obj->cursed) {
-         long old;
++$place = { (42,11),(42,13),(42,15) }
+ SHUFFLE: $place
  
-         switch (rn2(3)) {
-diff --git a/src/cmd.c b/src/cmd.c
-index 550bf28..fb23608 100644
---- a/src/cmd.c
-+++ b/src/cmd.c
-@@ -162,6 +162,7 @@ STATIC_PTR int NDECL(timed_occupation);
- STATIC_PTR int NDECL(doextcmd);
- STATIC_PTR int NDECL(dotravel);
- STATIC_PTR int NDECL(doterrain);
-+STATIC_PTR int NDECL(dotogglepetai); /* NEW: Properly declared internal command */
- STATIC_PTR int NDECL(wiz_wish);
- STATIC_PTR int NDECL(wiz_identify);
- STATIC_PTR int NDECL(wiz_intrinsic);
-@@ -502,10 +503,21 @@ doextlist(VOID_ARGS)
-                              iflags.menu_headings, buf, MENU_UNSELECTED);
-                     menushown[pass] = 1;
-                 }
--                Sprintf(buf, " %-14s %-3s %s",
--                        efp->ef_txt,
--                        (efp->flags & AUTOCOMPLETE) ? "[A]" : " ",
--                        efp->ef_desc);
-+                /* NEW: for the petai toggle, show what pressing it will
-+                   *do* ("...on" if custom AI is currently off, "...off"
-+                   if it's currently on) rather than a static description,
-+                   so the list itself reflects live state. */
-+                if (efp->ef_funct == dotogglepetai) {
-+                    Sprintf(buf, " %-14s %-3s toggle custom pet AI %s",
-+                            efp->ef_txt,
-+                            (efp->flags & AUTOCOMPLETE) ? "[A]" : " ",
-+                            iflags.vanilla_pet_behavior ? "on" : "off");
-+                } else {
-+                    Sprintf(buf, " %-14s %-3s %s",
-+                            efp->ef_txt,
-+                            (efp->flags & AUTOCOMPLETE) ? "[A]" : " ",
-+                            efp->ef_desc);
-+                }
-                 add_menu(menuwin, NO_GLYPH, &any, 0, 0, ATR_NONE,
-                          buf, MENU_UNSELECTED);
-                 ++n;
-@@ -1539,6 +1551,17 @@ wiz_rumor_check(VOID_ARGS)
-     return 0;
- }
+-STAIR:(01,01),down
+-REGION:(00,00,25,17),lit,"ordinary"
+-NON_DIGGABLE:(00,00,25,17)
+-NON_PASSWALL:(00,00,25,17)
++STAIR:(33,15),down
++
++DOOR:locked,(50,12)
++DOOR:closed,(43,11)
++DOOR:closed,(43,13)
++DOOR:closed,(43,15)
++
++ALTAR:(43,04),law,altar
++ALTAR:(45,04),neutral,altar
++ALTAR:(47,04),chaos,altar
  
-+/* #petai command -- toggle custom pet AI (mimic avoidance, aggressive
-+   rejoin/interpose logic, etc.) on/off in favor of vanilla pet behavior */
-+STATIC_PTR int
-+dotogglepetai(VOID_ARGS)
-+{
-+    iflags.vanilla_pet_behavior = !iflags.vanilla_pet_behavior;
-+    pline("Pet AI is now set to: %s.",
-+          iflags.vanilla_pet_behavior ? "vanilla" : "custom");
-+    return 0;
-+}
-+
- /* #terrain command -- show known map, inspired by crawl's '|' command */
- STATIC_PTR int
- doterrain(VOID_ARGS)
-@@ -3651,6 +3674,8 @@ struct ext_func_tab extcmdlist[] = {
-             dooverview, IFBURIED | AUTOCOMPLETE },
-     { '\0', "panic", "test panic routine (fatal to game)",
-             wiz_panic, IFBURIED | AUTOCOMPLETE | WIZMODECMD },
-+    { '\0', "petai", "toggle custom pet AI on/off",
-+            dotogglepetai, IFBURIED | AUTOCOMPLETE },
-     { 'p', "pay", "pay your shopping bill", dopay },
-     { ',', "pickup", "pick up things at the current location", dopickup },
-     { '\0', "polyself", "polymorph self",
-diff --git a/src/dogmove.c b/src/dogmove.c
-index 184dca7..f1c16bf 100644
---- a/src/dogmove.c
-+++ b/src/dogmove.c
-@@ -268,6 +268,8 @@ STATIC_DCL boolean FDECL(pet_bfs_to_coord,
-                           int *));
- STATIC_DCL boolean FDECL(pet_bfs_to_player,
-                          (struct monst *, xchar *, xchar *, int *));
-+STATIC_DCL boolean FDECL(pet_step_passable,
-+                         (struct monst *, xchar, xchar, xchar, xchar));
+ # Boulders
+-OBJECT:('`',"boulder"),(03,05)
+-OBJECT:('`',"boulder"),(05,05)
+-OBJECT:('`',"boulder"),(07,05)
+-OBJECT:('`',"boulder"),(09,05)
+-OBJECT:('`',"boulder"),(11,05)
+-#
+-OBJECT:('`',"boulder"),(04,07)
+-OBJECT:('`',"boulder"),(04,08)
+-OBJECT:('`',"boulder"),(06,07)
+-OBJECT:('`',"boulder"),(09,07)
+-OBJECT:('`',"boulder"),(11,07)
+-#
+-OBJECT:('`',"boulder"),(03,12)
+-OBJECT:('`',"boulder"),(04,10)
+-OBJECT:('`',"boulder"),(05,12)
+-OBJECT:('`',"boulder"),(06,10)
+-OBJECT:('`',"boulder"),(07,11)
+-OBJECT:('`',"boulder"),(08,10)
+-OBJECT:('`',"boulder"),(09,12)
+-#
+-OBJECT:('`',"boulder"),(03,14)
++OBJECT:('`',"boulder"),(31,04)
++OBJECT:('`',"boulder"),(29,06)
++OBJECT:('`',"boulder"),(30,06)
++OBJECT:('`',"boulder"),(31,07)
++OBJECT:('`',"boulder"),(32,07)
++OBJECT:('`',"boulder"),(29,08)
++OBJECT:('`',"boulder"),(32,08)
++OBJECT:('`',"boulder"),(30,09)
++OBJECT:('`',"boulder"),(31,09)
++OBJECT:('`',"boulder"),(30,10)
++OBJECT:('`',"boulder"),(32,10)
++OBJECT:('`',"boulder"),(33,12)
++OBJECT:('`',"boulder"),(34,14)
++OBJECT:('`',"boulder"),(38,05)
++OBJECT:('`',"boulder"),(39,06)
++OBJECT:('`',"boulder"),(37,07)
++OBJECT:('`',"boulder"),(38,07)
++OBJECT:('`',"boulder"),(37,08)
++OBJECT:('`',"boulder"),(39,09)
++OBJECT:('`',"boulder"),(38,10)
  
- STATIC_PTR void FDECL(wantdoor, (int, int, genericptr_t));
- 
-@@ -295,6 +297,101 @@ xchar ox, oy, nx, ny;
-                       || pet_intact_doorway(nx, ny));
- }
- 
-+/*
-+ * pet_step_passable: validate a single proposed step from (ox,oy) to
-+ * (nx,ny) using the same passability rules as pet_bfs_to_player's
-+ * neighbor test (walls/rock, closed & locked doors, pools, lava,
-+ * boulders, and diagonal squeeze/doorway checks).
-+ *
-+ * This exists because some navigation shortcuts in dog_move() (e.g.
-+ * the immediate "interpose" jump) pick a destination square directly
-+ * without running it through mfndpos()/the BFS pathfinder.  Without
-+ * this check, those shortcuts could move a pet through a closed or
-+ * locked door, or through a wall corner, because being "adjacent" in
-+ * grid terms does not by itself mean the step is legal.
-+ */
-+STATIC_OVL boolean
-+pet_step_passable(mon, ox, oy, nx, ny)
-+struct monst *mon;
-+xchar ox, oy, nx, ny;
-+{
-+    struct permonst *mdat = mon->data;
-+    boolean can_open  = (!nohands(mdat) && !verysmall(mdat));
-+    boolean can_phase = passes_walls(mdat);
-+    boolean can_ooze  = amorphous(mdat);
-+    struct rm *door_lev;
-+    int rtyp, htyp, vtyp;
-+    int ddx, ddy;
-+
-+    if (!isok(nx, ny))
-+        return FALSE;
-+    if (nx == ox && ny == oy)
-+        return TRUE;
-+
-+    ddx = sgn((int) nx - (int) ox);
-+    ddy = sgn((int) ny - (int) oy);
-+
-+    rtyp = levl[nx][ny].typ;
-+
-+    /* --- passability check (monster perspective) --- */
-+    if (IS_ROCK(rtyp)) {
-+        if (can_phase && may_passwall(nx, ny))
-+            ; /* ok */
-+        else if (rtyp == IRONBARS && passes_bars(mdat))
-+            ; /* ok */
-+        else
-+            return FALSE; /* impassable */
-+    } else if (IS_DOOR(rtyp) || rtyp == SDOOR) {
-+        if (levl[nx][ny].doormask & (D_CLOSED | D_LOCKED)) {
-+            if (!can_phase && !can_ooze && !can_open)
-+                return FALSE; /* can't deal with closed/locked door */
-+        }
-+        if (pet_illegal_door_diagonal(ox, oy, nx, ny))
-+            return FALSE;
-+    }
-+
-+    /* pool / lava */
-+    if (is_pool(nx, ny) && !is_swimmer(mdat)
-+        && !is_flyer(mdat) && !is_floater(mdat)
-+        && !is_clinger(mdat))
-+        return FALSE;
-+    if (is_lava(nx, ny) && !likes_lava(mdat)
-+        && !is_flyer(mdat) && !is_floater(mdat)
-+        && !is_clinger(mdat))
-+        return FALSE;
-+
-+    /* boulder */
-+    if (sobj_at(BOULDER, nx, ny) && !throws_rocks(mdat))
-+        return FALSE;
-+
-+    /* diagonal tight-squeeze */
-+    if (ddx && ddy
-+        && bad_rock(mdat, ox, ny)
-+        && bad_rock(mdat, nx, oy))
-+        return FALSE;
-+
-+    /* diagonal door check: can't move diagonally through a door unless
-+       it's completely gone (NODOOR or BROKEN).  Check both adjacent
-+       squares that the diagonal move passes through, including secret
-+       doors. */
-+    if (ddx && ddy) {
-+        htyp = levl[ox + ddx][oy].typ;
-+        if (IS_DOOR(htyp) || htyp == SDOOR) {
-+            door_lev = &levl[ox + ddx][oy];
-+            if (door_lev->doormask != D_NODOOR && door_lev->doormask != D_BROKEN)
-+                return FALSE; /* door blocks diagonal */
-+        }
-+        vtyp = levl[ox][oy + ddy].typ;
-+        if (IS_DOOR(vtyp) || vtyp == SDOOR) {
-+            door_lev = &levl[ox][oy + ddy];
-+            if (door_lev->doormask != D_NODOOR && door_lev->doormask != D_BROKEN)
-+                return FALSE; /* door blocks diagonal */
-+        }
-+    }
-+
-+    return TRUE;
-+}
-+
- /*
-  * pet_bfs_to_player: BFS shortest-path from the player's position to the
-  * pet, modeled after the travel ('_') command pathfinder.  Returns TRUE and
-@@ -1393,6 +1490,21 @@ struct monst *mtmp, *mtmp2;
-     if (!mtmp || !mtmp2)
-         return PET_MELEE_FATAL_PASSIVE;
- 
-+    /* NEW: Custom Mimic Avoidance */
-+    if (!iflags.vanilla_pet_behavior &&
-+        (mtmp2->data == &mons[PM_SMALL_MIMIC] ||
-+         mtmp2->data == &mons[PM_LARGE_MIMIC] ||
-+         mtmp2->data == &mons[PM_GIANT_MIMIC])) {
-+        /* Intimidated unless the pet is substantially stronger (e.g., +4 levels) */
-+        if ((int) mtmp->m_lev < (int) mtmp2->m_lev + 4)
-+            return PET_MELEE_INTIMIDATED;
-+    }
-+
-+    if ((int) mtmp2->m_lev >= (int) mtmp->m_lev + 2)
-+        return PET_MELEE_INTIMIDATED;
-+
-+    /* ... remainder of function ... */
-+
-     if ((int) mtmp2->m_lev >= (int) mtmp->m_lev + 2)
-         return PET_MELEE_INTIMIDATED;
- 
-@@ -1407,6 +1519,19 @@ struct monst *mtmp, *mtmp2;
-     if (max_passive_dmg(mtmp2, mtmp) >= mtmp->mhp)
-         return PET_MELEE_FATAL_PASSIVE;
- 
-+    /* Protect important peaceful NPCs from being killed by an overeager
-+       pet: quest leaders are already covered below via MS_LEADER (that
-+       check predates this custom AI and mirrors stock behavior, so it
-+       stays unconditional).  Shopkeepers and priests (including altar
-+       priests) are not covered there, since their msound isn't
-+       MS_GUARDIAN/MS_LEADER and they're often at full health.  This is
-+       new custom-AI behavior, so -- like the mimic-avoidance check
-+       above -- it's gated off in vanilla mode. */
-+    if (!iflags.vanilla_pet_behavior
-+        && (mtmp2->isshk || mtmp2->ispriest) && mtmp2->mpeaceful
-+        && !Conflict && !mtmp2->marked_for_pet)
-+        return PET_MELEE_PEACEFUL_TARGET;
-+
-     if ((mtmp->mhp * 4 < mtmp->mhpmax
-          || mtmp2->data->msound == MS_GUARDIAN
-          || mtmp2->data->msound == MS_LEADER) && mtmp2->mpeaceful
-@@ -1776,8 +1901,11 @@ int after; /* this is extra fast monster movement */
-        up until they are genuinely back near the player in walkable steps.
-        If BFS cannot find any path at all, do not enter hard rejoin: the pet
-        may be intentionally isolated or genuinely trapped, and should not
--       burn turns trying to sprint toward an unreachable player. */
--    if (mtmp->mtame && !mtmp->mleashed) {
-+       burn turns trying to sprint toward an unreachable player.
-+       This entire "sprint to catch up" behavior is part of the custom
-+       pet AI; when iflags.vanilla_pet_behavior is set, skip it so pets
-+       just use ordinary goal-directed movement instead. */
-+    if (mtmp->mtame && !mtmp->mleashed && !iflags.vanilla_pet_behavior) {
-         if (have_player_path) {
-             if (player_pathdist > PET_REJOIN_PATH_TRIGGER
-                 || (distmin(omx, omy, u.ux, u.uy) > 3
-@@ -1787,8 +1915,10 @@ int after; /* this is extra fast monster movement */
-     }
- 
-      /* choose a monster to pursue using player-facing threat ranking rather
--         than pet ranged-attack scoring */
--     if (!pursue_mon)
-+         than pet ranged-attack scoring.  This long-radius, player-centered
-+         threat search is custom AI; in vanilla mode fall straight through
-+         to the original pet-local target selection below. */
-+     if (!pursue_mon && !iflags.vanilla_pet_behavior)
-           pursue_mon = best_player_threat(mtmp, u.ux, u.uy, PET_TARGET_RADIUS);
- 
-     if (!pursue_mon)
-@@ -1865,6 +1995,7 @@ int after; /* this is extra fast monster movement */
-                a path exists, but if pathing changed mid-turn, avoid trying
-                to sprint toward an unreachable player and fall back to the
-                ordinary goal chosen earlier. */
-+            force_rejoin = FALSE; /* STOP forcing a hard sprint if the door is locked! */
-             gx = u.ux;
-             gy = u.uy;
-         }
-@@ -1885,12 +2016,16 @@ int after; /* this is extra fast monster movement */
-        so the pet positions between the player and the hostile instead of
-        lingering on the opposite side.  Also: if the hostile is very close
-        to the player, attempt an immediate safe interpose square next to the
--       player on the target side (urgent override to help the player). */
--    if (pursue_mon && !(force_marked_pursuit && have_marked_path)) {
-+       player on the target side (urgent override to help the player).
-+       This whole tactical-interposing behavior is custom AI; skip it
-+       entirely in vanilla mode so the pet just uses its ordinary goal
-+       (set by dog_goal) instead of actively repositioning around threats. */
-+    if (pursue_mon && !iflags.vanilla_pet_behavior
-+        && !(force_marked_pursuit && have_marked_path)) {
-         int pmx = pursue_mon->mx, pmy = pursue_mon->my;
-         int maxd2 = MAX_PET_DISTANCE * MAX_PET_DISTANCE;
- 
--        /* urgent interpose: only for immediate threats near the player,
-+        /* urgent interpose: only for immediate threats near the player;
-            prefer an adjacent square beside the player on the target side;
-            only force an immediate move when that square is adjacent to
-            the pet. */
-@@ -1936,7 +2071,9 @@ int after; /* this is extra fast monster movement */
-                     interpose_goal_y = besty;
- 
-                     if ((bestx != omx || besty != omy)
--                        && abs(bestx - omx) <= 1 && abs(besty - omy) <= 1) {
-+                        && abs(bestx - omx) <= 1 && abs(besty - omy) <= 1
-+                        && pet_step_passable(mtmp, (xchar) omx, (xchar) omy,
-+                                             (xchar) bestx, (xchar) besty)) {
-                         /* announce interpose when visible */
-                         if (pursue_mon && pursue_mon != &youmonst
-                             && !(abs(omx - u.ux) <= 1 && abs(omy - u.uy) <= 1)
-@@ -2078,8 +2215,10 @@ int after; /* this is extra fast monster movement */
-             continue;
- 
-         /* never allow an un-leashed pet to move so far from the player that
--           it exceeds MAX_PET_DISTANCE. */
--        if (!mtmp->mleashed) {
-+           it exceeds MAX_PET_DISTANCE.  This clamp is custom AI (vanilla
-+           NetHack has no such hard leash-like radius for tame monsters);
-+           skip it in vanilla mode. */
-+        if (!mtmp->mleashed && !iflags.vanilla_pet_behavior) {
-             int allowed_dist_sq = MAX_PET_DISTANCE * MAX_PET_DISTANCE;
-             int old_player_dist = udist;
-             int new_player_dist = distu(nx, ny);
-@@ -2216,8 +2355,9 @@ int after; /* this is extra fast monster movement */
-            player-centered (within PET_TARGET_RADIUS) be more aggressive
-            about closing on the monster and *allow* temporary movement
-            away from the player so the pet can position between you and
--           the hostile. */
--        if (pursue_mon) {
-+           the hostile.  All of this extra positioning bias is custom AI;
-+           in vanilla mode, skip it and just use the base goal delta. */
-+        if (pursue_mon && !iflags.vanilla_pet_behavior) {
-             int old_mon_dist = dist2(omx, omy, pursue_mon->mx, pursue_mon->my);
-             int new_mon_dist = dist2(nx, ny, pursue_mon->mx, pursue_mon->my);
-             int monDelta = new_mon_dist - old_mon_dist; /* >0 means moving away */
-diff --git a/src/dothrow.c b/src/dothrow.c
-index 1106d1c..71973ca 100644
---- a/src/dothrow.c
-+++ b/src/dothrow.c
-@@ -222,6 +222,42 @@ int shotlimit;
-         default:
-             break; /* No bonus */
-         }
-+        /* Standard RNG roll for the base volley */
-+        multishot = rnd(multishot);
-+        /* Apply custom role flat bonuses after base RNG to prevent dilution */
-+        if (Role_if(PM_WIZARD)) {
-+            if (skill == P_DAGGER) {
-+                /* Dynamically scale bonus based on dagger proficiency ranking */
-+                switch (P_SKILL(P_DAGGER)) {
-+                    /* case P_BASIC:        multishot += 1; break; */
-+                    case P_SKILLED:      multishot += 1; break;
-+                    /* case P_EXPERT:       multishot += 3; break; */
-+#ifdef P_MASTER
-+                    case P_MASTER:       multishot += 4; break;
-+#endif
-+#ifdef P_GRAND_MASTER
-+                    case P_GRAND_MASTER: multishot += 6; break;
-+#endif
-+                    default: break; /* Unskilled gets no bonus */
-+                }
-+            }
-+        } else if (Role_if(PM_RANGER)) {
-+            /* Ranger gets a bonus for daggers or any arrow fired from a bow */
-+            if (skill == P_DAGGER || (obj && ammo_and_launcher(obj, uwep)
-+                && objects[uwep->otyp].oc_skill == P_BOW)) {
-+                multishot += 1;
-+            }
-+        }
-+        /* Apply player-requested count prefixes (e.g., 3f) to the final total */
-+        if (shotlimit && multishot > shotlimit)
-+            multishot = shotlimit;
-+
-+        /* Standard low-tier fallback mechanism */
-+        /* if (!shotlimit && !slowcrossbow && multishot > multishot_floor
-+            && rn2(100)<10) {
-+            multishot = multishot_floor;
-+            pline("single shot");
-+        } */
-         /* ...or using their race's special bow; no bonus for spears */
-         if (!weakmultishot)
-             switch (Race_switch) {
-@@ -256,26 +292,38 @@ int shotlimit;
-             && (int) ACURRSTR < (Race_if(PM_GNOME) ? 16 : 18));
-         if (slowcrossbow)
-             multishot = rnd(multishot);
+ # Traps
+-TRAP:"hole",(08,01)
+-TRAP:"hole",(09,01)
+-TRAP:"hole",(10,01)
+-TRAP:"hole",(11,01)
+-TRAP:"hole",(12,01)
+-TRAP:"hole",(13,01)
+-TRAP:"hole",(14,01)
+-TRAP:"hole",(15,01)
+-TRAP:"hole",(16,01)
+-TRAP:"hole",(17,01)
+-TRAP:"hole",(18,01)
+-TRAP:"hole",(19,01)
+-TRAP:"hole",(20,01)
+-TRAP:"hole",(21,01)
+-TRAP:"hole",(22,01)
+-TRAP:"hole",(23,01)
 -
--        multishot = rnd(multishot);
--        if (!shotlimit && !slowcrossbow && multishot < multishot_floor
--            && rn2(10))
-+        /* old floor-rescue logic, superseded by the bias block below */
-+        /* if (!shotlimit && !slowcrossbow && multishot < multishot_floor
-+            && rn2(100)<90) {
-             multishot = multishot_floor;
--        if ((long) multishot > obj->quan)
-+            pline("multishot_floor shot");
-+            } */
-+        /* Bias the final volley toward the cap (skill floor, or the
-+           player's count-prefix if one was given), with a low chance
-+           of falling short. */
-+        if (!slowcrossbow) {
-+            int cap = shotlimit ? shotlimit : multishot_floor;
-+            if (rn2(100) < 90)
-+                multishot = cap;
-+            else
-+                multishot = rnd(cap);
-+            /* pline("bias cap=%d roll=%d", cap, multishot);*/ /* debug, remove later */
-+        }
-+        /* safety: never try to throw more than you're holding */
-+        if ((long) multishot > obj->quan) {
-             multishot = (int) obj->quan;
--        if (shotlimit > 0 && multishot > shotlimit)
--            multishot = shotlimit;
-+        }
-     }
+-MONSTER:('m',"giant mimic"), random, m_object "boulder"
+-MONSTER:('m',"giant mimic"), random, m_object "boulder"
++#TRAP:"hole",(34,01)
++#TRAP:"hole",(35,01)
++#TRAP:"hole",(36,01)
++#TRAP:"hole",(37,01)
++TRAP:"hole",(38,01)
++TRAP:"hole",(39,01)
++TRAP:"hole",(40,01)
++TRAP:"hole",(41,01)
++TRAP:"hole",(42,01)
++TRAP:"hole",(43,01)
++TRAP:"hole",(44,01)
++TRAP:"hole",(45,01)
++TRAP:"hole",(46,01)
++TRAP:"hole",(47,01)
++TRAP:"hole",(48,01)
++TRAP:"hole",(49,01)
++TRAP:"hole",(50,01)
++
++
++#MONSTER:('m',"giant mimic"), random, m_object "boulder"
++#MONSTER:('m',"giant mimic"), random, m_object "boulder"
  
-     m_shot.s = ammo_and_launcher(obj, uwep) ? TRUE : FALSE;
-     /* give a message if shooting more than one, or if player
-        attempted to specify a count */
--    if (multishot > 0 || shotlimit > 0) {
-+    /* if (multishot > 0 || shotlimit > 0) { */
-         /* "You shoot N arrows." or "You throw N daggers." */
-         You("%s %d %s.", m_shot.s ? "shoot" : "throw",
-             multishot, /* (might be 1 if player gave shotlimit) */
--            (multishot == 1) ? singular(obj, xname) : xname(obj));
--    }
-+            (multishot) ? singular(obj, xname) : xname(obj));
-+    /*}*/
+ # Random objects
+ OBJECT:'%',random
+@@ -521,98 +565,155 @@ OBJECT:'%',random
+ OBJECT:'=',random
+ OBJECT:'/',random
  
-     wep_mask = obj->owornmask;
-     m_shot.o = obj->otyp;
-diff --git a/src/options.c b/src/options.c
-index 1d095ea..55a04e5 100644
---- a/src/options.c
-+++ b/src/options.c
-@@ -193,6 +193,7 @@ static struct Bool_Opt {
- #endif
-     /* moved perm_invent from flags to iflags and out of save file in 3.6.2 */
-     { "perm_invent", &iflags.perm_invent, FALSE, SET_IN_GAME },
-+    { "petai_vanilla", &iflags.vanilla_pet_behavior, FALSE, SET_IN_GAME },
-     { "pickup_thrown", &flags.pickup_thrown, TRUE, SET_IN_GAME },
-     { "popup_dialog", &iflags.wc_popup_dialog, FALSE, SET_IN_GAME },   /*WC*/
-     { "preload_tiles", &iflags.wc_preload_tiles, TRUE, DISP_IN_GAME }, /*WC*/
-diff --git a/src/u_init.c b/src/u_init.c
-index 5fa243b..2c3bef5 100644
---- a/src/u_init.c
-+++ b/src/u_init.c
-@@ -545,13 +545,14 @@ static const struct def_skill Skill_V[] = {
- };
- static const struct def_skill Skill_W[] = {
-     /* Wizards are elite with daggers; raised to Master level 2026-03-06 */
--    { P_DAGGER, P_MASTER },
-+    { P_DAGGER, P_GRAND_MASTER },
-     { P_KNIFE, P_SKILLED },
-     { P_AXE, P_SKILLED },
-     { P_SHORT_SWORD, P_BASIC },
-     { P_CLUB, P_SKILLED },
-     { P_MACE, P_BASIC },
-     { P_QUARTERSTAFF, P_EXPERT },
-+    { P_LONG_SWORD, P_EXPERT },
-     { P_POLEARMS, P_SKILLED },
-     { P_SPEAR, P_BASIC },
-     { P_TRIDENT, P_BASIC },
-diff --git a/win/curses/cursdial.c b/win/curses/cursdial.c
-index 0d224c8..2f2d301 100644
---- a/win/curses/cursdial.c
-+++ b/win/curses/cursdial.c
-@@ -2671,8 +2671,6 @@ menu_get_selections(WINDOW * win, nhmenu *menu, int how)
-         total++;
-         q = q->next_item;
-     }
--    /* fprintf(stderr, "[DBG] resume: hint=%d total_entries=%d landed_page=%d\n",
--            inv_popup_resume_hint, total, p ? p->page_num : -1); */
-     if (p)
-         curpage = p->page_num;
-     inv_popup_resume_hint = -1;
+-# Rewards
+-DOOR:locked,(23,13)
+-DOOR:closed,(17,11)
+-DOOR:closed,(17,13)
+-DOOR:closed,(17,15)
+-REGION:(18,10,22,16),lit,"zoo",filled,irregular
+-IF [50%] {
+-  OBJECT:('(',"bag of holding"),$place[0]
+-} ELSE {
+-  OBJECT:('"',"amulet of reflection"),$place[0]
+-}
+ ENGRAVING:$place[0],burn,"Elbereth"
++ENGRAVING:$place[1],burn,"Elbereth"
++ENGRAVING:$place[2],burn,"Elbereth"
+ OBJECT:('?', "scare monster"),$place[0],cursed
+-
++OBJECT:('?', "scare monster"),$place[1],cursed
++OBJECT:('?', "scare monster"),$place[2],cursed
++OBJECT:('(',"bag of holding"),$place[0]
++OBJECT:('"',"amulet of reflection"),$place[1]
++OBJECT:('[',"cloak of magic resistance"),$place[2]
+ 
+ MAZE:"soko1-2",' '
+ FLAGS:noteleport,premapped,solidify
+-GEOMETRY:center,center
+-#12345678901234567890123456789012345678901234567890
++#GEOMETRY:center,center
++GEOMETRY:left,top
++# #=0 as it is a zero,zero top left layout.
++# 25x17 w*h
++#        10        20        30        40        50
++#123456789012345678901234567890123456789012345678901234567890
+ MAP
+-  ------------------------
+-  |......................|
+-  |..-------------------.|
+-----.|    -----        |.|
+-|..|.--  --...|        |.|
+-|.....|--|....|        |.|
+-|.....|..|....|        |.|
+---....|......--        |.|
+- |.......|...|   ------|.|
+- |....|..|...| --|.....|.|
+- |....|--|...| |.+.....|.|
+- |.......|..-- |-|.....|.|
+- ----....|.--  |.+.....+.|
+-    ---.--.|   |-|.....|--
+-     |.....|   |.+.....|  
+-     |..|..|   --|.....|  
+-     -------     -------  
++                           --------------------------
++                           |........................|
++                           |.......|--..........---.|
++                           -------.-------|.......|.|
++                            |...........| |---S---|.|
++                            |...........| |......P|.|
++                           --------.----- |......K|.|
++                           |............| |.......|.|
++                           |............| |TTT.TT{|.|
++                           -----.-------- |---S---|.|
++                            |..........| --|......|.|
++                            |..........| |.+......|.|
++                            |.........|- |-|......|.|
++                           -------.----  |.+......+.|
++                           |........|    |-|......|--
++                           |........|    |.+......|  
++                           |...|-----    --|......|  
++                           -----           --------  
+ ENDMAP
+-$place = { (16,10),(16,12),(16,14) }
++#MAP #unused original
++#--------------------------
++#|>......^^^^^^^^^^^^^^^^.|
++#|.......----------------.|
++#-------.------         |.|
++# |...........|         |.|
++# |.0.0.0.0.0.|         |.|
++#--------.----|         |.|
++#|...0.0..0.0.|         |.|
++#|...0........|         |.|
++#-----.--------   ------|.|
++# |..0.0.0...|  --|.....|.|
++# |.....0....|  |.+.....|.|
++# |.0.0...0.--  |-|.....|.|
++#-------.----   |.+.....+.|
++#|..0.....|     |-|.....|--
++#|........|     |.+.....|  
++#|...------     --|.....|  
++#-----            -------  
++#ENDMAP
++REGION:(27,00,62,16),lit,"ordinary"
++NON_DIGGABLE:(27,00,62,16)
++NON_PASSWALL:(27,00,62,16)
++
++# prize closet
++REGION:(41,11,43,15),lit,"ordinary"
++#zoo 1-2
++REGION:(45,10,49,16),lit,"zoo",filled
++
++$place = { (42,11),(42,13),(42,15) }
+ SHUFFLE: $place
+ 
+-STAIR:(06,15),down
+-REGION:(00,00,25,16),lit,"ordinary"
+-NON_DIGGABLE:(00,00,25,16)
+-NON_PASSWALL:(00,00,25,16)
++STAIR:(28,01),down
++
++DOOR:locked,(50,13)
++DOOR:closed,(43,11)
++DOOR:closed,(43,13)
++DOOR:closed,(43,15)
++
++ALTAR:(43,05),law,altar
++ALTAR:(45,05),neutral,altar
++ALTAR:(47,05),chaos,altar
++
++## Boulders
++#OBJECT:('`',"boulder"),(03,05)
++#OBJECT:('`',"boulder"),(05,05)
++#OBJECT:('`',"boulder"),(07,05)
++#OBJECT:('`',"boulder"),(09,05)
++#OBJECT:('`',"boulder"),(11,05)
++##
++#OBJECT:('`',"boulder"),(04,07)
++#OBJECT:('`',"boulder"),(04,08)
++#OBJECT:('`',"boulder"),(06,07)
++#OBJECT:('`',"boulder"),(09,07)
++#OBJECT:('`',"boulder"),(11,07)
++##
++#OBJECT:('`',"boulder"),(03,12)
++#OBJECT:('`',"boulder"),(04,10)
++#OBJECT:('`',"boulder"),(05,12)
++#OBJECT:('`',"boulder"),(06,10)
++#OBJECT:('`',"boulder"),(07,11)
++#OBJECT:('`',"boulder"),(08,10)
++#OBJECT:('`',"boulder"),(09,12)
++##
++#OBJECT:('`',"boulder"),(03,14)
+ 
+ # Boulders
+-OBJECT:('`',"boulder"),(04,04)
+-OBJECT:('`',"boulder"),(02,06)
+-OBJECT:('`',"boulder"),(03,06)
+-OBJECT:('`',"boulder"),(04,07)
+-OBJECT:('`',"boulder"),(05,07)
+-OBJECT:('`',"boulder"),(02,08)
+-OBJECT:('`',"boulder"),(05,08)
+-OBJECT:('`',"boulder"),(03,09)
+-OBJECT:('`',"boulder"),(04,09)
+-OBJECT:('`',"boulder"),(03,10)
+-OBJECT:('`',"boulder"),(05,10)
+-OBJECT:('`',"boulder"),(06,12)
++OBJECT:('`',"boulder"),(30,05)
++OBJECT:('`',"boulder"),(32,05)
++OBJECT:('`',"boulder"),(34,05)
++OBJECT:('`',"boulder"),(36,05)
++OBJECT:('`',"boulder"),(38,05)
+ #
+-OBJECT:('`',"boulder"),(07,14)
++OBJECT:('`',"boulder"),(31,07)
++OBJECT:('`',"boulder"),(31,08)
++OBJECT:('`',"boulder"),(33,07)
++OBJECT:('`',"boulder"),(36,07)
++OBJECT:('`',"boulder"),(38,07)
+ #
+-OBJECT:('`',"boulder"),(11,05)
+-OBJECT:('`',"boulder"),(12,06)
+-OBJECT:('`',"boulder"),(10,07)
+-OBJECT:('`',"boulder"),(11,07)
+-OBJECT:('`',"boulder"),(10,08)
+-OBJECT:('`',"boulder"),(12,09)
+-OBJECT:('`',"boulder"),(11,10)
+-
++OBJECT:('`',"boulder"),(30,12)
++OBJECT:('`',"boulder"),(31,10)
++OBJECT:('`',"boulder"),(32,12)
++OBJECT:('`',"boulder"),(33,10)
++OBJECT:('`',"boulder"),(34,11)
++OBJECT:('`',"boulder"),(35,10)
++OBJECT:('`',"boulder"),(36,12)
++#
++OBJECT:('`',"boulder"),(30,14)
+ # Traps
+-TRAP:"hole",(05,01)
+-TRAP:"hole",(06,01)
+-TRAP:"hole",(07,01)
+-TRAP:"hole",(08,01)
+-TRAP:"hole",(09,01)
+-TRAP:"hole",(10,01)
+-TRAP:"hole",(11,01)
+-TRAP:"hole",(12,01)
+-TRAP:"hole",(13,01)
+-TRAP:"hole",(14,01)
+-TRAP:"hole",(15,01)
+-TRAP:"hole",(16,01)
+-TRAP:"hole",(17,01)
+-TRAP:"hole",(18,01)
+-TRAP:"hole",(19,01)
+-TRAP:"hole",(20,01)
+-TRAP:"hole",(21,01)
+-TRAP:"hole",(22,01)
+-
+-MONSTER:('m',"giant mimic"), random, m_object "boulder"
+-MONSTER:('m',"giant mimic"), random, m_object "boulder"
++#TRAP:"hole",(34,01)
++#TRAP:"hole",(35,01)
++#TRAP:"hole",(36,01)
++#TRAP:"hole",(37,01)
++TRAP:"hole",(38,01)
++TRAP:"hole",(39,01)
++TRAP:"hole",(40,01)
++TRAP:"hole",(41,01)
++TRAP:"hole",(42,01)
++TRAP:"hole",(43,01)
++TRAP:"hole",(44,01)
++TRAP:"hole",(45,01)
++TRAP:"hole",(46,01)
++TRAP:"hole",(47,01)
++TRAP:"hole",(48,01)
++TRAP:"hole",(49,01)
++TRAP:"hole",(50,01)
++
++
++
++#MONSTER:('m',"giant mimic"), random, m_object "boulder"
++#MONSTER:('m',"giant mimic"), random, m_object "boulder"
+ 
+ # Random objects
+ OBJECT:'%',random
+@@ -622,16 +723,15 @@ OBJECT:'%',random
+ OBJECT:'=',random
+ OBJECT:'/',random
+ 
+-# Rewards
+-DOOR:locked,(23,12)
+-DOOR:closed,(17,10)
+-DOOR:closed,(17,12)
+-DOOR:closed,(17,14)
+-REGION:(18,09,22,15),lit,"zoo",filled,irregular
+-IF [50%] {
+-  OBJECT:('(',"bag of holding"),$place[0]
+-} ELSE {
+-  OBJECT:('"',"amulet of reflection"),$place[0]
+-}
++
+ ENGRAVING:$place[0],burn,"Elbereth"
++ENGRAVING:$place[1],burn,"Elbereth"
++ENGRAVING:$place[2],burn,"Elbereth"
+ OBJECT:('?', "scare monster"),$place[0],cursed
++OBJECT:('?', "scare monster"),$place[1],cursed
++OBJECT:('?', "scare monster"),$place[2],cursed
++OBJECT:('(',"bag of holding"),$place[0]
++OBJECT:('"',"amulet of reflection"),$place[1]
++OBJECT:('[',"cloak of magic resistance"),$place[2]
++
++
+diff --git a/diffs.txt b/diffs.txt
+index 350e487..a28ab80 100644
+--- a/diffs.txt
++++ b/diffs.txt
+@@ -1,511 +0,0 @@
+-diff --git a/include/flag.h b/include/flag.h
+-index dbfad88..3f2e431 100644
+-Binary files a/include/flag.h and b/include/flag.h differ
+-diff --git a/src/apply.c b/src/apply.c
+-index acd6db5..1482baa 100644
+---- a/src/apply.c
+-+++ b/src/apply.c
+-@@ -93,14 +93,45 @@ use_towel(obj)
+- struct obj *obj;
+- {
+-     boolean drying_feedback = (obj == uwep);
+-+    boolean have_goop = (Glib || u.ucreamed);
+- 
+-     if (!freehand()) {
+-         You("have no free %s!", body_part(HAND));
+-         return 0;
+--    } else if (obj == ublindf) {
+--        You("cannot use it while you're wearing it!");
+--        return 0;
+--    } else if (obj->cursed) {
+-+    }
+-+
+-+    /* Change of key behavior: applying a towel now primarily toggles
+-+     * wearing it over your face/eyes, the same as a blindfold, since
+-+     * that's the far more common use (forcing blindness for telepathy,
+-+     * training, etc. when no real blindfold is at hand).  Wiping your
+-+     * face/hands clean is demoted to a secondary action, reached via a
+-+     * y/n prompt when there's actually something to wipe. */
+-+    if (obj == ublindf) {
+-+        /* already wearing this towel over your face -- take it off */
+-+        if (cursed(obj))
+-+            return 1; /* costs a turn, matches normal takeoff behavior */
+-+        Blindf_off(obj);
+-+        if (is_wet_towel(obj))
+-+            dry_a_towel(obj, -1, drying_feedback);
+-+        return 1;
+-+    } else if (!ublindf) {
+-+        /* nothing else is covering your eyes; put the towel on unless
+-+         * the player would rather wipe up gunk instead */
+-+        if (have_goop) {
+-+            char choice = ynq("Wipe off the gunk instead of covering your face?");
+-+            if (choice == 'q') return 0;  /* Cancel the action entirely, costs 0 turns */
+-+            if (choice == 'y') goto do_wipe;
+-+        }
+-+        Blindf_on(obj);
+-+        if (is_wet_towel(obj))
+-+            dry_a_towel(obj, -1, drying_feedback);
+-+        return 1;
+-+    }
+-+    /* else: some other eyewear (blindfold/lenses) is already worn, so
+-+       putting the towel on isn't an option -- fall through to wiping */
+-+
+-+ do_wipe:
+-+    if (obj->cursed) {
+-         long old;
+- 
+-         switch (rn2(3)) {
+-diff --git a/src/cmd.c b/src/cmd.c
+-index 550bf28..fb23608 100644
+---- a/src/cmd.c
+-+++ b/src/cmd.c
+-@@ -162,6 +162,7 @@ STATIC_PTR int NDECL(timed_occupation);
+- STATIC_PTR int NDECL(doextcmd);
+- STATIC_PTR int NDECL(dotravel);
+- STATIC_PTR int NDECL(doterrain);
+-+STATIC_PTR int NDECL(dotogglepetai); /* NEW: Properly declared internal command */
+- STATIC_PTR int NDECL(wiz_wish);
+- STATIC_PTR int NDECL(wiz_identify);
+- STATIC_PTR int NDECL(wiz_intrinsic);
+-@@ -502,10 +503,21 @@ doextlist(VOID_ARGS)
+-                              iflags.menu_headings, buf, MENU_UNSELECTED);
+-                     menushown[pass] = 1;
+-                 }
+--                Sprintf(buf, " %-14s %-3s %s",
+--                        efp->ef_txt,
+--                        (efp->flags & AUTOCOMPLETE) ? "[A]" : " ",
+--                        efp->ef_desc);
+-+                /* NEW: for the petai toggle, show what pressing it will
+-+                   *do* ("...on" if custom AI is currently off, "...off"
+-+                   if it's currently on) rather than a static description,
+-+                   so the list itself reflects live state. */
+-+                if (efp->ef_funct == dotogglepetai) {
+-+                    Sprintf(buf, " %-14s %-3s toggle custom pet AI %s",
+-+                            efp->ef_txt,
+-+                            (efp->flags & AUTOCOMPLETE) ? "[A]" : " ",
+-+                            iflags.vanilla_pet_behavior ? "on" : "off");
+-+                } else {
+-+                    Sprintf(buf, " %-14s %-3s %s",
+-+                            efp->ef_txt,
+-+                            (efp->flags & AUTOCOMPLETE) ? "[A]" : " ",
+-+                            efp->ef_desc);
+-+                }
+-                 add_menu(menuwin, NO_GLYPH, &any, 0, 0, ATR_NONE,
+-                          buf, MENU_UNSELECTED);
+-                 ++n;
+-@@ -1539,6 +1551,17 @@ wiz_rumor_check(VOID_ARGS)
+-     return 0;
+- }
+- 
+-+/* #petai command -- toggle custom pet AI (mimic avoidance, aggressive
+-+   rejoin/interpose logic, etc.) on/off in favor of vanilla pet behavior */
+-+STATIC_PTR int
+-+dotogglepetai(VOID_ARGS)
+-+{
+-+    iflags.vanilla_pet_behavior = !iflags.vanilla_pet_behavior;
+-+    pline("Pet AI is now set to: %s.",
+-+          iflags.vanilla_pet_behavior ? "vanilla" : "custom");
+-+    return 0;
+-+}
+-+
+- /* #terrain command -- show known map, inspired by crawl's '|' command */
+- STATIC_PTR int
+- doterrain(VOID_ARGS)
+-@@ -3651,6 +3674,8 @@ struct ext_func_tab extcmdlist[] = {
+-             dooverview, IFBURIED | AUTOCOMPLETE },
+-     { '\0', "panic", "test panic routine (fatal to game)",
+-             wiz_panic, IFBURIED | AUTOCOMPLETE | WIZMODECMD },
+-+    { '\0', "petai", "toggle custom pet AI on/off",
+-+            dotogglepetai, IFBURIED | AUTOCOMPLETE },
+-     { 'p', "pay", "pay your shopping bill", dopay },
+-     { ',', "pickup", "pick up things at the current location", dopickup },
+-     { '\0', "polyself", "polymorph self",
+-diff --git a/src/dogmove.c b/src/dogmove.c
+-index 184dca7..f1c16bf 100644
+---- a/src/dogmove.c
+-+++ b/src/dogmove.c
+-@@ -268,6 +268,8 @@ STATIC_DCL boolean FDECL(pet_bfs_to_coord,
+-                           int *));
+- STATIC_DCL boolean FDECL(pet_bfs_to_player,
+-                          (struct monst *, xchar *, xchar *, int *));
+-+STATIC_DCL boolean FDECL(pet_step_passable,
+-+                         (struct monst *, xchar, xchar, xchar, xchar));
+- 
+- STATIC_PTR void FDECL(wantdoor, (int, int, genericptr_t));
+- 
+-@@ -295,6 +297,101 @@ xchar ox, oy, nx, ny;
+-                       || pet_intact_doorway(nx, ny));
+- }
+- 
+-+/*
+-+ * pet_step_passable: validate a single proposed step from (ox,oy) to
+-+ * (nx,ny) using the same passability rules as pet_bfs_to_player's
+-+ * neighbor test (walls/rock, closed & locked doors, pools, lava,
+-+ * boulders, and diagonal squeeze/doorway checks).
+-+ *
+-+ * This exists because some navigation shortcuts in dog_move() (e.g.
+-+ * the immediate "interpose" jump) pick a destination square directly
+-+ * without running it through mfndpos()/the BFS pathfinder.  Without
+-+ * this check, those shortcuts could move a pet through a closed or
+-+ * locked door, or through a wall corner, because being "adjacent" in
+-+ * grid terms does not by itself mean the step is legal.
+-+ */
+-+STATIC_OVL boolean
+-+pet_step_passable(mon, ox, oy, nx, ny)
+-+struct monst *mon;
+-+xchar ox, oy, nx, ny;
+-+{
+-+    struct permonst *mdat = mon->data;
+-+    boolean can_open  = (!nohands(mdat) && !verysmall(mdat));
+-+    boolean can_phase = passes_walls(mdat);
+-+    boolean can_ooze  = amorphous(mdat);
+-+    struct rm *door_lev;
+-+    int rtyp, htyp, vtyp;
+-+    int ddx, ddy;
+-+
+-+    if (!isok(nx, ny))
+-+        return FALSE;
+-+    if (nx == ox && ny == oy)
+-+        return TRUE;
+-+
+-+    ddx = sgn((int) nx - (int) ox);
+-+    ddy = sgn((int) ny - (int) oy);
+-+
+-+    rtyp = levl[nx][ny].typ;
+-+
+-+    /* --- passability check (monster perspective) --- */
+-+    if (IS_ROCK(rtyp)) {
+-+        if (can_phase && may_passwall(nx, ny))
+-+            ; /* ok */
+-+        else if (rtyp == IRONBARS && passes_bars(mdat))
+-+            ; /* ok */
+-+        else
+-+            return FALSE; /* impassable */
+-+    } else if (IS_DOOR(rtyp) || rtyp == SDOOR) {
+-+        if (levl[nx][ny].doormask & (D_CLOSED | D_LOCKED)) {
+-+            if (!can_phase && !can_ooze && !can_open)
+-+                return FALSE; /* can't deal with closed/locked door */
+-+        }
+-+        if (pet_illegal_door_diagonal(ox, oy, nx, ny))
+-+            return FALSE;
+-+    }
+-+
+-+    /* pool / lava */
+-+    if (is_pool(nx, ny) && !is_swimmer(mdat)
+-+        && !is_flyer(mdat) && !is_floater(mdat)
+-+        && !is_clinger(mdat))
+-+        return FALSE;
+-+    if (is_lava(nx, ny) && !likes_lava(mdat)
+-+        && !is_flyer(mdat) && !is_floater(mdat)
+-+        && !is_clinger(mdat))
+-+        return FALSE;
+-+
+-+    /* boulder */
+-+    if (sobj_at(BOULDER, nx, ny) && !throws_rocks(mdat))
+-+        return FALSE;
+-+
+-+    /* diagonal tight-squeeze */
+-+    if (ddx && ddy
+-+        && bad_rock(mdat, ox, ny)
+-+        && bad_rock(mdat, nx, oy))
+-+        return FALSE;
+-+
+-+    /* diagonal door check: can't move diagonally through a door unless
+-+       it's completely gone (NODOOR or BROKEN).  Check both adjacent
+-+       squares that the diagonal move passes through, including secret
+-+       doors. */
+-+    if (ddx && ddy) {
+-+        htyp = levl[ox + ddx][oy].typ;
+-+        if (IS_DOOR(htyp) || htyp == SDOOR) {
+-+            door_lev = &levl[ox + ddx][oy];
+-+            if (door_lev->doormask != D_NODOOR && door_lev->doormask != D_BROKEN)
+-+                return FALSE; /* door blocks diagonal */
+-+        }
+-+        vtyp = levl[ox][oy + ddy].typ;
+-+        if (IS_DOOR(vtyp) || vtyp == SDOOR) {
+-+            door_lev = &levl[ox][oy + ddy];
+-+            if (door_lev->doormask != D_NODOOR && door_lev->doormask != D_BROKEN)
+-+                return FALSE; /* door blocks diagonal */
+-+        }
+-+    }
+-+
+-+    return TRUE;
+-+}
+-+
+- /*
+-  * pet_bfs_to_player: BFS shortest-path from the player's position to the
+-  * pet, modeled after the travel ('_') command pathfinder.  Returns TRUE and
+-@@ -1393,6 +1490,21 @@ struct monst *mtmp, *mtmp2;
+-     if (!mtmp || !mtmp2)
+-         return PET_MELEE_FATAL_PASSIVE;
+- 
+-+    /* NEW: Custom Mimic Avoidance */
+-+    if (!iflags.vanilla_pet_behavior &&
+-+        (mtmp2->data == &mons[PM_SMALL_MIMIC] ||
+-+         mtmp2->data == &mons[PM_LARGE_MIMIC] ||
+-+         mtmp2->data == &mons[PM_GIANT_MIMIC])) {
+-+        /* Intimidated unless the pet is substantially stronger (e.g., +4 levels) */
+-+        if ((int) mtmp->m_lev < (int) mtmp2->m_lev + 4)
+-+            return PET_MELEE_INTIMIDATED;
+-+    }
+-+
+-+    if ((int) mtmp2->m_lev >= (int) mtmp->m_lev + 2)
+-+        return PET_MELEE_INTIMIDATED;
+-+
+-+    /* ... remainder of function ... */
+-+
+-     if ((int) mtmp2->m_lev >= (int) mtmp->m_lev + 2)
+-         return PET_MELEE_INTIMIDATED;
+- 
+-@@ -1407,6 +1519,19 @@ struct monst *mtmp, *mtmp2;
+-     if (max_passive_dmg(mtmp2, mtmp) >= mtmp->mhp)
+-         return PET_MELEE_FATAL_PASSIVE;
+- 
+-+    /* Protect important peaceful NPCs from being killed by an overeager
+-+       pet: quest leaders are already covered below via MS_LEADER (that
+-+       check predates this custom AI and mirrors stock behavior, so it
+-+       stays unconditional).  Shopkeepers and priests (including altar
+-+       priests) are not covered there, since their msound isn't
+-+       MS_GUARDIAN/MS_LEADER and they're often at full health.  This is
+-+       new custom-AI behavior, so -- like the mimic-avoidance check
+-+       above -- it's gated off in vanilla mode. */
+-+    if (!iflags.vanilla_pet_behavior
+-+        && (mtmp2->isshk || mtmp2->ispriest) && mtmp2->mpeaceful
+-+        && !Conflict && !mtmp2->marked_for_pet)
+-+        return PET_MELEE_PEACEFUL_TARGET;
+-+
+-     if ((mtmp->mhp * 4 < mtmp->mhpmax
+-          || mtmp2->data->msound == MS_GUARDIAN
+-          || mtmp2->data->msound == MS_LEADER) && mtmp2->mpeaceful
+-@@ -1776,8 +1901,11 @@ int after; /* this is extra fast monster movement */
+-        up until they are genuinely back near the player in walkable steps.
+-        If BFS cannot find any path at all, do not enter hard rejoin: the pet
+-        may be intentionally isolated or genuinely trapped, and should not
+--       burn turns trying to sprint toward an unreachable player. */
+--    if (mtmp->mtame && !mtmp->mleashed) {
+-+       burn turns trying to sprint toward an unreachable player.
+-+       This entire "sprint to catch up" behavior is part of the custom
+-+       pet AI; when iflags.vanilla_pet_behavior is set, skip it so pets
+-+       just use ordinary goal-directed movement instead. */
+-+    if (mtmp->mtame && !mtmp->mleashed && !iflags.vanilla_pet_behavior) {
+-         if (have_player_path) {
+-             if (player_pathdist > PET_REJOIN_PATH_TRIGGER
+-                 || (distmin(omx, omy, u.ux, u.uy) > 3
+-@@ -1787,8 +1915,10 @@ int after; /* this is extra fast monster movement */
+-     }
+- 
+-      /* choose a monster to pursue using player-facing threat ranking rather
+--         than pet ranged-attack scoring */
+--     if (!pursue_mon)
+-+         than pet ranged-attack scoring.  This long-radius, player-centered
+-+         threat search is custom AI; in vanilla mode fall straight through
+-+         to the original pet-local target selection below. */
+-+     if (!pursue_mon && !iflags.vanilla_pet_behavior)
+-           pursue_mon = best_player_threat(mtmp, u.ux, u.uy, PET_TARGET_RADIUS);
+- 
+-     if (!pursue_mon)
+-@@ -1865,6 +1995,7 @@ int after; /* this is extra fast monster movement */
+-                a path exists, but if pathing changed mid-turn, avoid trying
+-                to sprint toward an unreachable player and fall back to the
+-                ordinary goal chosen earlier. */
+-+            force_rejoin = FALSE; /* STOP forcing a hard sprint if the door is locked! */
+-             gx = u.ux;
+-             gy = u.uy;
+-         }
+-@@ -1885,12 +2016,16 @@ int after; /* this is extra fast monster movement */
+-        so the pet positions between the player and the hostile instead of
+-        lingering on the opposite side.  Also: if the hostile is very close
+-        to the player, attempt an immediate safe interpose square next to the
+--       player on the target side (urgent override to help the player). */
+--    if (pursue_mon && !(force_marked_pursuit && have_marked_path)) {
+-+       player on the target side (urgent override to help the player).
+-+       This whole tactical-interposing behavior is custom AI; skip it
+-+       entirely in vanilla mode so the pet just uses its ordinary goal
+-+       (set by dog_goal) instead of actively repositioning around threats. */
+-+    if (pursue_mon && !iflags.vanilla_pet_behavior
+-+        && !(force_marked_pursuit && have_marked_path)) {
+-         int pmx = pursue_mon->mx, pmy = pursue_mon->my;
+-         int maxd2 = MAX_PET_DISTANCE * MAX_PET_DISTANCE;
+- 
+--        /* urgent interpose: only for immediate threats near the player,
+-+        /* urgent interpose: only for immediate threats near the player;
+-            prefer an adjacent square beside the player on the target side;
+-            only force an immediate move when that square is adjacent to
+-            the pet. */
+-@@ -1936,7 +2071,9 @@ int after; /* this is extra fast monster movement */
+-                     interpose_goal_y = besty;
+- 
+-                     if ((bestx != omx || besty != omy)
+--                        && abs(bestx - omx) <= 1 && abs(besty - omy) <= 1) {
+-+                        && abs(bestx - omx) <= 1 && abs(besty - omy) <= 1
+-+                        && pet_step_passable(mtmp, (xchar) omx, (xchar) omy,
+-+                                             (xchar) bestx, (xchar) besty)) {
+-                         /* announce interpose when visible */
+-                         if (pursue_mon && pursue_mon != &youmonst
+-                             && !(abs(omx - u.ux) <= 1 && abs(omy - u.uy) <= 1)
+-@@ -2078,8 +2215,10 @@ int after; /* this is extra fast monster movement */
+-             continue;
+- 
+-         /* never allow an un-leashed pet to move so far from the player that
+--           it exceeds MAX_PET_DISTANCE. */
+--        if (!mtmp->mleashed) {
+-+           it exceeds MAX_PET_DISTANCE.  This clamp is custom AI (vanilla
+-+           NetHack has no such hard leash-like radius for tame monsters);
+-+           skip it in vanilla mode. */
+-+        if (!mtmp->mleashed && !iflags.vanilla_pet_behavior) {
+-             int allowed_dist_sq = MAX_PET_DISTANCE * MAX_PET_DISTANCE;
+-             int old_player_dist = udist;
+-             int new_player_dist = distu(nx, ny);
+-@@ -2216,8 +2355,9 @@ int after; /* this is extra fast monster movement */
+-            player-centered (within PET_TARGET_RADIUS) be more aggressive
+-            about closing on the monster and *allow* temporary movement
+-            away from the player so the pet can position between you and
+--           the hostile. */
+--        if (pursue_mon) {
+-+           the hostile.  All of this extra positioning bias is custom AI;
+-+           in vanilla mode, skip it and just use the base goal delta. */
+-+        if (pursue_mon && !iflags.vanilla_pet_behavior) {
+-             int old_mon_dist = dist2(omx, omy, pursue_mon->mx, pursue_mon->my);
+-             int new_mon_dist = dist2(nx, ny, pursue_mon->mx, pursue_mon->my);
+-             int monDelta = new_mon_dist - old_mon_dist; /* >0 means moving away */
+-diff --git a/src/dothrow.c b/src/dothrow.c
+-index 1106d1c..71973ca 100644
+---- a/src/dothrow.c
+-+++ b/src/dothrow.c
+-@@ -222,6 +222,42 @@ int shotlimit;
+-         default:
+-             break; /* No bonus */
+-         }
+-+        /* Standard RNG roll for the base volley */
+-+        multishot = rnd(multishot);
+-+        /* Apply custom role flat bonuses after base RNG to prevent dilution */
+-+        if (Role_if(PM_WIZARD)) {
+-+            if (skill == P_DAGGER) {
+-+                /* Dynamically scale bonus based on dagger proficiency ranking */
+-+                switch (P_SKILL(P_DAGGER)) {
+-+                    /* case P_BASIC:        multishot += 1; break; */
+-+                    case P_SKILLED:      multishot += 1; break;
+-+                    /* case P_EXPERT:       multishot += 3; break; */
+-+#ifdef P_MASTER
+-+                    case P_MASTER:       multishot += 4; break;
+-+#endif
+-+#ifdef P_GRAND_MASTER
+-+                    case P_GRAND_MASTER: multishot += 6; break;
+-+#endif
+-+                    default: break; /* Unskilled gets no bonus */
+-+                }
+-+            }
+-+        } else if (Role_if(PM_RANGER)) {
+-+            /* Ranger gets a bonus for daggers or any arrow fired from a bow */
+-+            if (skill == P_DAGGER || (obj && ammo_and_launcher(obj, uwep)
+-+                && objects[uwep->otyp].oc_skill == P_BOW)) {
+-+                multishot += 1;
+-+            }
+-+        }
+-+        /* Apply player-requested count prefixes (e.g., 3f) to the final total */
+-+        if (shotlimit && multishot > shotlimit)
+-+            multishot = shotlimit;
+-+
+-+        /* Standard low-tier fallback mechanism */
+-+        /* if (!shotlimit && !slowcrossbow && multishot > multishot_floor
+-+            && rn2(100)<10) {
+-+            multishot = multishot_floor;
+-+            pline("single shot");
+-+        } */
+-         /* ...or using their race's special bow; no bonus for spears */
+-         if (!weakmultishot)
+-             switch (Race_switch) {
+-@@ -256,26 +292,38 @@ int shotlimit;
+-             && (int) ACURRSTR < (Race_if(PM_GNOME) ? 16 : 18));
+-         if (slowcrossbow)
+-             multishot = rnd(multishot);
+--
+--        multishot = rnd(multishot);
+--        if (!shotlimit && !slowcrossbow && multishot < multishot_floor
+--            && rn2(10))
+-+        /* old floor-rescue logic, superseded by the bias block below */
+-+        /* if (!shotlimit && !slowcrossbow && multishot < multishot_floor
+-+            && rn2(100)<90) {
+-             multishot = multishot_floor;
+--        if ((long) multishot > obj->quan)
+-+            pline("multishot_floor shot");
+-+            } */
+-+        /* Bias the final volley toward the cap (skill floor, or the
+-+           player's count-prefix if one was given), with a low chance
+-+           of falling short. */
+-+        if (!slowcrossbow) {
+-+            int cap = shotlimit ? shotlimit : multishot_floor;
+-+            if (rn2(100) < 90)
+-+                multishot = cap;
+-+            else
+-+                multishot = rnd(cap);
+-+            /* pline("bias cap=%d roll=%d", cap, multishot);*/ /* debug, remove later */
+-+        }
+-+        /* safety: never try to throw more than you're holding */
+-+        if ((long) multishot > obj->quan) {
+-             multishot = (int) obj->quan;
+--        if (shotlimit > 0 && multishot > shotlimit)
+--            multishot = shotlimit;
+-+        }
+-     }
+- 
+-     m_shot.s = ammo_and_launcher(obj, uwep) ? TRUE : FALSE;
+-     /* give a message if shooting more than one, or if player
+-        attempted to specify a count */
+--    if (multishot > 0 || shotlimit > 0) {
+-+    /* if (multishot > 0 || shotlimit > 0) { */
+-         /* "You shoot N arrows." or "You throw N daggers." */
+-         You("%s %d %s.", m_shot.s ? "shoot" : "throw",
+-             multishot, /* (might be 1 if player gave shotlimit) */
+--            (multishot == 1) ? singular(obj, xname) : xname(obj));
+--    }
+-+            (multishot) ? singular(obj, xname) : xname(obj));
+-+    /*}*/
+- 
+-     wep_mask = obj->owornmask;
+-     m_shot.o = obj->otyp;
+-diff --git a/src/options.c b/src/options.c
+-index 1d095ea..55a04e5 100644
+---- a/src/options.c
+-+++ b/src/options.c
+-@@ -193,6 +193,7 @@ static struct Bool_Opt {
+- #endif
+-     /* moved perm_invent from flags to iflags and out of save file in 3.6.2 */
+-     { "perm_invent", &iflags.perm_invent, FALSE, SET_IN_GAME },
+-+    { "petai_vanilla", &iflags.vanilla_pet_behavior, FALSE, SET_IN_GAME },
+-     { "pickup_thrown", &flags.pickup_thrown, TRUE, SET_IN_GAME },
+-     { "popup_dialog", &iflags.wc_popup_dialog, FALSE, SET_IN_GAME },   /*WC*/
+-     { "preload_tiles", &iflags.wc_preload_tiles, TRUE, DISP_IN_GAME }, /*WC*/
+-diff --git a/src/u_init.c b/src/u_init.c
+-index 5fa243b..2c3bef5 100644
+---- a/src/u_init.c
+-+++ b/src/u_init.c
+-@@ -545,13 +545,14 @@ static const struct def_skill Skill_V[] = {
+- };
+- static const struct def_skill Skill_W[] = {
+-     /* Wizards are elite with daggers; raised to Master level 2026-03-06 */
+--    { P_DAGGER, P_MASTER },
+-+    { P_DAGGER, P_GRAND_MASTER },
+-     { P_KNIFE, P_SKILLED },
+-     { P_AXE, P_SKILLED },
+-     { P_SHORT_SWORD, P_BASIC },
+-     { P_CLUB, P_SKILLED },
+-     { P_MACE, P_BASIC },
+-     { P_QUARTERSTAFF, P_EXPERT },
+-+    { P_LONG_SWORD, P_EXPERT },
+-     { P_POLEARMS, P_SKILLED },
+-     { P_SPEAR, P_BASIC },
+-     { P_TRIDENT, P_BASIC },
+-diff --git a/win/curses/cursdial.c b/win/curses/cursdial.c
+-index 0d224c8..2f2d301 100644
+---- a/win/curses/cursdial.c
+-+++ b/win/curses/cursdial.c
+-@@ -2671,8 +2671,6 @@ menu_get_selections(WINDOW * win, nhmenu *menu, int how)
+-         total++;
+-         q = q->next_item;
+-     }
+--    /* fprintf(stderr, "[DBG] resume: hint=%d total_entries=%d landed_page=%d\n",
+--            inv_popup_resume_hint, total, p ? p->page_num : -1); */
+-     if (p)
+-         curpage = p->page_num;
+-     inv_popup_resume_hint = -1;
+diff --git a/src/pickup.c b/src/pickup.c
+index 33e9c9e..885b4be 100644
+--- a/src/pickup.c
++++ b/src/pickup.c
+@@ -1889,6 +1889,33 @@ struct obj *otmp;
+     obj_extract_self(otmp);
+     newsym(ox, oy);
+ 
++    /* Sokoban Choice Mechanic: Vaporize remaining prizes on pickup */
++    if (In_sokoban(&u.uz) && u.uz.dlevel == 1 && ox == 16 && (oy >= 11 && oy <= 15)) {
++        /* $place = { (16,11),(16,13),(16,15) } */
++    pline("DEBUG: vaporize check fired, ox=%d oy=%d dlevel=%d", ox, oy, u.uz.dlevel);
++        struct obj *obj_to_vanish, *next_obj;
++        boolean vanished_any = FALSE;
++
++        for (obj_to_vanish = fobj; obj_to_vanish; obj_to_vanish = next_obj) {
++            next_obj = obj_to_vanish->nobj;
++            if (obj_to_vanish->ox == 16 && (obj_to_vanish->oy >= 10 && obj_to_vanish->oy <= 15) && obj_to_vanish->oy != oy) {
++                if (obj_to_vanish->otyp == BAG_OF_HOLDING ||
++                    obj_to_vanish->otyp == AMULET_OF_REFLECTION ||
++                    obj_to_vanish->otyp == CLOAK_OF_MAGIC_RESISTANCE) {
++
++                    obj_extract_self(obj_to_vanish);
++                    newsym(obj_to_vanish->ox, obj_to_vanish->oy);
++                    obfree(obj_to_vanish, (struct obj *)0);
++                    vanished_any = TRUE;
++                }
++            }
++        }
++        if (vanished_any) {
++            You("hear a strange rumbling chime in the distance...");
++            pline("The other rewards have dissolved into thin air!");
++        }
++    }
++
+     /* for shop items, addinv() needs to be after addtobill() (so that
+        object merger can take otmp->unpaid into account) but before
+        remote_robbery() (which calls rob_shop() which calls setpaid()

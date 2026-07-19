@@ -1889,6 +1889,33 @@ struct obj *otmp;
     obj_extract_self(otmp);
     newsym(ox, oy);
 
+    /* Sokoban Choice Mechanic: Vaporize remaining prizes on pickup */
+    if (In_sokoban(&u.uz) && u.uz.dlevel == 1 && ox == 42 && (oy >= 11 && oy <= 15)) {
+        /* $place = { (42,11),(42,13),(42,15) } */
+    pline("DEBUG: vaporize check fired, ox=%d oy=%d dlevel=%d", ox, oy, u.uz.dlevel);
+        struct obj *obj_to_vanish, *next_obj;
+        boolean vanished_any = FALSE;
+
+        for (obj_to_vanish = fobj; obj_to_vanish; obj_to_vanish = next_obj) {
+            next_obj = obj_to_vanish->nobj;
+            if (obj_to_vanish->ox == 42 && (obj_to_vanish->oy >= 10 && obj_to_vanish->oy <= 15) && obj_to_vanish->oy != oy) {
+                if (obj_to_vanish->otyp == BAG_OF_HOLDING ||
+                    obj_to_vanish->otyp == AMULET_OF_REFLECTION ||
+                    obj_to_vanish->otyp == CLOAK_OF_MAGIC_RESISTANCE) {
+
+                    obj_extract_self(obj_to_vanish);
+                    newsym(obj_to_vanish->ox, obj_to_vanish->oy);
+                    obfree(obj_to_vanish, (struct obj *)0);
+                    vanished_any = TRUE;
+                }
+            }
+        }
+        if (vanished_any) {
+            You("hear a strange rumbling chime in the distance...");
+            pline("The other rewards have dissolved into thin air!");
+        }
+    }
+
     /* for shop items, addinv() needs to be after addtobill() (so that
        object merger can take otmp->unpaid into account) but before
        remote_robbery() (which calls rob_shop() which calls setpaid()
