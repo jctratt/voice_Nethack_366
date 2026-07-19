@@ -121,7 +121,7 @@ MAP
 ...............    .........CCC...}.|.|.........................|.|.}.......
 ................   ....C....CCC...}.|.|.-----------------------.|.|.}.......
 .......C..C.....  .....C....CCC...}.|.|.|......+.......+......|.|.|.}.......
-.............C..CC.....C....CCC...}.|.|.|......|-------|......|.|.|.}.......
+.............C..CC.....C....CCC...}.+.+.+......|-------|......|.|.|.}.......
 ................   ....C....CCC...}.|.|.|......|.......|......|.|.|.}.......
 ......C..C.....    ....C....CCC...}.|.|.|......|-------|......|.|.|.}.......
 ............C..     ...C....CCC...}.|.|.|......+.......+......|.|.|.}.......
@@ -142,22 +142,22 @@ REPLACE_TERRAIN:(34,1,68,19), '}', '.', 2%
 # Dungeon Description
 REGION:(00,00,75,20),lit,"ordinary"
 REGION:(37,04,65,16),unlit,"ordinary",filled,irregular {
-  ROOMDOOR:true,closed,north|south|west|east,random
+  #ROOMDOOR:true,closed,north|south|west|east,random
 }
 REGION:(39,06,63,14),unlit,"ordinary",filled,irregular {
-  ROOMDOOR:true,closed,north|south|west|east,random
+  #ROOMDOOR:true,closed,north|south|west|east,random
 }
 
 REGION:(41,08,46,12),lit,"ordinary",filled,irregular {
-  ROOMDOOR:true,closed,north|south|west,random
+  #ROOMDOOR:true,closed,north|south|west,random
 }
 REGION:(56,08,61,12),lit,"ordinary",filled,irregular {
-  ROOMDOOR:true,closed,north|south|east,random
+  #ROOMDOOR:true,closed,north|south|east,random
 }
 REGION:(48,08,54,08),unlit,"ordinary"
 REGION:(48,12,54,12),unlit,"ordinary"
 REGION:(48,10,54,10),unlit,"ordinary",filled,irregular {
-  ROOMDOOR:true,closed,north|south|west|east,random
+  #ROOMDOOR:true,closed,north|south|west|east,random
 }
 
 # Doors
@@ -165,6 +165,9 @@ DOOR:closed,(55,08)
 DOOR:closed,(55,12)
 DOOR:closed,(47,08)
 DOOR:closed,(47,12)
+DOOR:closed,(36,09)
+DOOR:closed,(38,09)
+DOOR:closed,(40,09)
 # Stairs
 TERRAIN:(03,17),'.'
 STAIR:(03,17),up
