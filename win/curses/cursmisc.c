@@ -85,6 +85,21 @@ curses_read_char()
         curses_refresh_nethack_windows();
     }
 
+    {
+        /* Mirror every keystroke into the same batched log used for
+           outgoing pline() messages, so $NHN4_messages.txt shows input
+           interleaved with output. This is the single chokepoint all
+           curses keyboard input passes through (top-level commands,
+           getpos(), y/n prompts, text entry, ...); doagain replay and
+           mouse-click-derived commands don't call getch() again so they
+           are not re-logged here. */
+        extern void log_message_batched(const char *line, int force_flush);
+        char kbuf[16];
+
+        snprintf(kbuf, sizeof(kbuf), "[key] %s", visctrl((char) ch));
+        log_message_batched(kbuf, 0);
+    }
+
     return ch;
 }
 
@@ -1099,15 +1114,33 @@ parse_escape_sequence(void)
     ret = getch();
 
     if (ret != ERR) {           /* Likely an escape sequence */
-        if (((ret >= 'a') && (ret <= 'z')) || ((ret >= '0') && (ret <= '9'))) {
-            ret |= 0x80;        /* Meta key support for most terminals */
-        } else if (ret == 'O') {        /* Numeric keypad */
+        if (ret == 'O') {        /* Numeric keypad */
             ret = getch();
             if ((ret != ERR) && (ret >= 112) && (ret <= 121)) {
                 ret = ret - 112 + '0';  /* Convert to number */
             } else {
                 ret = '\033';   /* Escape */
             }
+        } else if (iflags.altmeta
+                   && (((ret >= 'a') && (ret <= 'z'))
+                       || ((ret >= '0') && (ret <= '9')))) {
+            /* A terminal that encodes Alt+key as ESC+key (rather than
+               setting the 8th bit directly) sends both bytes back to
+               back, within this same short timeout window -- that's
+               indistinguishable at the byte level from a human pressing
+               ESC and then, moments later, a plain key, so only do this
+               when 'altmeta' is on and only for the handful of ms a real
+               terminal-generated sequence would take. */
+            ret |= 0x80;        /* Meta key support for most terminals */
+        } else {
+            /* Not a recognized escape sequence: this is a plain ESC
+               keypress that happened to be followed closely by another
+               keystroke (e.g. cancelling a prompt and then continuing
+               to play).  Push the peeked character back so it is
+               delivered as its own, unmodified keystroke on the next
+               read, and report a clean ESC now. */
+            ungetch(ret);
+            ret = '\033';
         }
     } else {
         ret = '\033';           /* Just an escape character */

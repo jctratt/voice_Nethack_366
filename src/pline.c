@@ -13,6 +13,11 @@
 #include <regex.h>
 #include <string.h>
 #include <ctype.h>
+#ifndef _WIN32
+#include <sys/stat.h>
+#include <unistd.h>
+#include <time.h>
+#endif
 
 #define BIGBUFSZ                                                \
     (5 * BUFSZ) /* big enough to format a 4*BUFSZ string (from  \
@@ -74,6 +79,7 @@ static char prevmsg[BUFSZ];
 
 static void FDECL(putmesg, (const char *) );
 static char *FDECL(You_buf, (int) );
+void log_message_batched(const char *line, int force_flush);
 #if defined(MSGHANDLER) && (defined(POSIX_TYPES) || defined(__GNUC__))
 static void FDECL(execplinehandler, (const char *) );
 #endif
@@ -886,6 +892,96 @@ sanitize_message(const char *src, char *dest)
 }
 #endif /* VOICE_ENABLED */
 
+/* Fills in the on-disk filename (no directory) for the per-character
+   message/input log, e.g. "<plname>_messages.txt", falling back to
+   "nethack_messages.txt" if plname isn't initialized yet during early
+   boot. Shared by log_message_batched() here and the newgame() log
+   truncation in allmain.c so both stay in sync. */
+void
+voice_log_basename(char *out, size_t outsz)
+{
+    if (plname && *plname)
+        snprintf(out, outsz, "%s_messages.txt", plname);
+    else
+        strncpy(out, "nethack_messages.txt", outsz - 1), out[outsz - 1] = '\0';
+}
+
+/* Resolves the real on-disk path for the message/input log: it now lives
+   under $HOME/save/ (created on demand) rather than directly in the game's
+   own nethackdir, so it survives a `make install` wiping nethackdir.
+   The first time a given character's log is written, a compatibility
+   symlink is created at nethackdir's own save/<file> pointing at the real
+   file, so a fresh install (or a brand new character) grows the expected
+   link automatically without a separate manual step. */
+void
+voice_log_resolve_path(const char *base_filename, char *out, size_t outsz)
+{
+#ifndef _WIN32
+    const char *home = nh_getenv("HOME");
+
+    if (home && *home) {
+        struct stat st;
+        char homesave[BUFSZ];
+        char linkpath[BUFSZ];
+
+        snprintf(homesave, sizeof(homesave), "%s/save", home);
+        if (stat(homesave, &st) != 0)
+            (void) mkdir(homesave, 0755);
+
+        snprintf(out, outsz, "%s/%s", homesave, base_filename);
+
+        snprintf(linkpath, sizeof(linkpath), "save/%s", base_filename);
+        if (lstat(linkpath, &st) != 0)
+            (void) symlink(out, linkpath);
+        return;
+    }
+#endif
+    /* No $HOME (or a non-Unix build): fall back to the historical
+       behavior of writing directly into the current (nethackdir)
+       directory. */
+    strncpy(out, base_filename, outsz - 1);
+    out[outsz - 1] = '\0';
+}
+
+/* Called once, when the current game has truly ended (quit, death,
+   escape, ascension, ...) -- never for an ordinary save-and-suspend
+   exit.  Finalizes this life's message/input log by renaming it to a
+   timestamped "<file>.end-<epoch>" snapshot, so:
+     - if the player starts a genuinely new game reusing the same
+       character name, newgame()'s truncation creates a fresh log
+       instead of silently overwriting the finished one;
+     - if the player instead reverts to an earlier save (outside of
+       normal nethack, e.g. restoring a backed-up save file) and keeps
+       playing that same life, the timestamped file is still sitting
+       there for their own tooling to rename back into place.
+   The compatibility symlink under nethackdir's save/ is removed rather
+   than updated, since it would otherwise dangle; whichever life (new
+   or reverted) writes to this basename next recreates it fresh via
+   voice_log_resolve_path(). */
+void
+voice_log_finalize(void)
+{
+#ifndef _WIN32
+    char basefile[256];
+    char logpath[BUFSZ];
+    char endpath[BUFSZ];
+    char linkpath[BUFSZ];
+    struct stat st;
+
+    voice_log_basename(basefile, sizeof(basefile));
+    voice_log_resolve_path(basefile, logpath, sizeof(logpath));
+
+    if (stat(logpath, &st) == 0) {
+        snprintf(endpath, sizeof(endpath), "%s.end-%ld", logpath,
+                 (long) time((time_t *) 0));
+        (void) rename(logpath, endpath);
+    }
+
+    snprintf(linkpath, sizeof(linkpath), "save/%s", basefile);
+    (void) unlink(linkpath);
+#endif
+}
+
 /* Global wrapper so other files can force a flush on exit */
 void log_message_batched(const char *line, int force_flush)
 {
@@ -897,20 +993,17 @@ void log_message_batched(const char *line, int force_flush)
     size_t line_len = (line && *line) ? strlen(line) : 0;
 
     /* 1. FLUSH FIRST IF NECESSARY */
-    boolean buffer_will_overflow = (line_len > 0) && 
+    boolean buffer_will_overflow = (line_len > 0) &&
         ((strlen(batch_buffer) + line_len + 2) >= BUFFER_SIZE);
 
     if (message_count > 0 && (message_count >= BATCH_LIMIT || buffer_will_overflow || force_flush)) {
         char filename[256];
-        
-        /* Fallback to "nethack" if plname isn't initialized yet during early boot */
-        if (plname && *plname) {
-            snprintf(filename, sizeof(filename), "%s_messages.txt", plname);
-        } else {
-            strncpy(filename, "nethack_messages.txt", sizeof(filename));
-        }
+        char logpath[BUFSZ];
 
-        FILE *logfile = (fopen)(filename, "a");
+        voice_log_basename(filename, sizeof(filename));
+        voice_log_resolve_path(filename, logpath, sizeof(logpath));
+
+        FILE *logfile = (fopen)(logpath, "a");
         if (logfile) {
             fprintf(logfile, "%s", batch_buffer);
             fclose(logfile);

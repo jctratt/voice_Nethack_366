@@ -643,15 +643,24 @@ display_gamewindows()
     display_nhwindow(WIN_MAP, FALSE);
 }
 
+extern void voice_log_basename(char *out, size_t outsz);
+extern void voice_log_resolve_path(const char *base_filename, char *out,
+                                    size_t outsz);
+
 void
 newgame()
 {
     /* Truncate the batch log so a fresh game starts with an empty file */
-    FILE *clear_log = (fopen)("nethack_messages.txt", "w");
-    if (clear_log) {
-        fclose(clear_log);
+    {
+        char logname[256], logpath[BUFSZ];
+
+        voice_log_basename(logname, sizeof(logname));
+        voice_log_resolve_path(logname, logpath, sizeof(logpath));
+        FILE *clear_log = (fopen)(logpath, "w");
+        if (clear_log) {
+            fclose(clear_log);
+        }
     }
-    /* Truncate the batch log so a fresh game starts with an empty file */
     int i;
 
 #ifdef MFLOPPY

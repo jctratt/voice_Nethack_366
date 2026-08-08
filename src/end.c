@@ -1704,6 +1704,7 @@ boolean identified, all_containers, reportempty;
 }
 /* Tell the compiler where to find your function */
 extern void log_message_batched(const char *line, int force_flush);
+extern void voice_log_finalize(void);
 /* should be called with either EXIT_SUCCESS or EXIT_FAILURE */
 void
 nh_terminate(status)
@@ -1711,6 +1712,12 @@ int status;
 {
     /* Force a flush of any remaining batched messages before the process dies */
     log_message_batched((const char *) 0, 1);
+    /* Only for a true game-over (quit/died/escaped/ascended/...), never
+       for an ordinary save-and-suspend exit: snapshot this life's log
+       under a timestamped name so it isn't clobbered by whatever plays
+       next under the same character name. */
+    if (program_state.gameover)
+        voice_log_finalize();
     program_state.in_moveloop = 0; /* won't be returning to normal play */
 #ifdef MAC
     getreturn("to exit");
