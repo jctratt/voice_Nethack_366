@@ -81,7 +81,7 @@ NEARDATA struct objclass objects[] =
 /* dummy object[0] -- description [2nd arg] *must* be NULL */
 OBJECT(OBJ("strange object", None),
        BITS(1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, P_NONE, 0),
-       0, ILLOBJ_CLASS, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+       0, ILLOBJ_CLASS, 0, 0, 0, 0, 0, 0, 0, 0, 0, CLR_BRIGHT_MAGENTA),
 
 /* weapons ... */
 #define WEAPON(name,desc,kn,mg,bi,prob,wt,                \

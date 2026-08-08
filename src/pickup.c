@@ -1890,15 +1890,14 @@ struct obj *otmp;
     newsym(ox, oy);
 
     /* Sokoban Choice Mechanic: Vaporize remaining prizes on pickup */
-    if (In_sokoban(&u.uz) && u.uz.dlevel == 1 && ox == 42 && (oy >= 11 && oy <= 15)) {
-        /* $place = { (42,11),(42,13),(42,15) } */
-    pline("DEBUG: vaporize check fired, ox=%d oy=%d dlevel=%d", ox, oy, u.uz.dlevel);
+    if (In_sokoban(&u.uz) && ox == 43 && (oy >= 14 && oy <= 18)) {
+        pline("DEBUG: vaporize check fired, ox=%d oy=%d", ox, oy);
         struct obj *obj_to_vanish, *next_obj;
         boolean vanished_any = FALSE;
 
         for (obj_to_vanish = fobj; obj_to_vanish; obj_to_vanish = next_obj) {
             next_obj = obj_to_vanish->nobj;
-            if (obj_to_vanish->ox == 42 && (obj_to_vanish->oy >= 10 && obj_to_vanish->oy <= 15) && obj_to_vanish->oy != oy) {
+            if (obj_to_vanish->ox == 43 && (obj_to_vanish->oy >= 14 && obj_to_vanish->oy <= 18) && obj_to_vanish->oy != oy) {
                 if (obj_to_vanish->otyp == BAG_OF_HOLDING ||
                     obj_to_vanish->otyp == AMULET_OF_REFLECTION ||
                     obj_to_vanish->otyp == CLOAK_OF_MAGIC_RESISTANCE) {

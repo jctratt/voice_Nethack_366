@@ -24,6 +24,7 @@ STATIC_DCL void FDECL(m_initweap, (struct monst *));
 STATIC_DCL void FDECL(m_initinv, (struct monst *));
 STATIC_DCL boolean FDECL(makemon_rnd_goodpos, (struct monst *,
                                                unsigned, coord *));
+STATIC_DCL boolean FDECL(sokoban_banned, (struct permonst *));
 
 /* per-turn guard to avoid revealing counts when multiple random
    monsters are generated during a single action */
@@ -1291,12 +1292,27 @@ int mmflags;
                 return (struct monst *) 0; /* no more monsters! */
             }
             fakemon.data = ptr; /* set up for goodpos */
-        } while (++tryct <= 50
-                 /* in Sokoban, don't accept a giant on first try;
-                    after that, boulder carriers are fair game */
-                 && ((tryct == 1 && throws_rocks(ptr) && In_sokoban(&u.uz))
+        } while (++tryct <= 100
+                 && ((In_sokoban(&u.uz) && (sokoban_banned(ptr) || (tryct == 1 && throws_rocks(ptr))))
                      || !goodpos(x, y, &fakemon, gpflags)));
+
+        /* NEW CODE */
+        /* If 50 attempts failed to find a monster that passes goodpos(), abort creation */
+        if (tryct > 100 && !goodpos(x, y, &fakemon, gpflags)) {
+            debugpline0("Warning: could not find valid monster placement.");
+            return (struct monst *) 0;
+        }
         mndx = monsndx(ptr);
+    }
+        /* NEW: catch explicitly-requested monsters that are banned from
+       Sokoban too, not just ones chosen via rndmonst() */
+    if (In_sokoban(&u.uz)) {
+        if (sokoban_banned(ptr)) {
+            pline("Reject: %s", ptr->mname);
+            return (struct monst *) 0;
+        } else {
+            pline("%s", ptr->mname);
+        }
     }
     (void) propagate(mndx, countbirth, FALSE);
     mtmp = newmonst();
@@ -1350,7 +1366,10 @@ int mmflags;
     place_monster(mtmp, x, y);
     mtmp->mcansee = mtmp->mcanmove = TRUE;
     mtmp->mpeaceful = (mmflags & MM_ANGRY) ? FALSE : peace_minded(ptr);
-
+    if (In_sokoban(&u.uz)) {
+        /* Force hostile so co-aligned or peaceful spawns don't block the player */
+        mtmp->mpeaceful = FALSE;
+    }
     switch (ptr->mlet) {
     case S_MIMIC:
         set_mimic_sym(mtmp);
@@ -1604,6 +1623,48 @@ int mmflags;
         newsym(mtmp->mx, mtmp->my); /* make sure the mon shows up */
 
     return mtmp;
+}
+
+/* Returns TRUE if the monster type is problematic for Sokoban mechanics */
+STATIC_OVL boolean
+sokoban_banned(ptr)
+struct permonst *ptr;
+{
+    int i, mndx = monsndx(ptr);
+
+    if (ptr->mmove == 0 || is_were(ptr) || is_mind_flayer(ptr))
+        return TRUE;
+
+    if (ptr->mlet == S_LIGHT || ptr->mlet == S_MIMIC || ptr->mlet == S_EEL
+        || ptr->mlet == S_BLOB || ptr->mlet == S_JELLY || ptr->mlet == S_PUDDING)
+        return TRUE;
+
+    if (mndx == PM_PYROLISK || mndx == PM_FLOATING_EYE
+        || mndx == PM_ROCK_MOLE || mndx == PM_ENERGY_VORTEX
+        || mndx == PM_GREEN_SLIME || mndx == PM_RUST_MONSTER
+        || mndx == PM_DISENCHANTER || mndx == PM_SHADE
+        || mndx == PM_JELLYFISH || mndx == PM_CHAMELEON)
+        return TRUE;
+            /* || mndx == PM_GAS_SPORE || mndx == PM_SHRIEKER
+            || mndx == PM_ACID_BLOB || mndx == PM_QUIVERING_BLOB
+            || mndx == PM_PYROLISK || mndx == PM_FLOATING_EYE
+            || mndx == PM_BLUE_JELLY || mndx == PM_SPOTTED_JELLY || mndx == PM_OCHRE_JELLY
+            || mndx == PM_SMALL_MIMIC || mndx == PM_LARGE_MIMIC || mndx == PM_GIANT_MIMIC
+            || mndx == PM_ROCK_MOLE || mndx == PM_ENERGY_VORTEX
+            || ptr->mlet == S_LIGHT || ptr->mlet == S_EEL || ptr->mlet == S_WORM
+            || mndx == PM_GRAY_OOZE || mndx == PM_BROWN_PUDDING
+            || mndx == PM_GREEN_SLIME || mndx == PM_BLACK_PUDDING
+            || mndx == PM_RUST_MONSTER || mndx == PM_DISENCHANTER
+            || mndx == PM_SHADE || mndx == PM_JELLYFISH || mndx == PM_CHAMELEON
+            || mndx == PM_WEREJACKAL || mndx == PM_WEREWOLF || mndx == PM_WERERAT
+            || mndx == PM_HUMAN_WERERAT || mndx == PM_HUMAN_WEREJACKAL || mndx == PM_HUMAN_WEREWOLF  */
+
+    for (i = 0; i < NATTK; i++) {
+        if (ptr->mattk[i].aatyp == AT_BOOM)
+            return TRUE;
+    }
+
+    return FALSE;
 }
 
 int

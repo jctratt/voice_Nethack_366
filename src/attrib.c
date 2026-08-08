@@ -203,14 +203,24 @@ boolean givemsg;
 {
     int num = incr;
 
-    if (!num) {
+    if (TRUE) {
         if (ABASE(A_STR) < 18)
-            num = (rn2(4) ? 1 : rnd(6));
+        {
+            num = rnd(6);
+            pline("<18 num: %d", num);
+        }
         else if (ABASE(A_STR) < STR18(85))
+        {
             num = rnd(10);
+            pline("<18(85) num: %d", num);
+        }
         else
+        {
             num = 1;
+            pline("num = num = 1");
+        }
     }
+    pline("submitted num: %d", num);
     (void) adjattrib(A_STR, (otmp && otmp->cursed) ? -num : num,
                      givemsg ? -1 : 1);
 }

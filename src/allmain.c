@@ -151,7 +151,11 @@ boolean resuming;
                     /* occasionally add another monster; since this takes
                        place after movement has been allotted, the new
                        monster effectively loses its first turn */
-                    if (!rn2(u.uevent.udemigod ? 25
+                    /* Skip 75% of monster creation attempts in Sokoban */
+                    if (In_sokoban(&u.uz) && rn2(4)) {
+                        /* skip creation attempt */
+                    } else if (!rn2(u.uevent.udemigod ? 25
+                    /* <<< END NEW CODE >>> */
                              : (depth(&u.uz) > depth(&stronghold_level)) ? 50
                                : 70))
                         (void) makemon((struct permonst *) 0, 0, 0,

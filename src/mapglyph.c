@@ -172,10 +172,10 @@ unsigned mgflags;
                     color = CLR_GRAY;
                     break;
                 case A_CHAOTIC:
-                    color = CLR_BLACK;
+                    color = CLR_RED;
                     break;
                 default:
-                    color = CLR_RED;
+                    color = CLR_ORANGE;
                     break;
                 }
        }
