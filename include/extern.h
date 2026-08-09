@@ -1541,6 +1541,7 @@ E boolean FDECL(same_race, (struct permonst *, struct permonst *));
 E int FDECL(monsndx, (struct permonst *));
 E int FDECL(name_to_mon, (const char *));
 E int FDECL(name_to_monclass, (const char *, int *));
+E const char *FDECL(mon_eaten_intrinsics, (int));
 E int FDECL(gender, (struct monst *));
 E int FDECL(pronoun_gender, (struct monst *, BOOLEAN_P));
 E boolean FDECL(levl_follower, (struct monst *));

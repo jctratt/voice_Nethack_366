@@ -626,6 +626,18 @@ curses_message_win_getline(const char *prompt, char *answer, int buffer)
             *answer = '\0';
             goto alldone;
         case '\033': /* DOESCAPE */
+            /* a real terminal-generated escape sequence (arrow keys,
+               some terminals' modifier-key reporting e.g. for Shift
+               combos, bracketed-paste markers, etc.) sends ESC
+               immediately followed by more bytes; this loop doesn't
+               understand those sequences, so swallow and discard any
+               such trailing bytes now rather than letting them leak
+               into the answer as literal garbage characters on a
+               later iteration of this same loop */
+            timeout(10);
+            while (getch() != ERR)
+                ;
+            timeout(-1);
             /* if there isn't any input yet, return ESC */
             if (len == 0) {
                 Strcpy(answer, "\033");
@@ -753,6 +765,16 @@ curses_message_win_getline(const char *prompt, char *answer, int buffer)
             }
             break;
         default:
+            /* only accept plain printable ASCII as typed text; reject
+               anything else (ncurses KEY_* special-key codes, which are
+               values above the 8-bit range, and raw "meta" bytes with
+               the high bit set, which some terminals send directly for
+               certain modifier combinations) rather than storing and
+               drawing it -- those don't have a sensible single-cell
+               rendering and show up as reverse-video garbage instead of
+               being silently ignored */
+            if (ch < 32 || ch > 126)
+                break;
             p_answer[len++] = ch;
             if (len >= buffer)
                 len = buffer - 1;
@@ -763,6 +785,19 @@ curses_message_win_getline(const char *prompt, char *answer, int buffer)
     }
 
  alldone:
+    {
+        /* mirror typed free-text answers (wishes, engravings, naming,
+           any getlin() prompt) into the same batched log as individual
+           keystrokes and outgoing messages -- this is the one place
+           where the whole finished string is known at once, since
+           getlin() reads raw getch() and never passes through
+           curses_read_char()'s per-keystroke logging */
+        extern void log_message_batched(const char *line, int force_flush);
+        char kbuf[BUFSZ + 16];
+
+        snprintf(kbuf, sizeof(kbuf), "[input] %s", answer);
+        log_message_batched(kbuf, 0);
+    }
     free(linestarts);
     free(tmpbuf);
     curses_toggle_color_attr(win, NONE, A_BOLD, OFF);

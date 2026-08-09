@@ -18,6 +18,8 @@ STATIC_DCL struct permonst *FDECL(lookat, (int, int, char *, char *));
 STATIC_DCL void FDECL(checkfile, (char *, struct permonst *,
                                   BOOLEAN_P, BOOLEAN_P, char *));
 STATIC_DCL void FDECL(look_all, (BOOLEAN_P,BOOLEAN_P));
+STATIC_DCL void NDECL(dowhatis_hasintrinsics);
+STATIC_DCL struct obj *FDECL(corpse_pick, (struct obj *));
 STATIC_DCL void FDECL(do_supplemental_info, (char *, struct permonst *,
                                              BOOLEAN_P));
 STATIC_DCL void NDECL(whatdoes_help);
@@ -1179,6 +1181,11 @@ coord *click_cc;
             add_menu(win, NO_GLYPH, &any,
                      flags.lootabc ? 0 : any.a_char, 'n', ATR_NONE,
                      "something else (by symbol or name)", MENU_UNSELECTED);
+            any.a_char = 'h';
+            add_menu(win, NO_GLYPH, &any,
+                     flags.lootabc ? 0 : any.a_char, 0, ATR_NONE,
+                     "what a corpse could give you if eaten",
+                     MENU_UNSELECTED);
             if (!u.uswallow && !Hallucination) {
                 any = zeroany;
                 add_menu(win, NO_GLYPH, &any, 0, 0, ATR_NONE,
@@ -1269,6 +1276,9 @@ coord *click_cc;
             return 0;
         case 'O':
             look_all(FALSE, FALSE); /* list all objects */
+            return 0;
+        case 'h':
+            dowhatis_hasintrinsics();
             return 0;
         }
     } else { /* clicklook */
@@ -1362,6 +1372,158 @@ coord *click_cc;
 
     flags.verbose = save_verbose;
     return 0;
+}
+
+/* given the first corpse object in a pile (from sobj_at(CORPSE, ...)),
+   prompts the player to pick a specific one if there's more than one
+   distinct corpse there, otherwise just returns it as-is; returns NULL
+   only if the player cancels a picker menu (never for a NULL input) */
+STATIC_OVL struct obj *
+corpse_pick(ofirst)
+struct obj *ofirst;
+{
+    struct obj *otmp;
+
+    if (!ofirst || !nxtobj(ofirst, CORPSE, TRUE))
+        return ofirst;
+
+    {
+        menu_item *cpick_list = (menu_item *) 0;
+        winid cwin;
+        anything cany;
+        struct obj *o;
+
+        cany = zeroany;
+        cwin = create_nhwindow(NHW_MENU);
+        start_menu(cwin);
+        for (o = ofirst; o; o = nxtobj(o, CORPSE, TRUE)) {
+            cany.a_obj = o;
+            add_menu(cwin, NO_GLYPH, &cany, 0, 0, ATR_NONE,
+                     doname(o), MENU_UNSELECTED);
+        }
+        end_menu(cwin, "Which corpse?");
+        if (select_menu(cwin, PICK_ONE, &cpick_list) > 0) {
+            otmp = cpick_list->item.a_obj;
+            free((genericptr_t) cpick_list);
+        } else {
+            otmp = (struct obj *) 0;
+        }
+        destroy_nhwindow(cwin);
+    }
+    return otmp;
+}
+
+/* the 'h' entry of do_look()'s menu: "what a corpse could give you if
+   eaten" -- lets the player check a monster's eaten-corpse intrinsic(s)
+   via the map, inventory, a typed name, or the square they're standing
+   on, without needing to actually eat anything first */
+STATIC_OVL void
+dowhatis_hasintrinsics()
+{
+    menu_item *pick_list = (menu_item *) 0;
+    winid win;
+    anything any;
+    int i = '\0';
+    coord cc;
+    struct obj *otmp;
+    int mndx = NON_PM;
+
+    any = zeroany;
+    win = create_nhwindow(NHW_MENU);
+    start_menu(win);
+    any.a_char = '/';
+    add_menu(win, NO_GLYPH, &any, any.a_char, 0, ATR_NONE,
+             "point at a monster or corpse on the map", MENU_UNSELECTED);
+    any.a_char = 'i';
+    add_menu(win, NO_GLYPH, &any, any.a_char, 0, ATR_NONE,
+             "a corpse in your inventory", MENU_UNSELECTED);
+    any.a_char = '?';
+    add_menu(win, NO_GLYPH, &any, any.a_char, 0, ATR_NONE,
+             "type a monster's name", MENU_UNSELECTED);
+    any.a_char = ':';
+    add_menu(win, NO_GLYPH, &any, any.a_char, 0, ATR_NONE,
+             "the corpse on your own square", MENU_UNSELECTED);
+    end_menu(win, "Check intrinsics from eating what:");
+    if (select_menu(win, PICK_ONE, &pick_list) > 0) {
+        i = pick_list->item.a_char;
+        free((genericptr_t) pick_list);
+    }
+    destroy_nhwindow(win);
+
+    switch (i) {
+    case '/': {
+        struct monst *mtmp;
+
+        if (u.uswallow) {
+            pline("You can't look around while swallowed.");
+            return;
+        }
+        cc.x = u.ux;
+        cc.y = u.uy;
+        if (getpos(&cc, FALSE, "a monster or corpse") < 0 || cc.x < 0)
+            return;
+        if ((mtmp = m_at(cc.x, cc.y)) != 0) {
+            mndx = monsndx(mtmp->data);
+        } else if ((otmp = sobj_at(CORPSE, cc.x, cc.y)) != 0) {
+            if ((otmp = corpse_pick(otmp)) == 0)
+                return;
+            mndx = otmp->corpsenm;
+        } else {
+            pline("There's no monster or corpse there.");
+            return;
+        }
+        break;
+    }
+    case 'i': {
+        char invlet = display_inventory((const char *) 0, TRUE);
+
+        if (!invlet || invlet == '\033')
+            return;
+        for (otmp = invent; otmp; otmp = otmp->nobj)
+            if (otmp->invlet == invlet)
+                break;
+        if (!otmp || otmp->otyp != CORPSE) {
+            pline("That's not a corpse.");
+            return;
+        }
+        mndx = otmp->corpsenm;
+        break;
+    }
+    case '?': {
+        char out_str[BUFSZ] = DUMMY;
+
+        getlin("What monster? (type the name)", out_str);
+        if (out_str[0] == '\0' || out_str[0] == '\033')
+            return;
+        mungspaces(out_str);
+        if ((mndx = name_to_mon(out_str)) == NON_PM) {
+            pline("I've never heard of such a monster.");
+            return;
+        }
+        break;
+    }
+    case ':': {
+        struct obj *ofirst = sobj_at(CORPSE, u.ux, u.uy);
+
+        if (!ofirst) {
+            pline("There's no corpse here.");
+            return;
+        }
+        if ((otmp = corpse_pick(ofirst)) == 0)
+            return;
+        mndx = otmp->corpsenm;
+        break;
+    }
+    default:
+        return;
+    }
+
+    if (mndx < LOW_PM || mndx >= NUMMONS) {
+        pline("That corpse has no discernible monster type.");
+        return;
+    }
+    pline("Eating a %s corpse: %s", mons[mndx].mname,
+          mon_eaten_intrinsics(mndx));
 }
 
 STATIC_OVL void

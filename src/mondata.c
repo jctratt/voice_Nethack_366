@@ -1193,4 +1193,25 @@ struct permonst *mdat;
     return TRUE;
 }
 
+#include "mconveys.h"
+
+/* returns a description of what eating this monster's corpse does --
+   resistances conferred, hazards (poison/acid/stoning/instadeath/slime),
+   and the various per-monster special cases in eat.c (nurse healing,
+   newt energy, wraith XP, lycanthropy, telepathy, etc.) -- from
+   mconveys_table, which util/genmconveys.c generates directly from
+   mons[] (see that file for the full derivation), one entry per monster
+   in the exact same order as mons[] itself.  Indexed directly rather
+   than matched by name: some monsters share a display name with a
+   different PM_ index (e.g. the animal-form and human-form "wererat"),
+   so a name-keyed lookup could silently resolve to the wrong one. */
+const char *
+mon_eaten_intrinsics(mndx)
+int mndx;
+{
+    if (mndx < LOW_PM || mndx >= NUMMONS)
+        return "unknown";
+    return mconveys_table[mndx - LOW_PM].text;
+}
+
 /*mondata.c*/

@@ -229,6 +229,15 @@ curses_name_input_dialog(const char *prompt, char *answer, int buffer)
     curses_enhanced_getline(askwin, input, buffer, prompt_height);
 
     Strcpy(answer, input);
+    {
+        /* same reasoning as curses_message_win_getline()'s logging --
+           this is the character-naming dialog (e.g. #name/#call) */
+        extern void log_message_batched(const char *line, int force_flush);
+        char kbuf[BUFSZ + 16];
+
+        snprintf(kbuf, sizeof(kbuf), "[input] %s", answer);
+        log_message_batched(kbuf, 0);
+    }
     delwin(askwin);
     delwin(bwin);
 
@@ -1289,6 +1298,16 @@ curses_line_input_dialog(const char *prompt, char *answer, int buffer)
     curses_enhanced_getline(askwin, input, buffer, prompt_height);
 
     Strcpy(answer, input);
+    {
+        /* same reasoning as curses_message_win_getline()'s logging --
+           this is the popup-dialog variant of getlin(), used instead of
+           that one when 'popup_dialog' is on */
+        extern void log_message_batched(const char *line, int force_flush);
+        char kbuf[BUFSZ + 16];
+
+        snprintf(kbuf, sizeof(kbuf), "[input] %s", answer);
+        log_message_batched(kbuf, 0);
+    }
     werase(bwin);
     delwin(bwin);
     curses_destroy_win(askwin);
